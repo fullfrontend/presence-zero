@@ -5,6 +5,7 @@ import { ScoreCell } from './score-cell'
 import { PresenceBadge } from './presence-badge'
 import { DomainChips } from './domain-chips'
 import { ScoreHistogram } from './score-histogram'
+import { Skeleton } from './skeleton'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
@@ -27,17 +28,22 @@ export default function ResultsTable(
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
   const [leadsOnly, setLeadsOnly] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     if (readOnly) return
     let mounted = true
 
     const load = async () => {
+      setLoading(true)
       const params = new URLSearchParams()
       if (minScore > 0) params.set('minScore', String(minScore))
       const res = await fetch(`/api/scans/${scanId}/results?${params}`)
       const data = await res.json()
-      if (mounted) setResults(data.results)
+      if (mounted) {
+        setResults(data.results)
+        setLoading(false)
+      }
     }
 
     void load()
@@ -96,7 +102,22 @@ export default function ResultsTable(
             </tr>
           </thead>
           <tbody>
-            {visible.map(r => (
+            {loading && visible.length === 0 ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <tr key={`skeleton-${i}`} className="border-t border-line align-top">
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-8" /></td>
+                  <td className="px-3 py-2">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="mt-1.5 h-3 w-24" />
+                  </td>
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-16" /></td>
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-20" /></td>
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-24" /></td>
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-16" /></td>
+                  <td className="px-3 py-2"><Skeleton className="h-4 w-28" /></td>
+                </tr>
+              ))
+            ) : visible.map(r => (
               <tr key={r.id} className="border-t border-line align-top">
                 <td className="px-3 py-2"><ScoreCell score={r.score} /></td>
                 <td className="px-3 py-2">
@@ -130,7 +151,7 @@ export default function ResultsTable(
             ))}
           </tbody>
         </table>
-        {visible.length === 0 && <p className="p-4 text-sm text-dim">No results match the filters.</p>}
+        {!loading && visible.length === 0 && <p className="p-4 text-sm text-dim">No results match the filters.</p>}
       </div>
     </div>
   )

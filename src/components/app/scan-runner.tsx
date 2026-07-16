@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ResultsTable from '@/components/app/results-table'
 import { Button } from '@/components/brand/button'
+import { Skeleton } from '@/components/app/skeleton'
 
 interface ScanState {
   status: 'running' | 'paused' | 'done' | 'failed'
@@ -15,6 +16,7 @@ const PHASES = ['fetch', 'process', 'retry', 'done'] as const
 
 export default function ScanRunner({ scanId }: { scanId: string }) {
   const [scan, setScan] = useState<ScanState | null>(null)
+  const [working, setWorking] = useState(false)
   const driving = useRef(false)
 
   const drive = useCallback(async () => {
@@ -29,6 +31,7 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
         return null
       }
     }
+    setWorking(true)
     try {
       let state: ScanState = await (await fetch(`/api/scans/${scanId}`)).json()
       setScan(state)
@@ -46,12 +49,26 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
       }
     } finally {
       driving.current = false
+      setWorking(false)
     }
   }, [scanId])
 
   useEffect(() => { void drive() }, [drive])
 
-  if (!scan) return <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">Loading…</p>
+  if (!scan) {
+    return (
+      <div className="rounded-xl border border-line bg-surface p-6">
+        <div className="flex flex-wrap items-center gap-2">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-16" />
+        </div>
+        <Skeleton className="mt-4 h-1.5 w-full" />
+        <Skeleton className="mt-2 h-3 w-32" />
+      </div>
+    )
+  }
 
   const pct = scan.totalFound > 0 ? Math.round((scan.totalProcessed / scan.totalFound) * 100) : 0
   const activeIndex = PHASES.indexOf(scan.phase as (typeof PHASES)[number])
@@ -86,15 +103,23 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
         </div>
 
         <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
-          <span>{scan.status === 'running' ? `${scan.phase}…` : scan.status}</span>
+          <span className="flex items-center gap-2">
+            {scan.status === 'running' ? `${scan.phase}…` : scan.status}
+            {working && (
+              <span className="flex items-center gap-1.5 text-lime">
+                <span className="pz-spin inline-block h-3 w-3 rounded-full border border-lime border-t-transparent" />
+                {scan.status === 'paused' ? 'Retrying…' : 'Working…'}
+              </span>
+            )}
+          </span>
           <span>{scan.totalProcessed}/{scan.totalFound} PROCESSED</span>
         </div>
 
         {scan.errorMessage && <p className="mt-3 text-sm text-red-400">{scan.errorMessage}</p>}
 
         {(scan.status === 'paused' || scan.status === 'running') && (
-          <Button variant="ghost" onClick={() => { void drive() }} className="mt-4">
-            Resume scan
+          <Button variant="ghost" onClick={() => { void drive() }} className="mt-4" disabled={working}>
+            {working ? 'Resuming…' : 'Resume scan'}
           </Button>
         )}
       </div>
