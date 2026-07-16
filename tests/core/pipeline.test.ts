@@ -155,6 +155,29 @@ describe('pipeline', () => {
     expect(biz.score).toBeGreaterThan(biz2.score!)
   })
 
+  it('an enrichPhone that throws is swallowed: business still scored phone-less, not probe_failed', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    const enrichPhone = async () => { throw new Error('lookup service down') }
+    const res = await runToCompletion(db, deps(db, { getProviderById: noPhoneProvider, enrichPhone }))
+    expect(res.status).toBe('done')
+    const biz = (await db.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
+    expect(biz.presenceStatus).toBe('none') // real probe result (no listed website), not probe_failed
+    expect(biz.phone).toBeNull()
+    expect(biz.score).toBeLessThan(100) // scored without the hasPhone bonus
+  })
+
+  it('a getApiKey that throws does not propagate out of advanceScan and the scan still resolves', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    const getApiKey = async (): Promise<string | undefined> => { throw new Error('db unavailable') }
+    const res = await runToCompletion(db, deps(db, { getProviderById: noPhoneProvider, getApiKey }))
+    expect(res).toBeDefined()
+    expect(res.status).toBe('done') // resolves gracefully as if no key configured
+    const biz = (await db.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
+    expect(biz.phone).toBeNull()
+  })
+
   it('with no configured API key, a phone-less business is left unchanged (default behavior preserved)', async () => {
     const savedKey = process.env.GOOGLE_PLACES_API_KEY
     delete process.env.GOOGLE_PLACES_API_KEY

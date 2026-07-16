@@ -57,7 +57,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   if (!scan) throw new Error(`Scan not found: ${scanId}`)
   if (scan.status === 'done' || scan.status === 'failed') return snapshot(scan)
 
-  const apiKey = await getApiKey()
+  let apiKey: string | undefined
+  try { apiKey = await getApiKey() } catch { apiKey = undefined }
   const enrichPhone = deps.enrichPhone ?? (apiKey ? createGooglePhoneLookup(apiKey) : async () => null)
 
   const area: ScanArea = { location: scan.location, category: scan.category, countryCode: scan.countryCode }
@@ -80,19 +81,15 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           if (domain === candidates[0] && domain.endsWith('.com') && available === true) exactComAvailable = true
         }
       }
-      let phone = b.phone
-      if (!phone) {
-        const found = await enrichPhone(b.name, b.address)
-        if (found) {
-          phone = found
-          await db.update(businesses).set({ phone: found }).where(eq(businesses.id, b.id))
-        }
-      }
+      let found: string | null = null
+      if (!b.phone) { try { found = await enrichPhone(b.name, b.address) } catch { found = null } }
       const score = computeScore({
         presence, reviewCount: b.reviewCount, rating: b.rating,
-        exactComAvailable, hasPhone: !!phone,
+        exactComAvailable, hasPhone: !!(b.phone || found),
       })
-      await db.update(businesses).set({ presenceStatus: presence, score }).where(eq(businesses.id, b.id))
+      await db.update(businesses)
+        .set({ presenceStatus: presence, score, ...(found ? { phone: found } : {}) })
+        .where(eq(businesses.id, b.id))
     } catch {
       await db.update(businesses).set({ presenceStatus: 'probe_failed', score: 0 }).where(eq(businesses.id, b.id))
     }
