@@ -11,7 +11,9 @@ export function HeroPipeline() {
   useEffect(() => {
     if (reduced || !root.current) return
     let ctx: { revert: () => void } | undefined
+    let cancelled = false
     void import('gsap').then(({ gsap }) => {
+      if (cancelled || !root.current) return
       const q = gsap.utils.selector(root.current!)
       ctx = gsap.context(() => {
         const tl = gsap.timeline()
@@ -23,7 +25,7 @@ export function HeroPipeline() {
           .fromTo(q('[data-bar]'), { width: '0%' }, { width: '87%', duration: 0.9, ease: 'power1.out' }, '<')
       }, root)
     })
-    return () => ctx?.revert()
+    return () => { cancelled = true; ctx?.revert() }
   }, [reduced])
 
   return (
