@@ -6,5 +6,7 @@ let registered = false
 
 export function buildPipelineDeps(db: Db): PipelineDeps {
   if (!registered) { registerBuiltInProviders(); registered = true }
-  return { db }
+  const envBatch = Number(process.env.PRESENCEZERO_BATCH_SIZE)
+  const batchSize = Number.isFinite(envBatch) && envBatch > 0 ? envBatch : undefined
+  return { db, ...(batchSize ? { batchSize } : {}) }
 }

@@ -17,15 +17,28 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
   const drive = useCallback(async () => {
     if (driving.current) return
     driving.current = true
+    const advanceOnce = async (): Promise<ScanState | null> => {
+      try {
+        const res = await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })
+        if (!res.ok) return null
+        return await res.json() as ScanState
+      } catch {
+        return null
+      }
+    }
     try {
       let state: ScanState = await (await fetch(`/api/scans/${scanId}`)).json()
       setScan(state)
       if (state.status === 'paused') {
-        state = await (await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })).json()
+        const next = await advanceOnce()
+        if (next === null) return
+        state = next
         setScan(state)
       }
       while (state.status === 'running') {
-        state = await (await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })).json()
+        const next = await advanceOnce()
+        if (next === null) break
+        state = next
         setScan(state)
       }
     } finally {
@@ -49,7 +62,7 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
           <div className="h-full bg-zinc-900 transition-all" style={{ width: `${pct}%` }} />
         </div>
         {scan.errorMessage && <p className="mt-3 text-sm text-red-600">{scan.errorMessage}</p>}
-        {scan.status === 'paused' && (
+        {(scan.status === 'paused' || scan.status === 'running') && (
           <button onClick={() => { void drive() }} className="mt-3 rounded bg-zinc-900 px-3 py-1.5 text-sm text-white">
             Resume scan
           </button>

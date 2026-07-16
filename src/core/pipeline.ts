@@ -41,7 +41,7 @@ function snapshot(scan: Scan): AdvanceResult {
 
 export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<AdvanceResult> {
   const { db } = deps
-  const batchSize = deps.batchSize ?? 25
+  const batchSize = deps.batchSize ?? 8
   const getProviderById = deps.getProviderById ?? getProvider
   const probe = deps.probe ?? createWebsiteProbe()
   const checkDomain = deps.checkDomain ?? createRdapChecker({ cache: createDrizzleRdapCache(db) })
@@ -109,10 +109,10 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         .where(and(eq(businesses.scanId, scanId), isNull(businesses.presenceStatus)))
         .limit(batchSize)
       if (batch.length === 0) {
-        await update({ phase: 'retry' })
+        await update({ phase: 'retry', errorMessage: null })
       } else {
         for (const b of batch) await processBusiness(b)
-        await update({ totalProcessed: sql`${scans.totalProcessed} + ${batch.length}` })
+        await update({ totalProcessed: sql`${scans.totalProcessed} + ${batch.length}`, errorMessage: null })
       }
     } else if (scan.phase === 'retry') {
       const batch = await db.select().from(businesses)
@@ -123,7 +123,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         ))
         .limit(batchSize)
       if (batch.length === 0) {
-        await update({ phase: 'done', status: 'done' })
+        await update({ phase: 'done', status: 'done', errorMessage: null })
       } else {
         for (const b of batch) {
           await db.update(businesses).set({ retried: true }).where(eq(businesses.id, b.id))

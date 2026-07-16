@@ -67,6 +67,12 @@ Every lead gets a score out of 100, built from weighted signals. Defaults live i
 
 Edit `scoring.config.ts` directly to retune weights for your market — there's no UI for it by design, since it's a one-line config file meant to be forked.
 
+## Known limitations
+
+- **No built-in auth.** As noted in the quick-start sections above, keep self-hosted and Vercel deployments private — anyone with the URL can use the app and see your leads.
+- **No private-IP filtering on the website probe.** The presence probe fetches user/provider-supplied URLs (business websites) without filtering out private/internal IP ranges, so it carries some SSRF surface. The blast radius is bounded — the probe only ever reports back `alive`/`dead`/`parked` — but don't expose a deployment to untrusted users.
+- **Large CSV imports are held in memory for export.** Results are loaded fully in memory when exporting to CSV, so very large imports (tens of thousands of rows) may use significant memory. The app is intended for realistic local-business-scan sizes, not bulk data processing.
+
 ## Ethics
 
 PresenceZero is a lead **finder**, not a spam tool. It has no bulk-email, auto-outreach, or scraping-for-spam features, and none are planned — that's a permanent design decision, not a missing feature. The intended workflow is: find a short list of genuinely underserved local businesses, then reach out yourself, like a human, because you have something worth offering them.
