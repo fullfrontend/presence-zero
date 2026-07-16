@@ -44,3 +44,16 @@ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* Subtle progress-bar sheen, shown only while a scan is actively running. */
+@keyframes pz-sheen {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.pz-sheen { position: relative; overflow: hidden; }
+.pz-sheen::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+  animation: pz-sheen 1.4s ease-in-out infinite;
+}
