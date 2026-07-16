@@ -6,6 +6,7 @@ import { SectionTag } from '@/components/brand/section-tag'
 export const metadata: Metadata = {
   title: 'Live demo',
   description: 'Explore a real PresenceZero result set — scored local-business leads with available domains. Read-only; self-host to run your own scans.',
+  alternates: { canonical: '/demo' },
 }
 
 export default function DemoPage() {
