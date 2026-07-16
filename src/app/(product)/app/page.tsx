@@ -22,7 +22,7 @@ export default async function HomePage() {
         <ul className="divide-y rounded border bg-white">
           {rows.map(s => (
             <li key={s.id}>
-              <Link href={`/scans/${s.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50">
+              <Link href={`/app/scans/${s.id}`} className="flex items-center justify-between px-4 py-3 hover:bg-zinc-50">
                 <span>{s.category} in {s.location}</span>
                 <span className="text-sm text-zinc-500">{s.status} · {s.totalFound} found</span>
               </Link>

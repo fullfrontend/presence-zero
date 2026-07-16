@@ -22,7 +22,7 @@ export default function NewScanForm() {
     const data = await res.json()
     setBusy(false)
     if (!res.ok) { setError(data.error ?? 'Failed to create scan'); return }
-    router.push(`/scans/${data.id}`)
+    router.push(`/app/scans/${data.id}`)
   }
 
   const input = 'w-full rounded border px-3 py-2 text-sm'
