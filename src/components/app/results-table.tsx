@@ -21,6 +21,40 @@ const MIN_SCORE_OPTIONS = [0, 40, 60, 80]
 const SELECT_CLS = 'rounded border border-line bg-surface px-2 py-1 font-mono text-xs text-text focus:border-lime/60 focus:outline-none'
 const INPUT_CLS = 'w-36 rounded border border-line bg-surface px-2 py-1 text-xs text-text focus:border-lime/60 focus:outline-none'
 
+type SortDir = 'asc' | 'desc'
+type SortKey = 'score' | 'name' | 'presence' | 'domains' | 'phone' | 'status' | 'note'
+
+// Lead-quality rank: leads group together, best leads first (ascending).
+const PRESENCE_RANK: Record<string, number> = { none: 0, dead: 1, parked: 2, probe_failed: 3, alive: 4 }
+// Lead-pipeline rank: follows the natural progression of a lead.
+const STATUS_RANK: Record<string, number> = { new: 0, contacted: 1, replied: 2, won: 3, lost: 4, skipped: 5 }
+
+interface Column {
+  key: SortKey
+  label: string
+  defaultDir: SortDir
+  value: (r: Result) => number | string | null
+}
+
+const COLUMNS: Column[] = [
+  { key: 'score', label: 'Score', defaultDir: 'desc', value: r => r.score },
+  { key: 'name', label: 'Business', defaultDir: 'asc', value: r => r.name },
+  { key: 'presence', label: 'Presence', defaultDir: 'asc', value: r => PRESENCE_RANK[r.presenceStatus ?? 'none'] ?? 0 },
+  { key: 'domains', label: 'Available domains', defaultDir: 'desc', value: r => r.domains.filter(d => d.available === true).length },
+  { key: 'phone', label: 'Contact', defaultDir: 'asc', value: r => r.phone },
+  { key: 'status', label: 'Status', defaultDir: 'asc', value: r => STATUS_RANK[r.leadStatus] ?? 0 },
+  { key: 'note', label: 'Note', defaultDir: 'asc', value: r => (r.note && r.note.trim() ? r.note : null) },
+]
+
+// Nulls always sort last, regardless of direction; only the substantive comparison flips with dir.
+function compareValues(a: number | string | null, b: number | string | null, dir: SortDir): number {
+  if (a == null && b == null) return 0
+  if (a == null) return 1
+  if (b == null) return -1
+  const cmp = typeof a === 'number' ? a - (b as number) : a.localeCompare(b as string, undefined, { sensitivity: 'base' })
+  return dir === 'asc' ? cmp : -cmp
+}
+
 export default function ResultsTable(
   { scanId, readOnly = false, initialResults }:
   { scanId: string; readOnly?: boolean; initialResults?: Result[] },
@@ -29,6 +63,8 @@ export default function ResultsTable(
   const [minScore, setMinScore] = useState(0)
   const [leadsOnly, setLeadsOnly] = useState(true)
   const [loading, setLoading] = useState(false)
+  const [sortKey, setSortKey] = useState<SortKey>('score')
+  const [sortDir, setSortDir] = useState<SortDir>('desc')
 
   useEffect(() => {
     if (readOnly) return
@@ -61,9 +97,20 @@ export default function ResultsTable(
     setResults(data.results)
   }
 
+  function handleSort(key: SortKey) {
+    if (key === sortKey) {
+      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))
+    } else {
+      setSortKey(key)
+      setSortDir(COLUMNS.find(c => c.key === key)?.defaultDir ?? 'asc')
+    }
+  }
+
   // Live mode: the server already applies minScore. Read-only mode has no server round trip, so filter locally.
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
   const visible = leadsOnly ? byMinScore.filter(r => r.presenceStatus !== 'alive') : byMinScore
+  const activeColumn = COLUMNS.find(c => c.key === sortKey) ?? COLUMNS[0]
+  const sorted = [...visible].sort((a, b) => compareValues(activeColumn.value(a), activeColumn.value(b), sortDir))
 
   return (
     <div className="space-y-3">
@@ -92,13 +139,25 @@ export default function ResultsTable(
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-base">
             <tr className="font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
-              <th className="px-3 py-2 text-left font-normal">Score</th>
-              <th className="px-3 py-2 text-left font-normal">Business</th>
-              <th className="px-3 py-2 text-left font-normal">Presence</th>
-              <th className="px-3 py-2 text-left font-normal">Available domains</th>
-              <th className="px-3 py-2 text-left font-normal">Contact</th>
-              <th className="px-3 py-2 text-left font-normal">Status</th>
-              <th className="px-3 py-2 text-left font-normal">Note</th>
+              {COLUMNS.map(col => {
+                const active = col.key === sortKey
+                return (
+                  <th
+                    key={col.key}
+                    className="px-3 py-2 text-left font-normal"
+                    aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSort(col.key)}
+                      className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-mute hover:text-text"
+                    >
+                      {col.label}
+                      {active && <span aria-hidden="true">{sortDir === 'asc' ? '▲' : '▼'}</span>}
+                    </button>
+                  </th>
+                )
+              })}
             </tr>
           </thead>
           <tbody>
@@ -117,7 +176,7 @@ export default function ResultsTable(
                   <td className="px-3 py-2"><Skeleton className="h-4 w-28" /></td>
                 </tr>
               ))
-            ) : visible.map(r => (
+            ) : sorted.map(r => (
               <tr key={r.id} className="border-t border-line align-top">
                 <td className="px-3 py-2"><ScoreCell score={r.score} /></td>
                 <td className="px-3 py-2">
