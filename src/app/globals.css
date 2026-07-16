@@ -59,8 +59,12 @@ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
 }
 
 /* Interactive affordances — native <button> doesn't get a pointer from the reset. */
-button:not(:disabled), [role="button"], summary { cursor: pointer; }
+button:not(:disabled), [role="button"], summary, select { cursor: pointer; }
 button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+
+/* Native selects must render dark — a styled background otherwise forces a light option popup. */
+select { color-scheme: dark; }
+select option { background-color: #0A0A0B; color: #FAFAFA; }
 
 /* Scroll reveal. Content is in the DOM at SSR (indexable); the Reveal client
    component animates the entrance. .pz-reveal starts hidden; .is-visible settles it. */
