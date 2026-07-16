@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { Button } from '@/components/brand/button'
 
 export default function NewScanForm() {
   const router = useRouter()
@@ -25,36 +26,53 @@ export default function NewScanForm() {
     router.push(`/app/scans/${data.id}`)
   }
 
-  const input = 'w-full rounded border px-3 py-2 text-sm'
+  const label = 'block font-mono text-[11px] uppercase tracking-[0.14em] text-mute'
+  const input = 'mt-1.5 w-full rounded-md border border-line bg-base/60 px-3 py-2.5 text-sm text-text placeholder:text-mute'
+  const providers: { value: typeof provider; label: string }[] = [
+    { value: 'osm', label: 'OSM' },
+    { value: 'google', label: 'Google' },
+    { value: 'csv', label: 'CSV' },
+  ]
+
   return (
-    <form onSubmit={submit} className="space-y-3 rounded border bg-white p-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <label className="text-sm">Location
+    <form onSubmit={submit} className="space-y-5 rounded-xl border border-line bg-surface p-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <label className={label}>Location
           <input className={input} value={location} onChange={e => setLocation(e.target.value)} placeholder="Ottawa, ON" required />
         </label>
-        <label className="text-sm">Category
+        <label className={label}>Category
           <input className={input} value={category} onChange={e => setCategory(e.target.value)} placeholder="bakery" required />
         </label>
-        <label className="text-sm">Country code
+        <label className={label}>Country code
           <input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value)} maxLength={2} placeholder="us" required />
         </label>
       </div>
-      <label className="block text-sm">Data source
-        <select className={input} value={provider} onChange={e => setProvider(e.target.value as typeof provider)}>
-          <option value="osm">OpenStreetMap (free, no key)</option>
-          <option value="google">Google Places (your API key — set it in Settings)</option>
-          <option value="csv">CSV import</option>
-        </select>
-      </label>
+      <div>
+        <span className={label}>Data source</span>
+        <div className="mt-1.5 flex gap-2">
+          {providers.map(p => (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => setProvider(p.value)}
+              className={`rounded-md px-4 py-2 text-sm transition ${
+                provider === p.value ? 'bg-lime text-base' : 'border border-line text-dim'
+              }`}
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
       {provider === 'csv' && (
-        <label className="block text-sm">CSV content (header: name,address,phone,category,rating,review_count,website)
+        <label className={label}>CSV content (header: name,address,phone,category,rating,review_count,website)
           <textarea className={`${input} h-32 font-mono`} value={csvContent} onChange={e => setCsvContent(e.target.value)} />
         </label>
       )}
-      {error && <p className="text-sm text-red-600">{error}</p>}
-      <button disabled={busy} className="rounded bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50">
+      {error && <p className="text-sm text-red-400">{error}</p>}
+      <Button type="submit" variant="primary" disabled={busy} className="disabled:opacity-50">
         {busy ? 'Starting…' : 'Start scan'}
-      </button>
+      </Button>
     </form>
   )
 }
