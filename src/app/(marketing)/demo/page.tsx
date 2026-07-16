@@ -16,7 +16,7 @@ export default function DemoPage() {
       <h1 className="mt-3 text-3xl font-semibold tracking-tight">{DEMO_SCAN.category} <span className="text-mute">in</span> {DEMO_SCAN.location}</h1>
       <p className="mt-3 max-w-2xl text-sm text-dim">A real scored result set. Filtering and sorting work; scanning and editing are disabled. <a href="https://github.com/its-tahir/presence-zero" className="text-lime underline-offset-4 hover:underline">Self-host</a> to run your own. Want it built or white-labeled for your business?{' '}
         <a href="mailto:hello@its-tahir.com" className="text-lime underline-offset-4 hover:underline">Get in touch</a>.</p>
-      <div className="mt-8"><ResultsTable scanId="demo" readOnly initialResults={DEMO_SCAN.results} /></div>
+      <div className="mt-8"><ResultsTable scanId="demo" readOnly initialResults={DEMO_SCAN.results} autoTour /></div>
     </main>
   )
 }

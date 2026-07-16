@@ -6,6 +6,7 @@ import { PresenceBadge } from './presence-badge'
 import { DomainChips } from './domain-chips'
 import { ScoreHistogram } from './score-histogram'
 import { Skeleton } from './skeleton'
+import { Tour, type TourStep } from './tour'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
@@ -34,16 +35,55 @@ interface Column {
   label: string
   defaultDir: SortDir
   value: (r: Result) => number | string | null
+  tour?: string
 }
 
 const COLUMNS: Column[] = [
-  { key: 'score', label: 'Score', defaultDir: 'desc', value: r => r.score },
-  { key: 'name', label: 'Business', defaultDir: 'asc', value: r => r.name },
-  { key: 'presence', label: 'Presence', defaultDir: 'asc', value: r => PRESENCE_RANK[r.presenceStatus ?? 'none'] ?? 0 },
-  { key: 'domains', label: 'Available domains', defaultDir: 'desc', value: r => r.domains.filter(d => d.available === true).length },
+  { key: 'score', label: 'Score', defaultDir: 'desc', value: r => r.score, tour: 'score' },
+  { key: 'name', label: 'Business', defaultDir: 'asc', value: r => r.name, tour: 'business' },
+  { key: 'presence', label: 'Presence', defaultDir: 'asc', value: r => PRESENCE_RANK[r.presenceStatus ?? 'none'] ?? 0, tour: 'presence' },
+  { key: 'domains', label: 'Available domains', defaultDir: 'desc', value: r => r.domains.filter(d => d.available === true).length, tour: 'domains' },
   { key: 'phone', label: 'Contact', defaultDir: 'asc', value: r => r.phone },
-  { key: 'status', label: 'Status', defaultDir: 'asc', value: r => STATUS_RANK[r.leadStatus] ?? 0 },
-  { key: 'note', label: 'Note', defaultDir: 'asc', value: r => (r.note && r.note.trim() ? r.note : null) },
+  { key: 'status', label: 'Status', defaultDir: 'asc', value: r => STATUS_RANK[r.leadStatus] ?? 0, tour: 'status' },
+  { key: 'note', label: 'Note', defaultDir: 'asc', value: r => (r.note && r.note.trim() ? r.note : null), tour: 'note' },
+]
+
+const TOUR_STEPS: TourStep[] = [
+  {
+    selector: '[data-tour="score"]',
+    title: 'Lead score (0–100)',
+    body: 'Higher means a better prospect. The lime bar under each number shows the score at a glance; the list sorts by score by default.',
+  },
+  {
+    selector: '[data-tour="presence"]',
+    title: 'Web presence',
+    body: 'How reachable the business’s site is. The dot encodes lead quality: solid lime = NONE (no site — the best target), ring = DEAD, half = PARKED. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
+  },
+  {
+    selector: '[data-tour="domains"]',
+    title: 'Available domains',
+    body: 'Matching domains that are still registrable, RDAP-checked and shown as lime chips — the ones you can pitch to win the work.',
+  },
+  {
+    selector: '[data-tour="status"]',
+    title: 'Lead pipeline',
+    body: 'Track each lead: new → contacted → replied → won or lost (or skipped). Update it inline.',
+  },
+  {
+    selector: '[data-tour="note"]',
+    title: 'Notes',
+    body: 'Jot a quick note per lead; it saves automatically.',
+  },
+  {
+    selector: '[data-tour="histogram"]',
+    title: 'Score distribution',
+    body: 'How your leads spread across score bands. Lime bars are leads; the violet bar is the low/alive bucket.',
+  },
+  {
+    selector: '[data-tour="toolbar"]',
+    title: 'Filter, sort, export',
+    body: 'Filter by minimum score or leads-only, sort any column by clicking its header, and export the whole list to CSV.',
+  },
 ]
 
 // Nulls always sort last, regardless of direction; only the substantive comparison flips with dir.
@@ -56,8 +96,8 @@ function compareValues(a: number | string | null, b: number | string | null, dir
 }
 
 export default function ResultsTable(
-  { scanId, readOnly = false, initialResults }:
-  { scanId: string; readOnly?: boolean; initialResults?: Result[] },
+  { scanId, readOnly = false, initialResults, autoTour = false }:
+  { scanId: string; readOnly?: boolean; initialResults?: Result[]; autoTour?: boolean },
 ) {
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
@@ -65,6 +105,23 @@ export default function ResultsTable(
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
+  const [tourOpen, setTourOpen] = useState(false)
+
+  // Auto-run the tour once per browser on pages that opt in (e.g. the read-only demo).
+  useEffect(() => {
+    if (!autoTour) return
+    const runOnce = () => {
+      try {
+        if (!window.localStorage.getItem('pz-demo-tour-seen')) {
+          setTourOpen(true)
+          window.localStorage.setItem('pz-demo-tour-seen', '1')
+        }
+      } catch {
+        // localStorage unavailable (private mode, disabled storage, etc.) — skip auto-run silently.
+      }
+    }
+    runOnce()
+  }, [autoTour])
 
   useEffect(() => {
     if (readOnly) return
@@ -114,7 +171,7 @@ export default function ResultsTable(
 
   return (
     <div className="space-y-3">
-      <div className="flex flex-wrap items-center gap-4">
+      <div data-tour="toolbar" className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           Min score
           <select className={SELECT_CLS} value={minScore} onChange={e => setMinScore(Number(e.target.value))}>
@@ -125,7 +182,12 @@ export default function ResultsTable(
           <input type="checkbox" checked={leadsOnly} onChange={e => setLeadsOnly(e.target.checked)} className="accent-lime" />
           Leads only
         </label>
-        <ScoreHistogram scores={visible.map(r => r.score)} />
+        {visible.length >= 2 && (
+          <div data-tour="histogram">
+            <ScoreHistogram scores={visible.map(r => r.score)} />
+          </div>
+        )}
+        <Button variant="ghost" onClick={() => setTourOpen(true)} className="px-3 py-1.5 text-xs">? Tour</Button>
         {readOnly ? (
           <div className="ml-auto flex items-center gap-3">
             <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-lime">Self-host to run scans</span>
@@ -135,6 +197,7 @@ export default function ResultsTable(
           <Button variant="ghost" href={`/api/scans/${scanId}/export`} className="ml-auto">Export CSV</Button>
         )}
       </div>
+      <Tour steps={TOUR_STEPS} open={tourOpen} onClose={() => setTourOpen(false)} />
       <div className="overflow-x-auto rounded-xl border border-line">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-base">
@@ -144,6 +207,7 @@ export default function ResultsTable(
                 return (
                   <th
                     key={col.key}
+                    data-tour={col.tour}
                     className="px-3 py-2 text-left font-normal"
                     aria-sort={active ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                   >
