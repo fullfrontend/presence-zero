@@ -25,7 +25,7 @@ export default async function AppHome() {
         <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
           {rows.map(s => (
             <li key={s.id}>
-              <Link href={`/app/scans/${s.id}`} className="flex items-center justify-between px-5 py-4 hover:bg-surface">
+              <Link href={`/app/scans/${s.id}`} className="flex items-center justify-between px-5 py-4 transition-colors hover:bg-surface">
                 <span className="text-text">{s.category} <span className="text-mute">in</span> {s.location}</span>
                 <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{s.status} · {s.totalFound} found</span>
               </Link>

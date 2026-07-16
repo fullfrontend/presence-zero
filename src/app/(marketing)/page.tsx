@@ -7,19 +7,20 @@ import { Ethics } from '@/components/landing/ethics'
 import { Quickstart } from '@/components/landing/quickstart'
 import { Faq } from '@/components/landing/faq'
 import { JsonLd } from '@/components/brand/json-ld'
+import { Reveal } from '@/components/brand/reveal'
 
 export default function LandingPage() {
   return (
     <>
       <JsonLd />
       <Hero />
-      <HowItWorks />
-      <WhyManual />
-      <Features />
-      <WhoFor />
-      <Ethics />
-      <Quickstart />
-      <Faq />
+      <Reveal><HowItWorks /></Reveal>
+      <Reveal><WhyManual /></Reveal>
+      <Reveal><Features /></Reveal>
+      <Reveal><WhoFor /></Reveal>
+      <Reveal><Ethics /></Reveal>
+      <Reveal><Quickstart /></Reveal>
+      <Reveal><Faq /></Reveal>
     </>
   )
 }

@@ -57,3 +57,15 @@ body { font-family: var(--font-sans); -webkit-font-smoothing: antialiased; }
   background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.35), transparent);
   animation: pz-sheen 1.4s ease-in-out infinite;
 }
+
+/* Interactive affordances — native <button> doesn't get a pointer from the reset. */
+button:not(:disabled), [role="button"], summary { cursor: pointer; }
+button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
+
+/* Scroll reveal. Content is in the DOM at SSR (indexable); the Reveal client
+   component animates the entrance. .pz-reveal starts hidden; .is-visible settles it. */
+.pz-reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
+.pz-reveal.is-visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pz-reveal, .pz-reveal.is-visible { opacity: 1 !important; transform: none !important; transition: none !important; }
+}

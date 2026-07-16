@@ -25,6 +25,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${GeistSans.variable} ${GeistMono.variable}`}>
       <body className="min-h-screen bg-base text-text antialiased">
+        <noscript><style>{`.pz-reveal{opacity:1!important;transform:none!important}`}</style></noscript>
         <div className="pz-texture" aria-hidden="true"><div className="pz-grid" /><div className="pz-grain" /></div>
         {children}
       </body>

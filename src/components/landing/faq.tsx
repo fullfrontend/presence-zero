@@ -13,9 +13,12 @@ export function Faq() {
         {FAQ_ITEMS.map((it, i) => (
           <div key={i}>
             <button className="flex w-full items-center justify-between py-4 text-left" aria-expanded={open === i} onClick={() => setOpen(open === i ? null : i)}>
-              <span className="text-text">{it.q}</span><span className="text-lime">{open === i ? '−' : '+'}</span>
+              <span className="text-text">{it.q}</span>
+              <span className={`text-lime transition-transform duration-300 ${open === i ? 'rotate-45' : ''}`}>+</span>
             </button>
-            {open === i && <p className="pb-4 text-sm text-dim">{it.a}</p>}
+            <div className={`grid transition-all duration-300 ${open === i ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+              <div className="overflow-hidden"><p className="pb-4 text-sm text-dim">{it.a}</p></div>
+            </div>
           </div>
         ))}
       </div>

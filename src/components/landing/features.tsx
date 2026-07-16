@@ -49,7 +49,7 @@ export function Features() {
       <HeadlineRule />
       <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {FEATURES.map((f) => (
-          <div key={f.title} className="rounded-xl border border-line bg-surface p-6">
+          <div key={f.title} className="rounded-xl border border-line bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-lime/40">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{f.kicker}</p>
             <h3 className="mt-3 text-lg font-medium text-text">{f.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-dim">{f.body}</p>

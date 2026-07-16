@@ -29,7 +29,7 @@ export function WhoFor() {
       <HeadlineRule />
       <div className="mt-14 grid gap-5 sm:grid-cols-3">
         {AUDIENCES.map((a) => (
-          <div key={a.title} className="rounded-xl border border-line bg-surface p-6">
+          <div key={a.title} className="rounded-xl border border-line bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-lime/40">
             <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{a.kicker}</p>
             <h3 className="mt-3 text-lg font-medium text-text">{a.title}</h3>
             <p className="mt-2 text-sm leading-relaxed text-dim">{a.body}</p>
