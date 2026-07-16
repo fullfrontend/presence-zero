@@ -8,7 +8,7 @@ const area = { location: 'Ottawa, ON', category: 'bakery', countryCode: 'ca' }
 
 describe('google places provider', () => {
   it('maps places and passes cursor as pageToken', async () => {
-    const fetchFn = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) =>
+    const fetchFn = vi.fn(async (_url: RequestInfo | URL, _init?: RequestInit) =>
       new Response(fixture, { status: 200 })) as unknown as typeof fetch
     const res = await createGooglePlacesProvider(fetchFn).fetchPage(area, 'tok-1', { apiKey: 'k' })
     expect(res.businesses[0]).toMatchObject({
