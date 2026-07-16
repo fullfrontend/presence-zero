@@ -19,7 +19,7 @@ function toBusiness(el: OverpassElement): RawBusiness | null {
   return {
     name: t.name,
     address,
-    phone: t.phone ?? t['contact:phone'],
+    phone: t.phone ?? t['contact:phone'] ?? t['contact:mobile'],
     website: t.website ?? t['contact:website'],
     category: t.shop ?? t.amenity ?? t.craft,
   }

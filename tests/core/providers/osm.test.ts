@@ -20,10 +20,16 @@ describe('osm provider', () => {
 
   it('geocodes then maps overpass elements, skipping unnamed', async () => {
     const res = await createOsmProvider(fakeFetch()).fetchPage(area, null, {})
-    expect(res.businesses).toHaveLength(2)
+    expect(res.businesses).toHaveLength(3)
     expect(res.businesses[0]).toMatchObject({ name: "Joe's Bakery", phone: '+1-613-555-0101', address: '12 Main St' })
     expect(res.businesses[1].website).toBe('https://crustyloaf.example.com')
     expect(res.nextCursor).toBeNull()
+  })
+
+  it('falls back to contact:mobile when no phone or contact:phone tag is present', async () => {
+    const res = await createOsmProvider(fakeFetch()).fetchPage(area, null, {})
+    const mobileOnly = res.businesses.find(b => b.name === 'Mobile Only Shop')
+    expect(mobileOnly?.phone).toBe('+1-613-555-0199')
   })
 
   it('rejects unsupported categories with a helpful error', async () => {

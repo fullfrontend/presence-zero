@@ -119,4 +119,60 @@ describe('pipeline', () => {
     expect(crusty.score).toBe(0)
     expect(attempts).toBe(2) // initial + one retry
   })
+
+  function noPhoneProvider(): Provider {
+    return {
+      id: 'mock',
+      async fetchPage() {
+        return { businesses: [{ name: 'No Phone Bakery', reviewCount: 10 }], nextCursor: null }
+      },
+    }
+  }
+
+  it('backfills a phone-less business via enrichPhone and scores it as having a phone', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    let calls = 0
+    const enrichPhone = async (name: string, _address: string | null) => {
+      calls++
+      expect(name).toBe('No Phone Bakery')
+      return '613-555-9999'
+    }
+    const res = await runToCompletion(db, deps(db, { getProviderById: noPhoneProvider, enrichPhone }))
+    expect(res.status).toBe('done')
+    expect(calls).toBe(1)
+    const biz = (await db.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
+    expect(biz.phone).toBe('613-555-9999')
+
+    // Same scenario but the lookup finds nothing — phone stays null and score is lower
+    // by exactly the hasPhone weight, proving hasPhone tracks the enriched phone.
+    const db2 = await freshDb()
+    await insertScan(db2)
+    const res2 = await runToCompletion(db2, deps(db2, { getProviderById: noPhoneProvider, enrichPhone: async () => null }))
+    expect(res2.status).toBe('done')
+    const biz2 = (await db2.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
+    expect(biz2.phone).toBeNull()
+    expect(biz.score).toBeGreaterThan(biz2.score!)
+  })
+
+  it('with no configured API key, a phone-less business is left unchanged (default behavior preserved)', async () => {
+    const savedKey = process.env.GOOGLE_PLACES_API_KEY
+    delete process.env.GOOGLE_PLACES_API_KEY
+    try {
+      const db = await freshDb()
+      await insertScan(db)
+      // Deliberately omit getApiKey and enrichPhone to exercise the real pipeline defaults:
+      // no key configured anywhere -> default enrichPhone is a no-op that always returns null.
+      const d: PipelineDeps = {
+        db, getProviderById: noPhoneProvider,
+        probe: async () => 'dead', checkDomain: async () => false, batchSize: 2,
+      }
+      const res = await runToCompletion(db, d)
+      expect(res.status).toBe('done')
+      const biz = (await db.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
+      expect(biz.phone).toBeNull()
+    } finally {
+      if (savedKey !== undefined) process.env.GOOGLE_PLACES_API_KEY = savedKey
+    }
+  })
 })

@@ -8,6 +8,7 @@ import { createWebsiteProbe } from './probes/website-probe'
 import { generateDomainCandidates } from './probes/domains'
 import { createRdapChecker } from './probes/rdap'
 import { createDrizzleRdapCache } from './probes/rdap-cache-store'
+import { createGooglePhoneLookup } from './enrich/google-phone'
 import { computeScore } from './scoring'
 import type { ProviderConfig, ScanArea } from './types'
 
@@ -17,6 +18,7 @@ export interface PipelineDeps {
   probe?: (url: string) => Promise<'alive' | 'dead' | 'parked'>
   checkDomain?: (domain: string) => Promise<boolean | null>
   getApiKey?: () => Promise<string | undefined>
+  enrichPhone?: (name: string, address: string | null) => Promise<string | null>
   batchSize?: number
 }
 
@@ -55,6 +57,9 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   if (!scan) throw new Error(`Scan not found: ${scanId}`)
   if (scan.status === 'done' || scan.status === 'failed') return snapshot(scan)
 
+  const apiKey = await getApiKey()
+  const enrichPhone = deps.enrichPhone ?? (apiKey ? createGooglePhoneLookup(apiKey) : async () => null)
+
   const area: ScanArea = { location: scan.location, category: scan.category, countryCode: scan.countryCode }
 
   const update = async (values: SQLiteUpdateSetSource<typeof scans>) => {
@@ -75,9 +80,17 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           if (domain === candidates[0] && domain.endsWith('.com') && available === true) exactComAvailable = true
         }
       }
+      let phone = b.phone
+      if (!phone) {
+        const found = await enrichPhone(b.name, b.address)
+        if (found) {
+          phone = found
+          await db.update(businesses).set({ phone: found }).where(eq(businesses.id, b.id))
+        }
+      }
       const score = computeScore({
         presence, reviewCount: b.reviewCount, rating: b.rating,
-        exactComAvailable, hasPhone: !!b.phone,
+        exactComAvailable, hasPhone: !!phone,
       })
       await db.update(businesses).set({ presenceStatus: presence, score }).where(eq(businesses.id, b.id))
     } catch {
@@ -89,7 +102,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
     if (scan.phase === 'fetch') {
       const provider = getProviderById(scan.provider)
       const stored: ProviderConfig = scan.providerConfig ? JSON.parse(scan.providerConfig) : {}
-      const config: ProviderConfig = { ...stored, apiKey: await getApiKey() }
+      const config: ProviderConfig = { ...stored, apiKey }
       const page = await provider.fetchPage(area, scan.providerCursor, config)
       if (page.businesses.length > 0) {
         await db.insert(businesses).values(page.businesses.map(raw => ({
