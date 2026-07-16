@@ -1,6 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Button } from '@/components/brand/button'
 
 export default function NewScanForm() {
@@ -12,6 +13,16 @@ export default function NewScanForm() {
   const [csvContent, setCsvContent] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [hasGoogleKey, setHasGoogleKey] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    fetch('/api/settings')
+      .then(res => res.json())
+      .then(data => { if (!cancelled) setHasGoogleKey(Boolean(data.googleApiKey)) })
+      .catch(() => { if (!cancelled) setHasGoogleKey(null) })
+    return () => { cancelled = true }
+  }, [])
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
@@ -79,6 +90,32 @@ export default function NewScanForm() {
               {p.label}
             </button>
           ))}
+        </div>
+        <div className="mt-2 rounded-md border border-line bg-base/40 p-3 text-xs text-dim">
+          {provider === 'osm' && (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">OpenStreetMap · free, no key</p>
+              <p className="mt-1">Queries the public Overpass API for businesses in your area. Great coverage of independent local shops. The free server can get busy — if a scan pauses with a 504, just hit Resume.</p>
+            </>
+          )}
+          {provider === 'google' && (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Google Places · your API key</p>
+              <p className="mt-1">Richer data (ratings, review counts). Set your key in Settings or the GOOGLE_PLACES_API_KEY environment variable — it stays on your server and uses your own free-tier quota.</p>
+              {hasGoogleKey === false && (
+                <p className="mt-2 text-amber-400">
+                  {'⚠ No Google Places key saved. Add one in Settings, or set the GOOGLE_PLACES_API_KEY env var — otherwise the scan will fail. '}
+                  <Link href="/app/settings" className="text-lime underline-offset-4 hover:underline">Open Settings</Link>
+                </p>
+              )}
+            </>
+          )}
+          {provider === 'csv' && (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">CSV import · your own list</p>
+              <p className="mt-1">Paste rows with header name,address,phone,category,rating,review_count,website. PresenceZero probes each site, checks matching domains, and scores them — so you can run leads from any source.</p>
+            </>
+          )}
         </div>
       </div>
       <div>
