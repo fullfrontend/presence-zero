@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import ScanRunner from '@/components/app/scan-runner'
 import { SectionTag } from '@/components/brand/section-tag'
 
@@ -6,8 +7,13 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
   return (
     <div className="space-y-6">
       <div>
-        <SectionTag>{'// SCAN'}</SectionTag>
-        <h1 className="mt-3 text-2xl font-semibold tracking-tight">Scan results</h1>
+        <Link href="/app" className="inline-flex items-center gap-1 text-sm text-dim transition hover:text-text">
+          {'← Back to scans'}
+        </Link>
+        <div className="mt-4">
+          <SectionTag>{'// SCAN'}</SectionTag>
+          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Scan results</h1>
+        </div>
       </div>
       <ScanRunner scanId={id} />
     </div>

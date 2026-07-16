@@ -122,9 +122,22 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
             {working ? 'Resuming…' : 'Resume scan'}
           </Button>
         )}
+
+        {scan.status === 'failed' && (
+          <div className="mt-4 flex items-center gap-3">
+            <Button href="/app">Start a new scan</Button>
+          </div>
+        )}
       </div>
 
-      {scan.status === 'done' && <ResultsTable scanId={scanId} />}
+      {scan.status === 'done' && (
+        <div className="space-y-3">
+          <div className="flex justify-end">
+            <Button href="/app" variant="link">{'New scan'}</Button>
+          </div>
+          <ResultsTable scanId={scanId} />
+        </div>
+      )}
     </div>
   )
 }
