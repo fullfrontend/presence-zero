@@ -33,7 +33,7 @@ export default function SettingsForm() {
         />
       </div>
       <p className="text-mute text-xs">
-        Stored in your own database and sent only to Google. Self-hosted and private.
+        Stored in your own database and sent only to Google. If GOOGLE_PLACES_API_KEY is set in the environment, it takes precedence. Self-hosted and private.
       </p>
       <div className="flex items-center gap-3">
         <Button disabled={!key}>Save</Button>

@@ -33,6 +33,7 @@ export function Quickstart() {
             <button
               key={i}
               onClick={() => setActiveTab(i)}
+              aria-pressed={activeTab === i}
               className={`px-4 py-3 font-mono text-sm transition-colors ${
                 activeTab === i
                   ? 'bg-lime text-base'

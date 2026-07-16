@@ -55,6 +55,7 @@ export default function NewScanForm() {
               key={p.value}
               type="button"
               onClick={() => setProvider(p.value)}
+              aria-pressed={provider === p.value}
               className={`rounded-md px-4 py-2 text-sm transition ${
                 provider === p.value ? 'bg-lime text-base' : 'border border-line text-dim'
               }`}

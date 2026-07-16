@@ -164,7 +164,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       presenceStatus: 'parked',
       score: 55,
       leadStatus: 'won',
-      note: 'Interested but needs follow-up in Aug',
+      note: 'Signed — 5-page site, build starts in Aug',
       domains: [
         { domain: 'goldengrainbakery.com', available: false },
         { domain: 'goldengrain.ca', available: false },

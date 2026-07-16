@@ -21,7 +21,7 @@ export default async function AppHome() {
       </section>
       <section>
         <SectionTag>{'// PAST SCANS'}</SectionTag>
-        {rows.length === 0 && <p className="mt-3 text-sm text-mute">No scans yet.</p>}
+        {rows.length === 0 && <p className="mt-3 text-sm text-dim">No scans yet.</p>}
         <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
           {rows.map(s => (
             <li key={s.id}>

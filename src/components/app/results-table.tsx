@@ -130,7 +130,7 @@ export default function ResultsTable(
             ))}
           </tbody>
         </table>
-        {visible.length === 0 && <p className="p-4 text-sm text-mute">No results match the filters.</p>}
+        {visible.length === 0 && <p className="p-4 text-sm text-dim">No results match the filters.</p>}
       </div>
     </div>
   )
