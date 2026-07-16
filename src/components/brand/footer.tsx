@@ -13,9 +13,9 @@ export function Footer() {
         <div className="flex flex-col gap-1 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <a href="mailto:hello@its-tahir.com" className="hover:text-text">hello@its-tahir.com</a>
           <a href="https://its-tahir.com" className="hover:text-text">its-tahir.com</a>
-          <a href="https://its-tahir.com/throughline" className="hover:text-text">Throughline</a>
-          <a href="https://its-tahir.com/anilense" className="hover:text-text">AniLense</a>
-          <a href="https://github.com/its-tahir/presence-zero" className="hover:text-text">GitHub · MIT</a>
+          <a href="https://throughline.its-tahir.com/" className="hover:text-text">Throughline</a>
+          <a href="https://anitrace.its-tahir.com/" className="hover:text-text">AniTrace</a>
+          <a href="https://github.com/its-tahir" className="hover:text-text">GitHub</a>
         </div>
       </div>
     </footer>
