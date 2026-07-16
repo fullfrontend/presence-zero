@@ -102,6 +102,7 @@ export default function ResultsTable(
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
   const [leadsOnly, setLeadsOnly] = useState(true)
+  const [hasPhoneOnly, setHasPhoneOnly] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -165,7 +166,8 @@ export default function ResultsTable(
 
   // Live mode: the server already applies minScore. Read-only mode has no server round trip, so filter locally.
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
-  const visible = leadsOnly ? byMinScore.filter(r => r.presenceStatus !== 'alive') : byMinScore
+  const byLeads = leadsOnly ? byMinScore.filter(r => r.presenceStatus !== 'alive') : byMinScore
+  const visible = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
   const activeColumn = COLUMNS.find(c => c.key === sortKey) ?? COLUMNS[0]
   const sorted = [...visible].sort((a, b) => compareValues(activeColumn.value(a), activeColumn.value(b), sortDir))
 
@@ -181,6 +183,10 @@ export default function ResultsTable(
         <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <input type="checkbox" checked={leadsOnly} onChange={e => setLeadsOnly(e.target.checked)} className="accent-lime" />
           Leads only
+        </label>
+        <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
+          <input type="checkbox" checked={hasPhoneOnly} onChange={e => setHasPhoneOnly(e.target.checked)} className="accent-lime" />
+          Has phone only
         </label>
         {visible.length >= 2 && (
           <div data-tour="histogram">

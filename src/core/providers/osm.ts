@@ -1,14 +1,8 @@
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
+import { CATEGORY_TAGS, SUPPORTED_OSM_CATEGORIES, resolveOsmCategory } from './osm-categories'
 
 const USER_AGENT = 'PresenceZero/0.1 (open-source lead finder)'
-
-export const CATEGORY_TAGS: Record<string, string> = {
-  restaurant: 'amenity=restaurant', cafe: 'amenity=cafe', bar: 'amenity=bar',
-  dentist: 'amenity=dentist', bakery: 'shop=bakery', hairdresser: 'shop=hairdresser',
-  butcher: 'shop=butcher', florist: 'shop=florist', plumber: 'craft=plumber',
-  electrician: 'craft=electrician', carpenter: 'craft=carpenter',
-}
 
 interface OverpassElement { tags?: Record<string, string> }
 
@@ -29,10 +23,11 @@ export function createOsmProvider(fetchFn: typeof fetch = fetch): Provider {
   return {
     id: 'osm',
     async fetchPage(area, _cursor, _config) {
-      const tag = CATEGORY_TAGS[area.category.toLowerCase().trim()]
+      const key = resolveOsmCategory(area.category)
+      const tag = key ? CATEGORY_TAGS[key] : undefined
       if (!tag) {
         throw new ProviderError(
-          `OSM provider doesn't support "${area.category}" yet. Supported: ${Object.keys(CATEGORY_TAGS).join(', ')}.`,
+          `OSM provider doesn't support "${area.category}" yet. Supported: ${SUPPORTED_OSM_CATEGORIES.join(', ')}.`,
         )
       }
       const geoRes = await fetchFn(

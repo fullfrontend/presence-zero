@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { createOsmProvider } from '@/core/providers/osm'
 import { ProviderError } from '@/core/providers/provider'
+import { resolveOsmCategory } from '@/core/providers/osm-categories'
 
 const nominatim = readFileSync('fixtures/nominatim.json', 'utf8')
 const overpass = readFileSync('fixtures/overpass.json', 'utf8')
@@ -64,5 +65,37 @@ describe('osm provider', () => {
     await createOsmProvider(spy).fetchPage(area, null, {})
     expect(seen).toHaveLength(2)
     expect(seen.every(ua => ua.length > 0)).toBe(true)
+  })
+
+  it('fetches successfully when the category is plural (e.g. example-chip categories)', async () => {
+    const res = await createOsmProvider(fakeFetch()).fetchPage({ ...area, category: 'bakeries' }, null, {})
+    expect(res.businesses).toHaveLength(3)
+  })
+})
+
+describe('resolveOsmCategory', () => {
+  it('resolves an exact singular key', () => {
+    expect(resolveOsmCategory('bakery')).toBe('bakery')
+  })
+
+  it('resolves simple trailing-s plurals', () => {
+    expect(resolveOsmCategory('dentists')).toBe('dentist')
+    expect(resolveOsmCategory('restaurants')).toBe('restaurant')
+  })
+
+  it('resolves -ies plurals to -y singular', () => {
+    expect(resolveOsmCategory('bakeries')).toBe('bakery')
+  })
+
+  it('resolves known synonyms', () => {
+    expect(resolveOsmCategory('coffee')).toBe('cafe')
+  })
+
+  it('is case-insensitive and trims whitespace', () => {
+    expect(resolveOsmCategory('  Dentists  ')).toBe('dentist')
+  })
+
+  it('returns null for unknown categories', () => {
+    expect(resolveOsmCategory('unicorns')).toBeNull()
   })
 })

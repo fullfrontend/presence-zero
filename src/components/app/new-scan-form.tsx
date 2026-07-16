@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/brand/button'
+import { SUPPORTED_OSM_CATEGORIES } from '@/core/providers/osm-categories'
 
 export default function NewScanForm() {
   const router = useRouter()
@@ -45,13 +46,13 @@ export default function NewScanForm() {
     { value: 'csv', label: 'CSV' },
   ]
   const examples: { label: string; location: string; category: string; countryCode: string }[] = [
-    { label: 'Lahore 🇵🇰', location: 'Lahore, Pakistan', category: 'restaurants', countryCode: 'pk' },
-    { label: 'Jaipur 🇮🇳', location: 'Jaipur, India', category: 'boutiques', countryCode: 'in' },
-    { label: 'Tallinn 🇪🇪', location: 'Tallinn, Estonia', category: 'cafes', countryCode: 'ee' },
-    { label: 'Porto 🇵🇹', location: 'Porto, Portugal', category: 'dentists', countryCode: 'pt' },
-    { label: 'Manchester 🇬🇧', location: 'Manchester, UK', category: 'plumbers', countryCode: 'gb' },
-    { label: 'Austin 🇺🇸', location: 'Austin, TX', category: 'bakeries', countryCode: 'us' },
-    { label: 'Perth 🇦🇺', location: 'Perth, Australia', category: 'electricians', countryCode: 'au' },
+    { label: 'Lahore 🇵🇰', location: 'Lahore, Pakistan', category: 'restaurant', countryCode: 'pk' },
+    { label: 'Jaipur 🇮🇳', location: 'Jaipur, India', category: 'boutique', countryCode: 'in' },
+    { label: 'Tallinn 🇪🇪', location: 'Tallinn, Estonia', category: 'cafe', countryCode: 'ee' },
+    { label: 'Porto 🇵🇹', location: 'Porto, Portugal', category: 'dentist', countryCode: 'pt' },
+    { label: 'Manchester 🇬🇧', location: 'Manchester, UK', category: 'plumber', countryCode: 'gb' },
+    { label: 'Austin 🇺🇸', location: 'Austin, TX', category: 'bakery', countryCode: 'us' },
+    { label: 'Perth 🇦🇺', location: 'Perth, Australia', category: 'electrician', countryCode: 'au' },
   ]
 
   function applyExample(ex: (typeof examples)[number]) {
@@ -68,7 +69,16 @@ export default function NewScanForm() {
           <input className={input} value={location} onChange={e => setLocation(e.target.value)} placeholder="Ottawa, ON" required />
         </label>
         <label className={label}>Category
-          <input className={input} value={category} onChange={e => setCategory(e.target.value)} placeholder="bakery" required />
+          {provider === 'osm' ? (
+            <select className={input} value={category} onChange={e => setCategory(e.target.value)} required>
+              <option value="">Choose a category…</option>
+              {SUPPORTED_OSM_CATEGORIES.map(c => (
+                <option key={c} value={c}>{c.replace(/_/g, ' ')}</option>
+              ))}
+            </select>
+          ) : (
+            <input className={input} value={category} onChange={e => setCategory(e.target.value)} placeholder="bakery" required />
+          )}
         </label>
         <label className={label}>Country code
           <input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value)} maxLength={2} placeholder="us" required />
@@ -95,7 +105,7 @@ export default function NewScanForm() {
           {provider === 'osm' && (
             <>
               <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">OpenStreetMap · free, no key</p>
-              <p className="mt-1">Queries the public Overpass API for businesses in your area. Great coverage of independent local shops. The free server can get busy — if a scan pauses with a 504, just hit Resume.</p>
+              <p className="mt-1">Queries the public Overpass API for businesses in your area. Great coverage of independent local shops. The free server can get busy — if a scan pauses with a 504, just hit Resume. Pick a supported category from the dropdown.</p>
             </>
           )}
           {provider === 'google' && (
