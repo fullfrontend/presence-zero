@@ -33,6 +33,22 @@ export default function NewScanForm() {
     { value: 'google', label: 'Google' },
     { value: 'csv', label: 'CSV' },
   ]
+  const examples: { label: string; location: string; category: string; countryCode: string }[] = [
+    { label: 'Lahore 🇵🇰', location: 'Lahore, Pakistan', category: 'restaurants', countryCode: 'pk' },
+    { label: 'Jaipur 🇮🇳', location: 'Jaipur, India', category: 'boutiques', countryCode: 'in' },
+    { label: 'Tallinn 🇪🇪', location: 'Tallinn, Estonia', category: 'cafes', countryCode: 'ee' },
+    { label: 'Porto 🇵🇹', location: 'Porto, Portugal', category: 'dentists', countryCode: 'pt' },
+    { label: 'Manchester 🇬🇧', location: 'Manchester, UK', category: 'plumbers', countryCode: 'gb' },
+    { label: 'Austin 🇺🇸', location: 'Austin, TX', category: 'bakeries', countryCode: 'us' },
+    { label: 'Perth 🇦🇺', location: 'Perth, Australia', category: 'electricians', countryCode: 'au' },
+  ]
+
+  function applyExample(ex: (typeof examples)[number]) {
+    setLocation(ex.location)
+    setCategory(ex.category)
+    setCountryCode(ex.countryCode)
+    setProvider('osm')
+  }
 
   return (
     <form onSubmit={submit} className="space-y-5 rounded-xl border border-line bg-surface p-6">
@@ -61,6 +77,21 @@ export default function NewScanForm() {
               }`}
             >
               {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <span className={label}>{'// Try an example'}</span>
+        <div className="mt-1.5 flex flex-wrap gap-2">
+          {examples.map(ex => (
+            <button
+              key={ex.label}
+              type="button"
+              onClick={() => applyExample(ex)}
+              className="rounded-full border border-line px-3 py-1 text-xs text-dim transition hover:border-lime/40 hover:text-text"
+            >
+              {ex.label}
             </button>
           ))}
         </div>
