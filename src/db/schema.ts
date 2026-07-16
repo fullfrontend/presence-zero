@@ -14,6 +14,10 @@ export const scans = sqliteTable('scans', {
   errorMessage: text('error_message'),
   totalFound: integer('total_found').notNull().default(0),
   totalProcessed: integer('total_processed').notNull().default(0),
+  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
+  archived: integer('archived', { mode: 'boolean' }).notNull().default(false),
+  label: text('label'),
+  title: text('title'),
 })
 
 export const businesses = sqliteTable('businesses', {

@@ -8,6 +8,13 @@
       "when": 1784179697987,
       "tag": "0000_stiff_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1784207967124,
+      "tag": "0001_wakeful_stick",
+      "breakpoints": true
     }
   ]
 }

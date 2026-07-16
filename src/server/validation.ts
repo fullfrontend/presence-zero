@@ -13,6 +13,13 @@ export const patchBusinessSchema = z.object({
   note: z.string().max(2000).optional(),
 }).refine(d => d.leadStatus !== undefined || d.note !== undefined, { message: 'nothing to update' })
 
+export const patchScanSchema = z.object({
+  pinned: z.boolean().optional(),
+  archived: z.boolean().optional(),
+  label: z.string().max(100).nullable().optional(),
+  title: z.string().max(200).nullable().optional(),
+}).refine(d => Object.values(d).some(v => v !== undefined), { message: 'nothing to update' })
+
 export const putSettingsSchema = z.object({ googleApiKey: z.string().min(1) })
 
 export const resultsQuerySchema = z.object({
