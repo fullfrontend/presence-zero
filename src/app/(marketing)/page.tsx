@@ -4,6 +4,8 @@ import { WhyManual } from '@/components/landing/why-manual'
 import { Features } from '@/components/landing/features'
 import { WhoFor } from '@/components/landing/who-for'
 import { Ethics } from '@/components/landing/ethics'
+import { Quickstart } from '@/components/landing/quickstart'
+import { Faq } from '@/components/landing/faq'
 
 export default function LandingPage() {
   return (
@@ -14,6 +16,8 @@ export default function LandingPage() {
       <Features />
       <WhoFor />
       <Ethics />
+      <Quickstart />
+      <Faq />
     </>
   )
 }
