@@ -1,7 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
-// TODO(task-10): switch to @/components/app/results-table once it exists
-import ResultsTable from '@/components/results-table'
+import ResultsTable from '@/components/app/results-table'
 import { Button } from '@/components/brand/button'
 
 interface ScanState {
