@@ -2,6 +2,35 @@
   "name": "presencezero",
   "version": "0.1.0",
   "private": true,
+  "description": "Open-source, self-hosted lead finder that spots local businesses with no website (or a dead/parked one), checks which matching domains are still available, and scores them 0–100 as sales leads — for web designers, agencies, and freelancers.",
+  "author": "Tahir Nazir",
+  "license": "MIT",
+  "keywords": [
+    "lead-generation",
+    "local-seo",
+    "web-design-leads",
+    "businesses-without-websites",
+    "domain-availability",
+    "domain-finder",
+    "rdap",
+    "google-places",
+    "openstreetmap",
+    "nextjs",
+    "typescript",
+    "self-hosted",
+    "open-source",
+    "small-business",
+    "freelance",
+    "agency"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/its-tahir/presence-zero"
+  },
+  "homepage": "https://github.com/its-tahir/presence-zero#readme",
+  "bugs": {
+    "url": "https://github.com/its-tahir/presence-zero/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

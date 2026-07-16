@@ -1,45 +1,79 @@
 # PresenceZero
 
-**Find businesses whose web presence is zero.**
+**Find local businesses whose web presence is zero — and the domains you can pitch them.**
 
-PresenceZero scans a location and business category, then flags the businesses that have no website, a dead one, or a domain squatted by a parking page — the businesses most likely to want (and pay for) a new site. For each lead it checks whether a matching domain name is still available, scores the opportunity from 0–100, and gives you a filterable table you can work from and export to CSV. It's a self-hosted, bring-your-own-API-key lead *finder*, not an outreach or CRM tool.
+[![CI](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml/badge.svg)](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
+![Next.js](https://img.shields.io/badge/Next.js-16-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
+
+PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs free on Docker or Vercel. It's a lead *finder* — not an outreach or CRM tool.
+
+**Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
 
 <!-- screenshot: docs pending -->
 
-## Features
+## How it works
 
-- **Pluggable providers** — Google Places (bring your own API key), OpenStreetMap (Nominatim + Overpass, no key required), or CSV import of a list you already have.
-- **Website presence classification** — every lead is probed and labeled `none` (no website on file), `dead` (unreachable / 5xx), `parked` (for-sale / parking-page patterns detected), or `alive` — or `probe_failed` if the probe itself errored.
-- **Domain availability check** — generates likely domain candidates from the business name and checks them via RDAP (no API key needed) to see if the exact-match domain is free to register.
-- **0–100 opportunity scoring** — ranks leads by how much they need (and how easy it would be to sell) a new web presence. Fully configurable, see [Scoring](#scoring).
-- **Lead pipeline statuses** — `new → contacted → replied → won | lost`, plus `skipped`, with a single note field per lead.
-- **CSV export** — take the results anywhere.
-- **Free-tier philosophy** — every dependency runs on a free tier. Providers are bring-your-own-key; RDAP and OpenStreetMap need no key at all. Self-host on a Raspberry Pi with Docker, or deploy to Vercel's Hobby tier with a free Turso database.
+1. **Find** — pick a location + category and a data source (Google Places, OpenStreetMap, or a CSV you already have). PresenceZero pulls the matching businesses.
+2. **Probe** — it visits each listed website and labels it `none`, `dead`, `parked`, or `alive`. The first three are your leads.
+3. **Check domains** — for each lead it derives likely domain names from the business name and checks availability via [RDAP](https://about.rdap.org/) (no key needed), surfacing the exact-match `.com`/ccTLD if it's free.
+4. **Score** — each lead gets a 0–100 opportunity score (no website + real customers + an available domain = a hot lead). The table sorts hottest-first.
+5. **Work the list** — filter, set a lead status, add notes, and export to CSV to take into your own workflow.
 
-## Quick start — Docker
+## Quick start
+
+### Option A — Run it locally (simplest, ~2 minutes)
+
+You only need [Node.js 20+](https://nodejs.org). No database setup, no API key.
+
+```bash
+git clone https://github.com/its-tahir/presence-zero.git
+cd presence-zero
+npm install
+npm run dev
+```
+
+Open **http://localhost:3000**. It creates a local SQLite file (`presencezero.db`) automatically and works immediately with the **OpenStreetMap** and **CSV** providers — no key required. Want Google Places too? See [Data sources](#data-sources) and [Environment variables](#environment-variables).
+
+### Option B — Docker (self-host)
 
 ```bash
 docker build -t presencezero .
 docker run -v ./data:/data -p 3000:3000 presencezero
 ```
 
-Open `http://localhost:3000`. The SQLite database lives at `./data/presencezero.db` on the host, so it survives container restarts and upgrades.
+Open **http://localhost:3000**. The SQLite database lives at `./data/presencezero.db` on the host, so it survives container restarts and upgrades.
 
-## Quick start — Vercel + Turso
+### Option C — Vercel + Turso (free hosting)
 
 PresenceZero uses SQLite via [libSQL](https://turso.tech/libsql), so it runs equally well against a local file or a hosted [Turso](https://turso.tech) database — Turso's free tier is generous enough for personal/small-team use.
 
 1. Create a free Turso database (`turso db create presencezero`, or via the Turso dashboard) and grab its `libsql://` URL and an auth token.
-2. Deploy this repo to Vercel and set two environment variables:
-   - `DATABASE_URL` — your Turso `libsql://...` URL
-   - `DATABASE_AUTH_TOKEN` — the token you generated
+2. Deploy this repo to Vercel and set two environment variables (see the table below): `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
 3. Deploy. Migrations run against the Turso database the same way they do locally.
 
-**No auth.** PresenceZero ships without a login screen — anyone with the URL can use it and see your leads. Keep your deployment URL private (don't share it publicly, don't link it from a public page) until auth lands as a feature.
+> **No login screen.** PresenceZero ships without auth — anyone with the URL can use it and see your leads. Keep any hosted deployment's URL private until auth lands. See [Known limitations](#known-limitations).
+
+## Environment variables
+
+**All optional.** With none set, PresenceZero runs locally against a SQLite file and works with the OpenStreetMap and CSV providers. Copy [`.env.example`](.env.example) to `.env` to configure:
+
+```bash
+cp .env.example .env
+```
+
+| Variable | Default | When you need it |
+|---|---|---|
+| `DATABASE_URL` | `file:presencezero.db` | Set to a Turso `libsql://…` URL for hosted/Vercel deploys. |
+| `DATABASE_AUTH_TOKEN` | — | Only for a hosted libSQL/Turso database. |
+| `GOOGLE_PLACES_API_KEY` | — | Only for the Google Places provider (you can also paste the key in the app's **Settings** page). |
+| `PRESENCEZERO_BATCH_SIZE` | `8` | Advanced: businesses processed per scan step. Lower for tight serverless time limits; raise when self-hosting. |
 
 ## Data sources
 
-**Google Places** — go to the [Google Cloud Console](https://console.cloud.google.com/), create a project, and enable **"Places API (New)"** (the classic Places API will not work — the field mask this app requests is New-API-only). Create an API key restricted to that API and add it under Settings in the app, or set it as the `GOOGLE_PLACES_API_KEY` environment variable. Google's free tier covers a meaningful number of monthly searches before billing kicks in.
+**Google Places** — go to the [Google Cloud Console](https://console.cloud.google.com/), create a project, and enable **"Places API (New)"** (the classic Places API will not work — the field mask this app requests is New-API-only). Create an API key restricted to that API and add it under **Settings** in the app, or set it as the `GOOGLE_PLACES_API_KEY` environment variable. Google's free tier covers a meaningful number of monthly searches before billing kicks in.
 
 **OpenStreetMap** — no key required, backed by the public Nominatim (geocoding) and Overpass (data) APIs. Currently supported categories: `restaurant`, `cafe`, `bar`, `dentist`, `bakery`, `hairdresser`, `butcher`, `florist`, `plumber`, `electrician`, `carpenter`. More can be added by extending the tag map in `src/core/providers/osm.ts`.
 
@@ -53,7 +87,7 @@ Only `name` is required; every other column is optional and left blank if unknow
 
 ## Scoring
 
-Every lead gets a score out of 100, built from weighted signals. Defaults live in `scoring.config.ts`:
+Every lead gets a score out of 100, built from weighted signals. Defaults live in [`scoring.config.ts`](scoring.config.ts):
 
 | Signal | Weight |
 |---|---|
@@ -67,11 +101,15 @@ Every lead gets a score out of 100, built from weighted signals. Defaults live i
 
 Edit `scoring.config.ts` directly to retune weights for your market — there's no UI for it by design, since it's a one-line config file meant to be forked.
 
+## Tech stack
+
+Next.js 16 (App Router) · TypeScript (strict) · SQLite via Drizzle ORM + libSQL · Zod · Vitest · Tailwind CSS. The domain engine (`src/core/`) is plain framework-free TypeScript, so providers, probes, scoring, and the scan pipeline run and test independently of the web app.
+
 ## Known limitations
 
-- **No built-in auth.** As noted in the quick-start sections above, keep self-hosted and Vercel deployments private — anyone with the URL can use the app and see your leads.
-- **No private-IP filtering on the website probe.** The presence probe fetches user/provider-supplied URLs (business websites) without filtering out private/internal IP ranges, so it carries some SSRF surface. The blast radius is bounded — the probe only ever reports back `alive`/`dead`/`parked` — but don't expose a deployment to untrusted users.
-- **Large CSV imports are held in memory for export.** Results are loaded fully in memory when exporting to CSV, so very large imports (tens of thousands of rows) may use significant memory. The app is intended for realistic local-business-scan sizes, not bulk data processing.
+- **No built-in auth.** Keep self-hosted and Vercel deployments private — anyone with the URL can use the app and see your leads.
+- **No private-IP filtering on the website probe.** The presence probe fetches user/provider-supplied URLs without filtering out private/internal IP ranges, so it carries some SSRF surface. The blast radius is bounded — the probe only ever reports back `alive`/`dead`/`parked` — but don't expose a deployment to untrusted users.
+- **Large CSV imports are held in memory for export.** Very large imports (tens of thousands of rows) may use significant memory. The app is intended for realistic local-business-scan sizes, not bulk data processing.
 
 ## Ethics
 
@@ -79,13 +117,13 @@ PresenceZero is a lead **finder**, not a spam tool. It has no bulk-email, auto-o
 
 ## Contributing
 
-Adding a new lead-source provider is a single, contained change:
+Contributions are welcome! Adding a new lead-source provider is a single, contained change:
 
-1. Implement the `Provider` interface (`src/core/providers/provider.ts`) — one file, one `id`, one `fetchPage(area, cursor, config)` method returning `{ businesses, nextCursor }`.
+1. Implement the `Provider` interface ([`src/core/providers/provider.ts`](src/core/providers/provider.ts)) — one file, one `id`, one `fetchPage(area, cursor, config)` method returning `{ businesses, nextCursor }`.
 2. Add fixtures under `fixtures/` and tests under `tests/` that exercise it against those fixtures (no live network calls in tests).
-3. Register it in `src/core/providers/index.ts`'s `registerBuiltInProviders()`.
+3. Register it in [`src/core/providers/index.ts`](src/core/providers/index.ts)'s `registerBuiltInProviders()`.
 
-`src/core/` is plain TypeScript with no Next.js or React imports — providers, probes, scoring, and the pipeline all run and test independently of the web app.
+`src/core/` is plain TypeScript with no Next.js or React imports — everything runs and tests independently of the web app. Run `npm test`, `npm run lint`, and `npx tsc --noEmit` before opening a PR (CI runs all three plus a build).
 
 ## License
 
