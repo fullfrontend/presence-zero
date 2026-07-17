@@ -155,7 +155,11 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
     }
   } catch (err) {
     if (err instanceof ProviderError) {
-      await update({ status: err.recoverable ? 'paused' : 'failed', errorMessage: err.message })
+      await update({
+        status: err.recoverable ? 'paused' : 'failed',
+        errorMessage: err.message,
+        ...(err.recoverable && err.nextCursor !== undefined ? { providerCursor: err.nextCursor } : {}),
+      })
     } else {
       await update({ status: 'failed', errorMessage: 'Unexpected error during scan — check server logs.' })
     }

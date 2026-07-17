@@ -84,7 +84,14 @@ export function createApifyProvider(deps: ApifyDeps = {}): Provider {
         })
         const body = await readJson(res, token)
         const runId = (body as { data?: { id?: string } }).data?.id
-        if (!runId) throw new ProviderError('Apify did not return a run id.', true)
+        // The run-start POST may already have spent money even though we can't read
+        // the run id back — recoverable here would let Resume start a second run and
+        // double-bill. Non-recoverable forces the user to check the Apify console.
+        if (!runId) {
+          throw new ProviderError(
+            'Apify started the run but did not return a run id — check your Apify console for a possibly-started run before retrying.',
+          )
+        }
         return { businesses: [], nextCursor: `apify:${runId}:1` }
       }
 
@@ -92,7 +99,14 @@ export function createApifyProvider(deps: ApifyDeps = {}): Provider {
       if (!parsed) throw new ProviderError('Invalid Apify scan cursor — start a new scan.')
       const { runId, polls } = parsed
       if (polls > MAX_POLLS) {
-        throw new ProviderError('Run still in progress — resume the scan to keep waiting.', true)
+        // Resume is fresh user intent to keep waiting — reset the poll count against
+        // the SAME run (never re-POST a new run) so Resume can actually make progress
+        // instead of re-throwing this same error forever at polls=601.
+        throw new ProviderError(
+          'Run still in progress — resume the scan to keep waiting.',
+          true,
+          `apify:${runId}:1`,
+        )
       }
 
       await sleep(POLL_INTERVAL_MS)

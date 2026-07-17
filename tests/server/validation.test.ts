@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { patchScanSchema, createScanSchema, putSettingsSchema } from '@/server/validation'
+import { patchScanSchema, createScanSchema, putSettingsSchema, parseApifyMaxPlacesCeiling } from '@/server/validation'
 
 describe('patchScanSchema', () => {
   it('accepts a partial update with a single field', () => {
@@ -62,5 +62,40 @@ describe('apify validation', () => {
     expect(putSettingsSchema.safeParse({ apifyToken: 'tok' }).success).toBe(true)
     expect(putSettingsSchema.safeParse({ googleApiKey: 'k' }).success).toBe(true)
     expect(putSettingsSchema.safeParse({}).success).toBe(false)
+  })
+
+  // APIFY_MAX_PLACES is unset in the test environment, so the module-scope
+  // ceiling read at import time defaults to 100 here.
+  it('default ceiling (no APIFY_MAX_PLACES set) rejects 101 but accepts 100', () => {
+    expect(createScanSchema.safeParse({ ...base, maxPlaces: 101 }).success).toBe(false)
+    expect(createScanSchema.safeParse({ ...base, maxPlaces: 100 }).success).toBe(true)
+  })
+
+  it('error message states the effective ceiling', () => {
+    const result = createScanSchema.safeParse({ ...base, maxPlaces: 101 })
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.issues[0].message).toBe('maxPlaces cannot exceed 100')
+  })
+})
+
+describe('parseApifyMaxPlacesCeiling', () => {
+  it('defaults to 100 when unset', () => {
+    expect(parseApifyMaxPlacesCeiling(undefined)).toBe(100)
+  })
+  it('defaults to 100 for a non-numeric value', () => {
+    expect(parseApifyMaxPlacesCeiling('garbage')).toBe(100)
+  })
+  it('defaults to 100 for an empty string (NaN)', () => {
+    expect(parseApifyMaxPlacesCeiling('')).toBe(100)
+  })
+  it('defaults to 100 for zero or negative values', () => {
+    expect(parseApifyMaxPlacesCeiling('0')).toBe(100)
+    expect(parseApifyMaxPlacesCeiling('-5')).toBe(100)
+  })
+  it('defaults to 100 for a non-finite value', () => {
+    expect(parseApifyMaxPlacesCeiling('Infinity')).toBe(100)
+  })
+  it('honours a valid raised ceiling', () => {
+    expect(parseApifyMaxPlacesCeiling('500')).toBe(500)
   })
 })

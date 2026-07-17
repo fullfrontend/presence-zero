@@ -31,6 +31,18 @@ function csvContentFor(s: PastScan): string | undefined {
   }
 }
 
+// Re-running an Apify scan must bill the same place cap the user originally chose —
+// omitting this lets the POST /api/scans route silently fall back to its own default.
+function maxPlacesFor(s: PastScan): number | undefined {
+  if (s.provider !== 'apify') return undefined
+  try {
+    const cfg = JSON.parse(s.providerConfig || '{}')
+    return typeof cfg.maxPlaces === 'number' && Number.isFinite(cfg.maxPlaces) ? cfg.maxPlaces : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const microLabel = 'font-mono text-[10px] uppercase tracking-[0.14em]'
 const actionBtn = `${microLabel} rounded border border-line px-2 py-1 text-mute transition-colors hover:border-lime/40 hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:text-mute`
 
@@ -113,6 +125,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
   async function rerun(s: PastScan) {
     const csvContent = csvContentFor(s)
     if (s.provider === 'csv' && !csvContent) return
+    const maxPlaces = maxPlacesFor(s)
     setBusyId(s.id)
     try {
       const res = await fetch('/api/scans', {
@@ -124,6 +137,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
           countryCode: s.countryCode,
           provider: s.provider,
           csvContent,
+          maxPlaces,
         }),
       })
       const data = await res.json()

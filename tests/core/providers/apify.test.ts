@@ -57,6 +57,14 @@ describe('apify provider — starting a run', () => {
     const p = createApifyProvider({ fetchFn: jsonFetch('{}'), sleep: noSleep })
     await expect(p.fetchPage(area, null, {})).rejects.toThrow(/API token/)
   })
+
+  it('treats a missing run id as non-recoverable — the POST may already have spent money, so a Resume must not start a second run', async () => {
+    const p = createApifyProvider({ fetchFn: jsonFetch('{"data":{}}'), sleep: noSleep })
+    const err = await p.fetchPage(area, null, { apifyToken: 't' }).catch(e => e)
+    expect(err).toBeInstanceOf(ProviderError)
+    expect(err.recoverable).toBe(false)
+    expect(err.message).toMatch(/apify console/i)
+  })
 })
 
 const runningJson = readFileSync('fixtures/apify-run-running.json', 'utf8')
@@ -104,12 +112,13 @@ describe('apify provider — polling', () => {
     expect(loaf.reviewCount).toBeUndefined()
   })
 
-  it('gives up with a recoverable error after the poll cap', async () => {
+  it('gives up with a recoverable error after the poll cap, resetting the cursor so Resume can retry the same run', async () => {
     const p = createApifyProvider({ fetchFn: jsonFetch(runningJson), sleep: noSleep })
     const err = await p.fetchPage(area, 'apify:RUN123:601', { apifyToken: 't' }).catch(e => e)
     expect(err).toBeInstanceOf(ProviderError)
     expect(err.recoverable).toBe(true)
     expect(err.message).toMatch(/still in progress/i)
+    expect(err.nextCursor).toBe('apify:RUN123:1')
   })
 })
 

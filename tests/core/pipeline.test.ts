@@ -102,6 +102,40 @@ describe('pipeline', () => {
     expect(res.status).toBe('failed')
   })
 
+  it('a recoverable error carrying nextCursor persists it as the paused providerCursor (e.g. Apify poll-cap resume)', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    const stuck: Provider = {
+      id: 'mock',
+      async fetchPage() { throw new ProviderError('Run still in progress — resume the scan to keep waiting.', true, 'apify:RUN123:1') },
+    }
+    const res = await advanceScan('scan1', deps(db, { getProviderById: () => stuck }))
+    expect(res.status).toBe('paused')
+    const row = (await db.select().from(scans).where(eq(scans.id, 'scan1')))[0]
+    expect(row.providerCursor).toBe('apify:RUN123:1')
+  })
+
+  it('a recoverable error without nextCursor leaves the existing providerCursor unchanged', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    // Prime the cursor via a normal running page first, then hit a recoverable error with no nextCursor.
+    let calls = 0
+    const flaky: Provider = {
+      id: 'mock',
+      async fetchPage() {
+        calls++
+        if (calls === 1) return { businesses: [], nextCursor: 'apify:RUN123:5' }
+        throw new ProviderError('Apify is rate-limiting — the scan will resume.', true)
+      },
+    }
+    const d = deps(db, { getProviderById: () => flaky })
+    await advanceScan('scan1', d)
+    const res = await advanceScan('scan1', d)
+    expect(res.status).toBe('paused')
+    const row = (await db.select().from(scans).where(eq(scans.id, 'scan1')))[0]
+    expect(row.providerCursor).toBe('apify:RUN123:5')
+  })
+
   it('a business whose probe throws is marked probe_failed and retried once', async () => {
     const db = await freshDb()
     await insertScan(db)

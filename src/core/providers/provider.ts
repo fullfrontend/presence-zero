@@ -6,7 +6,11 @@ export interface Provider {
 }
 
 export class ProviderError extends Error {
-  constructor(message: string, public readonly recoverable = false) {
+  constructor(
+    message: string,
+    public readonly recoverable = false,
+    public readonly nextCursor?: string,
+  ) {
     super(message)
     this.name = 'ProviderError'
   }
