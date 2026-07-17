@@ -14,3 +14,20 @@ export function presenceMeta(status: string | null): PresenceMeta {
   const key: PresenceKey = status && status in MAP ? (status as PresenceKey) : 'probe_failed'
   return { key, ...MAP[key] }
 }
+
+/**
+ * Generic per-status copy for rows scanned before probe details were recorded.
+ * Deliberately lists possibilities rather than asserting one — we genuinely do
+ * not know which occurred for these rows.
+ */
+const FALLBACK: Record<PresenceKey, string> = {
+  none: 'No website was listed on the source listing.',
+  dead: "The listed site didn't respond — DNS failure, connection refused, HTTP 5xx, or timeout.",
+  parked: 'The listed site looked like a registrar parking page.',
+  alive: 'The listed site responded normally.',
+  probe_failed: 'The check itself failed — re-scan to retry.',
+}
+
+export function probeFallbackDetail(status: string | null): string {
+  return FALLBACK[presenceMeta(status).key]
+}

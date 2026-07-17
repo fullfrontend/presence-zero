@@ -7,6 +7,7 @@ export interface DemoResult {
   reviewCount: number | null
   listedWebsite: string | null
   presenceStatus: 'none' | 'alive' | 'dead' | 'parked' | 'probe_failed'
+  probeDetail: string | null
   score: number | null
   leadStatus: 'new' | 'contacted' | 'replied' | 'won' | 'lost' | 'skipped'
   note: string | null
@@ -29,6 +30,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 212,
       listedWebsite: null,
       presenceStatus: 'none',
+      probeDetail: 'No website listed on the source listing.',
       score: 100, // 40 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
@@ -46,6 +48,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 189,
       listedWebsite: null,
       presenceStatus: 'dead',
+      probeDetail: 'Returned HTTP 503.',
       score: 95, // 35 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
@@ -63,6 +66,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 267,
       listedWebsite: null,
       presenceStatus: 'parked',
+      probeDetail: 'Matched a registrar for-sale page.',
       score: 90, // 30 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
@@ -80,6 +84,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 156,
       listedWebsite: null,
       presenceStatus: 'none',
+      probeDetail: 'No website listed on the source listing.',
       score: 85, // 40 + 25 + 10 + 0 + 10
       leadStatus: 'contacted',
       note: null,
@@ -97,6 +102,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 143,
       listedWebsite: null,
       presenceStatus: 'dead',
+      probeDetail: 'DNS lookup failed — the domain no longer resolves.',
       score: 80, // 35 + 25 + 10 + 0 + 10
       leadStatus: 'contacted',
       note: null,
@@ -115,6 +121,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 98,
       listedWebsite: null,
       presenceStatus: 'parked',
+      probeDetail: 'Matched a registrar for-sale page.',
       score: 75, // 30 + 25 + 10 + 0 + 10
       leadStatus: 'new',
       note: null,
@@ -132,6 +139,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 30,
       listedWebsite: null,
       presenceStatus: 'none',
+      probeDetail: 'No website listed on the source listing.',
       score: 65, // 40 + 15 + 0 + 0 + 10
       leadStatus: 'new',
       note: null,
@@ -149,6 +157,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 20,
       listedWebsite: null,
       presenceStatus: 'parked',
+      probeDetail: 'Matched a registrar for-sale page.',
       score: 60, // 30 + 10 + 10 + 0 + 10
       leadStatus: 'won',
       note: 'Signed — 5-page site, build starts in Aug',
@@ -166,6 +175,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 25,
       listedWebsite: null,
       presenceStatus: 'dead',
+      probeDetail: 'Timed out after 8s.',
       score: 58, // 35 + 13 + 0 + 0 + 10
       leadStatus: 'new',
       note: null,
@@ -183,6 +193,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 10,
       listedWebsite: null,
       presenceStatus: 'none',
+      probeDetail: 'No website listed on the source listing.',
       score: 45, // 40 + 5 + 0 + 0 + 0
       leadStatus: 'new',
       note: null,
@@ -201,6 +212,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 234,
       listedWebsite: 'https://artisanbakehouse.ca',
       presenceStatus: 'alive',
+      probeDetail: 'Responded normally.',
       score: 0,
       leadStatus: 'skipped',
       note: null,
@@ -215,6 +227,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 198,
       listedWebsite: 'https://freshbakedaily.ca',
       presenceStatus: 'alive',
+      probeDetail: 'Responded normally.',
       score: 0,
       leadStatus: 'skipped',
       note: null,
@@ -229,6 +242,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: null,
       listedWebsite: null,
       presenceStatus: 'probe_failed',
+      probeDetail: null,
       score: null,
       leadStatus: 'new',
       note: null,
@@ -243,6 +257,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 31,
       listedWebsite: null,
       presenceStatus: 'probe_failed',
+      probeDetail: null,
       score: null,
       leadStatus: 'new',
       note: null,

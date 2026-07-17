@@ -14,7 +14,7 @@ interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
   id: string; name: string; address: string | null; phone: string | null
   rating: number | null; reviewCount: number | null; listedWebsite: string | null
-  presenceStatus: string | null; score: number | null; leadStatus: string; note: string | null
+  presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
   category?: string | null; seenBefore?: boolean
   domains: DomainInfo[]
 }
@@ -280,7 +280,7 @@ export default function ResultsTable(
                       {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
                     </div>
                   </td>
-                  <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} /></td>
+                  <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /></td>
                   <td className="px-3 py-2"><DomainChips domains={r.domains} /></td>
                   <td className="px-3 py-2 text-xs text-dim">{r.phone}</td>
                   <td className="px-3 py-2">
