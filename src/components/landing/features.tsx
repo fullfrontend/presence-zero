@@ -4,8 +4,8 @@ import { HeadlineRule } from '@/components/brand/headline-rule'
 const FEATURES = [
   {
     kicker: '// SOURCES',
-    title: 'Google Places, OpenStreetMap, or CSV',
-    body: 'Pull business data from live providers or import your own list — no vendor lock-in.',
+    title: 'OpenStreetMap, CSV, Google, or Apify',
+    body: 'Start free with no key at all — OpenStreetMap or your own CSV. Add Google Places or Apify Google Maps with your own account for wider coverage. No vendor lock-in, and never a per-lead fee.',
   },
   {
     kicker: '// PRESENCE',

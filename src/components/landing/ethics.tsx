@@ -17,6 +17,11 @@ export function Ethics() {
           or scrape contacts for outreach. What you do with your exported list is your business.
           Bulk email is not, and will never be, a feature of this project.
         </p>
+        <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-dim">
+          Your sources stay your own. PresenceZero never proxies or resells data: OpenStreetMap is open
+          data, CSV is your list, and the optional Google and Apify sources run on your account, your
+          key, and their terms. We name that plainly rather than bury it.
+        </p>
       </div>
     </section>
   )

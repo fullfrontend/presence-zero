@@ -5,7 +5,7 @@ const STEPS = [
   {
     n: '01',
     title: 'Find',
-    body: 'Pull businesses from Google Places or OpenStreetMap, or import your own CSV — pick a city and category and get a raw list in seconds.',
+    body: 'Pull businesses from OpenStreetMap or your own CSV with no key at all, or add Google Places or Apify’s Google Maps scraper for wider coverage — pick a city and category and get a raw list in seconds.',
   },
   {
     n: '02',

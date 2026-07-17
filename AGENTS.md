@@ -19,7 +19,7 @@ CLI / npm package is a refactor, not a rewrite). CI/reviewers treat a violation 
 
 ```
 src/core/          Framework-free engine — DO NOT import next/react/app here
-  providers/       Pluggable data sources (Google Places, OSM, CSV) behind one interface
+  providers/       Pluggable data sources (Google Places, Apify, OSM, CSV) behind one interface
   probes/          Website presence probe, domain-candidate generation, RDAP checker
   scoring.ts       Lead scoring (weights in /scoring.config.ts)
   pipeline.ts      Resumable batch orchestration (fetch → process → retry → done)
@@ -85,6 +85,8 @@ CI (`.github/workflows/ci.yml`) runs all four on every push and PR.
 
 - **Free-tier & bring-your-own-key.** The project never proxies or pays for external calls.
   Everything must run on a free tier; provider API keys are always the user's own.
+  Paid-but-free-tier sources (Apify) are acceptable only as opt-in, using the user's own
+  account, with a hard per-scan cost ceiling and every billable add-on disabled.
 - **A finder, not a spam tool.** No bulk-email, auto-outreach, or scrape-for-spam features
   will be accepted — this is a permanent design decision, not a gap.
 - **No built-in auth (yet).** A deployment is single-operator; treat any hosted instance as
