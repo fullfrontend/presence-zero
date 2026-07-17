@@ -33,6 +33,13 @@ const PRESENCE_HEADLINE: Record<'none' | 'dead' | 'parked', string> = {
   parked: 'A real local business whose domain is parked.',
 }
 
+// Subject-free clause, safe after "With ___," (avoids "They has …" agreement bugs).
+const PRESENCE_FACT: Record<'none' | 'dead' | 'parked', string> = {
+  none: 'no website at all',
+  dead: 'a website that no longer loads',
+  parked: 'a parked domain instead of a real site',
+}
+
 const GOOD_RATING = 4.0
 
 /**
@@ -66,7 +73,7 @@ export function generatePitch(i: PitchInput): Pitch {
     points.push(`Strong ${i.rating}★ reputation with no website to back it up.`)
   }
 
-  points.push(`They ${PRESENCE_HOOK[presence]}, so every "do they have a website?" search is a lost booking.`)
+  points.push(`With ${PRESENCE_FACT[presence]}, every "do they have a website?" search is a booking that goes to a competitor.`)
 
   const suggestedDomain = i.availableDomain ?? undefined
   if (suggestedDomain) {

@@ -12,7 +12,11 @@ PresenceZero is an open-source, self-hosted tool that scans a location and busin
 
 **Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
 
-<!-- screenshot: docs pending -->
+![PresenceZero — “Find the businesses whose web presence is zero.” The landing page with a live scored lead preview.](public/screenshots/landing-hero.png)
+
+Every lead expands to a plain-language **score breakdown** and a ready-to-personalize **outreach angle** — so you go from “here’s a lead” to “here’s what to say” in one click:
+
+![PresenceZero results table with a lead expanded, showing why it scores 100 and a drafted outreach pitch with a copy button.](public/screenshots/demo-lead-detail.png)
 
 ## How it works
 
@@ -52,7 +56,13 @@ PresenceZero uses SQLite via [libSQL](https://turso.tech/libsql), so it runs equ
 
 1. Create a free Turso database (`turso db create presencezero`, or via the Turso dashboard) and grab its `libsql://` URL and an auth token.
 2. Deploy this repo to Vercel and set two environment variables (see the table below): `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
-3. Deploy. Migrations run against the Turso database the same way they do locally.
+3. Deploy. Migrations run against the Turso database on first request, the same way they do locally.
+
+**Verify the deploy in ~60 seconds:**
+
+1. Open your deployment's **`/demo`** — it's fully static, so if the scored table renders, the app built and shipped correctly.
+2. Open **`/app`** and run a small OpenStreetMap scan (e.g. `Ottawa, ON` / `cafe`). If results appear, the Turso database, the startup migrations, and the scan pipeline all work end to end.
+3. **If the app 500s on first load, it's almost always migrations.** Confirm `next.config.ts` still has `outputFileTracingIncludes: { "/**": ["./drizzle/**"] }` (this bundles the migration files into the serverless function) and that both `DATABASE_URL` and `DATABASE_AUTH_TOKEN` are set. The thrown error names the exact failing path.
 
 > **No login screen.** PresenceZero ships without auth — anyone with the URL can use it and see your leads. Keep any hosted deployment's URL private until auth lands. See [Known limitations](#known-limitations).
 

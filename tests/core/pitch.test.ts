@@ -38,6 +38,14 @@ describe('generatePitch', () => {
     expect(p.suggestedDomain).toBeUndefined()
   })
 
+  it('has no subject–verb agreement slips for any lead presence', () => {
+    for (const presence of ['none', 'dead', 'parked'] as const) {
+      const p = generatePitch({ name: 'Some Shop', presence, rating: 4.5, reviewCount: 120, availableDomain: null })
+      const text = [p.headline, p.angle, ...p.talkingPoints].join(' ')
+      expect(text).not.toMatch(/\bthey has\b/i)
+    }
+  })
+
   it('is deterministic', () => {
     const input = { ...base, presence: 'none', rating: 4.7, reviewCount: 212, availableDomain: 'cornercrumb.com' } as const
     expect(generatePitch(input)).toEqual(generatePitch(input))
