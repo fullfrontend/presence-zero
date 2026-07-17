@@ -12,12 +12,19 @@ import { createGooglePhoneLookup } from './enrich/google-phone'
 import { computeScore } from './scoring'
 import type { ProviderConfig, ScanArea } from './types'
 
+export type SecretName = 'google_api_key' | 'apify_token'
+
+const ENV_BY_SECRET: Record<SecretName, string> = {
+  google_api_key: 'GOOGLE_PLACES_API_KEY',
+  apify_token: 'APIFY_TOKEN',
+}
+
 export interface PipelineDeps {
   db: Db
   getProviderById?: (id: string) => Provider
   probe?: (url: string) => Promise<'alive' | 'dead' | 'parked'>
   checkDomain?: (domain: string) => Promise<boolean | null>
-  getApiKey?: () => Promise<string | undefined>
+  getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
   batchSize?: number
 }
@@ -47,9 +54,10 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   const getProviderById = deps.getProviderById ?? getProvider
   const probe = deps.probe ?? createWebsiteProbe()
   const checkDomain = deps.checkDomain ?? createRdapChecker({ cache: createDrizzleRdapCache(db) })
-  const getApiKey = deps.getApiKey ?? (async () => {
-    if (process.env.GOOGLE_PLACES_API_KEY) return process.env.GOOGLE_PLACES_API_KEY
-    const rows = await db.select().from(settings).where(eq(settings.key, 'google_api_key'))
+  const getSecret = deps.getSecret ?? (async (name: SecretName) => {
+    const fromEnv = process.env[ENV_BY_SECRET[name]]
+    if (fromEnv) return fromEnv
+    const rows = await db.select().from(settings).where(eq(settings.key, name))
     return rows[0]?.value
   })
 
@@ -57,8 +65,11 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   if (!scan) throw new Error(`Scan not found: ${scanId}`)
   if (scan.status === 'done' || scan.status === 'failed') return snapshot(scan)
 
-  let apiKey: string | undefined
-  try { apiKey = await getApiKey() } catch { apiKey = undefined }
+  const readSecret = async (name: SecretName) => {
+    try { return await getSecret(name) } catch { return undefined }
+  }
+  const apiKey = await readSecret('google_api_key')
+  const apifyToken = await readSecret('apify_token')
   const enrichPhone = deps.enrichPhone ?? (apiKey ? createGooglePhoneLookup(apiKey) : async () => null)
 
   const area: ScanArea = { location: scan.location, category: scan.category, countryCode: scan.countryCode }
@@ -99,13 +110,14 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
     if (scan.phase === 'fetch') {
       const provider = getProviderById(scan.provider)
       const stored: ProviderConfig = scan.providerConfig ? JSON.parse(scan.providerConfig) : {}
-      const config: ProviderConfig = { ...stored, apiKey }
+      const config: ProviderConfig = { ...stored, apiKey, apifyToken }
       const page = await provider.fetchPage(area, scan.providerCursor, config)
       if (page.businesses.length > 0) {
         await db.insert(businesses).values(page.businesses.map(raw => ({
           id: randomUUID(), scanId, name: raw.name, address: raw.address, phone: raw.phone,
           category: raw.category, rating: raw.rating, reviewCount: raw.reviewCount,
           listedWebsite: raw.website,
+          leadStatus: raw.closed ? ('skipped' as const) : ('new' as const),
         })))
       }
       await update({

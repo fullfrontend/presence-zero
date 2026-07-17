@@ -1,0 +1,29 @@
+[
+  {
+    "title": "Joe's Bakery",
+    "address": "12 Main St, Ottawa, ON",
+    "street": "12 Main St",
+    "city": "Ottawa",
+    "phone": "(613) 555-0101",
+    "phoneUnformatted": "+16135550101",
+    "totalScore": 4.6,
+    "reviewsCount": 80,
+    "categoryName": "Bakery",
+    "permanentlyClosed": false,
+    "temporarilyClosed": false
+  },
+  {
+    "title": "Crusty Loaf",
+    "address": null,
+    "street": "99 Elm St",
+    "city": "Ottawa",
+    "phoneUnformatted": "+16135550102",
+    "website": "https://crustyloaf.example.com",
+    "totalScore": null,
+    "reviewsCount": null,
+    "categoryName": "Bakery",
+    "permanentlyClosed": true,
+    "temporarilyClosed": false
+  },
+  { "title": "   ", "address": "nowhere" }
+]

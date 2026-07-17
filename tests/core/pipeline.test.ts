@@ -3,8 +3,9 @@ import { migrate } from 'drizzle-orm/libsql/migrator'
 import { eq } from 'drizzle-orm'
 import { createDb, type Db } from '@/db/client'
 import { scans, businesses, domainCandidates } from '@/db/schema'
-import { advanceScan, type PipelineDeps } from '@/core/pipeline'
+import { advanceScan, type PipelineDeps, type SecretName } from '@/core/pipeline'
 import { ProviderError, type Provider } from '@/core/providers/provider'
+import type { ProviderConfig, ScanArea } from '@/core/types'
 
 async function freshDb(): Promise<Db> {
   const db = createDb(':memory:')
@@ -39,7 +40,7 @@ function deps(db: Db, overrides: Partial<PipelineDeps> = {}): PipelineDeps {
     getProviderById: () => mockProvider(),
     probe: async url => (url.includes('dead') ? 'dead' : 'alive'),
     checkDomain: async domain => domain === 'joesbakery.com',
-    getApiKey: async () => undefined,
+    getSecret: async () => undefined,
     batchSize: 2,
     ...overrides,
   }
@@ -167,11 +168,11 @@ describe('pipeline', () => {
     expect(biz.score).toBeLessThan(100) // scored without the hasPhone bonus
   })
 
-  it('a getApiKey that throws does not propagate out of advanceScan and the scan still resolves', async () => {
+  it('a getSecret that throws does not propagate out of advanceScan and the scan still resolves', async () => {
     const db = await freshDb()
     await insertScan(db)
-    const getApiKey = async (): Promise<string | undefined> => { throw new Error('db unavailable') }
-    const res = await runToCompletion(db, deps(db, { getProviderById: noPhoneProvider, getApiKey }))
+    const getSecret = async (): Promise<string | undefined> => { throw new Error('db unavailable') }
+    const res = await runToCompletion(db, deps(db, { getProviderById: noPhoneProvider, getSecret }))
     expect(res).toBeDefined()
     expect(res.status).toBe('done') // resolves gracefully as if no key configured
     const biz = (await db.select().from(businesses).where(eq(businesses.scanId, 'scan1')))[0]
@@ -184,7 +185,7 @@ describe('pipeline', () => {
     try {
       const db = await freshDb()
       await insertScan(db)
-      // Deliberately omit getApiKey and enrichPhone to exercise the real pipeline defaults:
+      // Deliberately omit getSecret and enrichPhone to exercise the real pipeline defaults:
       // no key configured anywhere -> default enrichPhone is a no-op that always returns null.
       const d: PipelineDeps = {
         db, getProviderById: noPhoneProvider,
@@ -197,5 +198,31 @@ describe('pipeline', () => {
     } finally {
       if (savedKey !== undefined) process.env.GOOGLE_PLACES_API_KEY = savedKey
     }
+  })
+
+  it('passes the apify token to the provider config and never persists it', async () => {
+    const db = createDb(':memory:')
+    await migrate(db, { migrationsFolder: 'drizzle' })
+    await db.insert(scans).values({
+      id: 's-apify', createdAt: new Date(), location: 'Ottawa, ON', category: 'bakery',
+      countryCode: 'ca', provider: 'fake-apify', providerConfig: JSON.stringify({ maxPlaces: 25 }),
+    })
+    let seen: ProviderConfig | null = null
+    const provider = {
+      id: 'fake-apify',
+      fetchPage: async (_a: ScanArea, _c: string | null, config: ProviderConfig) => {
+        seen = config
+        return { businesses: [], nextCursor: null }
+      },
+    }
+    await advanceScan('s-apify', {
+      db,
+      getProviderById: () => provider,
+      getSecret: async (n: SecretName) => (n === 'apify_token' ? 'tok-secret' : undefined),
+    })
+    expect(seen!.apifyToken).toBe('tok-secret')
+    expect(seen!.maxPlaces).toBe(25)
+    const row = (await db.select().from(scans).where(eq(scans.id, 's-apify')))[0]
+    expect(row.providerConfig ?? '').not.toContain('tok-secret')
   })
 })
