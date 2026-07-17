@@ -9,12 +9,16 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
   }
-  const { location, category, countryCode, provider, csvContent } = parsed.data
+  const { location, category, countryCode, provider, csvContent, maxPlaces } = parsed.data
   const db = await getDb()
   const id = randomUUID()
+  // providerConfig is persisted — it must never hold secrets, only scan options.
+  const providerConfig: Record<string, unknown> = {}
+  if (csvContent) providerConfig.csvContent = csvContent
+  if (provider === 'apify') providerConfig.maxPlaces = maxPlaces ?? 50
   await db.insert(scans).values({
     id, createdAt: new Date(), location, category, countryCode, provider,
-    providerConfig: csvContent ? JSON.stringify({ csvContent }) : null,
+    providerConfig: Object.keys(providerConfig).length > 0 ? JSON.stringify(providerConfig) : null,
   })
   return Response.json({ id }, { status: 201 })
 }

@@ -7,11 +7,13 @@ import { SUPPORTED_OSM_CATEGORIES } from '@/core/providers/osm-categories'
 
 export default function NewScanForm() {
   const router = useRouter()
-  const [provider, setProvider] = useState<'google' | 'osm' | 'csv'>('osm')
+  const [provider, setProvider] = useState<'google' | 'osm' | 'csv' | 'apify'>('osm')
   const [location, setLocation] = useState('')
   const [category, setCategory] = useState('')
   const [countryCode, setCountryCode] = useState('us')
   const [csvContent, setCsvContent] = useState('')
+  const [maxPlaces, setMaxPlaces] = useState(50)
+  const [hasApifyToken, setHasApifyToken] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [hasGoogleKey, setHasGoogleKey] = useState<boolean | null>(null)
@@ -20,8 +22,12 @@ export default function NewScanForm() {
     let cancelled = false
     fetch('/api/settings')
       .then(res => res.json())
-      .then(data => { if (!cancelled) setHasGoogleKey(Boolean(data.googleApiKey)) })
-      .catch(() => { if (!cancelled) setHasGoogleKey(null) })
+      .then(data => {
+        if (cancelled) return
+        setHasGoogleKey(Boolean(data.googleApiKey))
+        setHasApifyToken(Boolean(data.apifyToken))
+      })
+      .catch(() => { if (!cancelled) { setHasGoogleKey(null); setHasApifyToken(null) } })
     return () => { cancelled = true }
   }, [])
 
@@ -30,7 +36,11 @@ export default function NewScanForm() {
     setBusy(true); setError(null)
     const res = await fetch('/api/scans', {
       method: 'POST',
-      body: JSON.stringify({ location, category, countryCode, provider, csvContent: csvContent || undefined }),
+      body: JSON.stringify({
+        location, category, countryCode, provider,
+        csvContent: csvContent || undefined,
+        maxPlaces: provider === 'apify' ? maxPlaces : undefined,
+      }),
     })
     const data = await res.json()
     setBusy(false)
@@ -44,6 +54,7 @@ export default function NewScanForm() {
     { value: 'osm', label: 'OSM' },
     { value: 'google', label: 'Google' },
     { value: 'csv', label: 'CSV' },
+    { value: 'apify', label: 'Apify' },
   ]
   const examples: { label: string; location: string; category: string; countryCode: string }[] = [
     { label: 'Lahore 🇵🇰', location: 'Lahore, Pakistan', category: 'restaurant', countryCode: 'pk' },
@@ -126,8 +137,42 @@ export default function NewScanForm() {
               <p className="mt-1">Paste rows with header name,address,phone,category,rating,review_count,website. PresenceZero probes each site, checks matching domains, and scores them — so you can run leads from any source.</p>
             </>
           )}
+          {provider === 'apify' && (
+            <>
+              <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Apify Google Maps · your account</p>
+              <p className="mt-1">Best coverage and the easiest setup — paste one token, no Google Cloud project. Uses your own Apify account; the free plan renews $5 of credit each month (about 1,250 places).</p>
+              {hasApifyToken === false && (
+                <p className="mt-2 text-amber-400">
+                  {'⚠ No Apify token saved. Add one in Settings, or set the APIFY_TOKEN env var — otherwise the scan will fail. '}
+                  <Link href="/app/settings" className="text-lime underline-offset-4 hover:underline">Open Settings</Link>
+                </p>
+              )}
+            </>
+          )}
         </div>
       </div>
+      {provider === 'apify' && (
+        <div>
+          <label className={label} htmlFor="maxPlaces">
+            Places to scan — {maxPlaces}
+          </label>
+          <input
+            id="maxPlaces"
+            type="range"
+            min={1}
+            max={100}
+            step={1}
+            value={maxPlaces}
+            onChange={e => setMaxPlaces(Number(e.target.value))}
+            className="mt-2 w-full accent-lime"
+          />
+          <p className="mt-1.5 text-xs text-dim">
+            Estimated cost <span className="text-text">${(maxPlaces * 0.004).toFixed(2)}</span>
+            {' '}· Apify charges $0.004 per place. The free $5/month covers about{' '}
+            {Math.floor(5 / (maxPlaces * 0.004))} scans this size.
+          </p>
+        </div>
+      )}
       <div>
         <span className={label}>{'// Try an example'}</span>
         <div className="mt-1.5 flex flex-wrap gap-2">

@@ -10,7 +10,7 @@ interface Step {
   linkLabel?: string
 }
 
-const STEPS: Step[] = [
+export const GOOGLE_STEPS: Step[] = [
   {
     n: '01',
     title: 'Open the Google Cloud Console',
@@ -44,10 +44,32 @@ const STEPS: Step[] = [
   },
 ]
 
+export const APIFY_STEPS: Step[] = [
+  {
+    n: '01',
+    title: 'Create a free Apify account',
+    body: 'No credit card. The free plan renews $5 of platform credit every month — about 1,250 places.',
+    href: 'https://apify.com/',
+    linkLabel: 'apify.com',
+  },
+  {
+    n: '02',
+    title: 'Open Settings → API & Integrations',
+    body: 'In the Apify Console sidebar, choose Settings, then the API & Integrations tab.',
+    href: 'https://console.apify.com/settings/integrations',
+    linkLabel: 'Open API & Integrations',
+  },
+  {
+    n: '03',
+    title: 'Copy your Personal API token',
+    body: 'Paste it above and save. It is stored in your own database and sent only to Apify.',
+  },
+]
+
 const STAGGER_MS = 80
 const ACTIVE_INTERVAL_MS = 1600
 
-export default function KeySetupGuide() {
+export default function KeySetupGuide({ steps = GOOGLE_STEPS, title = 'Get a Google Places API key' }: { steps?: Step[]; title?: string }) {
   const reduced = usePrefersReducedMotion()
   // Under reduced motion, render always short-circuits to "revealed"/"not active" below,
   // so these initial values only matter for the (non-reduced) animated path.
@@ -57,25 +79,26 @@ export default function KeySetupGuide() {
   // Stagger-reveal the steps on mount; skipped entirely under reduced motion.
   useEffect(() => {
     if (reduced) return
-    const timers = STEPS.map((_, i) =>
+    const timers = steps.map((_, i) =>
       window.setTimeout(() => setRevealed((c) => Math.max(c, i + 1)), i * STAGGER_MS),
     )
     return () => { timers.forEach((t) => window.clearTimeout(t)) }
-  }, [reduced])
+  }, [reduced, steps])
 
   // Loop a subtle "active step" highlight down the list; skipped entirely under reduced motion.
   useEffect(() => {
     if (reduced) return
     const id = window.setInterval(() => {
-      setActiveIndex((i) => (i + 1) % STEPS.length)
+      setActiveIndex((i) => (i + 1) % steps.length)
     }, ACTIVE_INTERVAL_MS)
     return () => window.clearInterval(id)
-  }, [reduced])
+  }, [reduced, steps])
 
   return (
     <div className="rounded-xl border border-line bg-surface p-6">
-      <ol className="space-y-5">
-        {STEPS.map((step, i) => {
+      <h3 className="text-sm font-medium text-mute">{title}</h3>
+      <ol className="mt-5 space-y-5">
+        {steps.map((step, i) => {
           const isRevealed = reduced || i < revealed
           const isActive = !reduced && activeIndex === i
           return (

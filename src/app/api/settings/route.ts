@@ -1,19 +1,30 @@
-import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { settings } from '@/db/schema'
 import { putSettingsSchema } from '@/server/validation'
 
+const MASK = '***'
+
 export async function GET() {
   const db = await getDb()
-  const row = (await db.select().from(settings).where(eq(settings.key, 'google_api_key')))[0]
-  return Response.json({ googleApiKey: row ? '***' : null })
+  const rows = await db.select().from(settings)
+  const has = (key: string) => rows.some(r => r.key === key)
+  // Never return stored secret values — presence only.
+  return Response.json({
+    googleApiKey: has('google_api_key') ? MASK : null,
+    apifyToken: has('apify_token') ? MASK : null,
+  })
 }
 
 export async function PUT(req: Request) {
   const parsed = putSettingsSchema.safeParse(await req.json().catch(() => ({})))
   if (!parsed.success) return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
   const db = await getDb()
-  await db.insert(settings).values({ key: 'google_api_key', value: parsed.data.googleApiKey })
-    .onConflictDoUpdate({ target: settings.key, set: { value: parsed.data.googleApiKey } })
+  const updates: [string, string][] = []
+  if (parsed.data.googleApiKey) updates.push(['google_api_key', parsed.data.googleApiKey])
+  if (parsed.data.apifyToken) updates.push(['apify_token', parsed.data.apifyToken])
+  for (const [key, value] of updates) {
+    await db.insert(settings).values({ key, value })
+      .onConflictDoUpdate({ target: settings.key, set: { value } })
+  }
   return Response.json({ ok: true })
 }
