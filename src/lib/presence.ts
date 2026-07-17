@@ -25,7 +25,7 @@ const FALLBACK: Record<PresenceKey, string> = {
   dead: "The listed site didn't respond — DNS failure, connection refused, HTTP 5xx, or timeout.",
   parked: 'The listed site looked like a registrar parking page.',
   alive: 'The listed site responded normally.',
-  probe_failed: 'The check itself failed — re-scan to retry.',
+  probe_failed: 'The check itself failed.',
 }
 
 export function probeFallbackDetail(status: string | null): string {

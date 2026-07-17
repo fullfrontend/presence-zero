@@ -22,10 +22,10 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   for (const c of candidates) {
     if (c.available === true) available.set(c.businessId, [...(available.get(c.businessId) ?? []), c.domain])
   }
-  const header = 'name,address,phone,category,rating,review_count,website,presence,score,lead_status,note,available_domains'
+  const header = 'name,address,phone,category,rating,review_count,website,presence,probe_detail,score,lead_status,note,available_domains'
   const lines = rows.map(r => [
     r.name, r.address, r.phone, r.category, r.rating, r.reviewCount, r.listedWebsite,
-    r.presenceStatus, r.score, r.leadStatus, r.note, (available.get(r.id) ?? []).join(' '),
+    r.presenceStatus, r.probeDetail, r.score, r.leadStatus, r.note, (available.get(r.id) ?? []).join(' '),
   ].map(csvCell).join(','))
   const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '')
   return new Response([header, ...lines].join('\n'), {

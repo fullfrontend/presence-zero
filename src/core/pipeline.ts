@@ -82,7 +82,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
     try {
       const outcome: { status: PresenceStatus; detail: string } = b.listedWebsite
         ? await probe(b.listedWebsite)
-        : { status: 'none', detail: 'No website listed on the source listing.' }
+        : { status: 'none', detail: 'No website was listed on the source listing.' }
       const presence = outcome.status
       let exactComAvailable = false
       if (presence !== 'alive') {
@@ -108,7 +108,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       await db.update(businesses)
         .set({
           presenceStatus: 'probe_failed', score: 0,
-          probeDetail: 'The check itself failed — re-check to retry.',
+          probeDetail: 'The check itself failed.',
         })
         .where(eq(businesses.id, b.id))
     }

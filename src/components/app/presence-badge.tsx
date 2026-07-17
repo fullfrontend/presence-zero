@@ -17,7 +17,11 @@ export function PresenceBadge({
   // No hover affordance unless a caller opts in — keeps existing usages identical.
   if (website === undefined && detail === undefined) return badge
   return (
-    <ProbeTooltip website={website ?? null} detail={detail ?? probeFallbackDetail(status)}>
+    <ProbeTooltip
+      website={website ?? null}
+      detail={detail ?? probeFallbackDetail(status)}
+      ariaLabel={`Why this lead is ${m.label}`}
+    >
       {badge}
     </ProbeTooltip>
   )
