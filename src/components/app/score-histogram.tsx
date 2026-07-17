@@ -6,14 +6,20 @@ export function ScoreHistogram({ scores }: { scores: (number | null)[] }) {
   for (const v of vals) buckets[Math.min(4, Math.floor(v / 20))]++
   const max = Math.max(...buckets, 1)
   const labels = ['0', '20', '40', '60', '80']
+  const ranges = ['0–19', '20–39', '40–59', '60–79', '80–100']
   return (
-    <div className="flex items-end gap-1" aria-hidden="true">
-      {buckets.map((b, i) => (
-        <div key={i} className="flex w-6 flex-col items-center gap-1">
-          <div className="flex h-10 w-full items-end"><div className={`w-full ${i === 0 ? 'bg-violet/70' : 'bg-lime'}`} style={{ height: `${(b / max) * 100}%` }} /></div>
-          <span className="font-mono text-[9px] text-mute">{labels[i]}</span>
-        </div>
-      ))}
-    </div>
+    <figure className="m-0">
+      <span className="sr-only">
+        Score distribution: {buckets.map((b, i) => `${b} in ${ranges[i]}`).join(', ')}.
+      </span>
+      <div className="flex items-end gap-1" aria-hidden="true">
+        {buckets.map((b, i) => (
+          <div key={i} className="flex w-6 flex-col items-center gap-1">
+            <div className="flex h-10 w-full items-end"><div className={`w-full ${i === 0 ? 'bg-violet/70' : 'bg-lime'}`} style={{ height: `${(b / max) * 100}%` }} /></div>
+            <span className="font-mono text-[9px] text-mute">{labels[i]}</span>
+          </div>
+        ))}
+      </div>
+    </figure>
   )
 }

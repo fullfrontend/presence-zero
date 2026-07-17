@@ -1,6 +1,7 @@
-import { and, desc, eq, gte, inArray } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { businesses, domainCandidates } from '@/db/schema'
+import { businesses, domainCandidates, scans } from '@/db/schema'
+import { normalizeBusinessKey } from '@/core/dedupe'
 import { resultsQuerySchema } from '@/server/validation'
 
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -27,5 +28,25 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
     list.push({ domain: c.domain, available: c.available })
     byBusiness.set(c.businessId, list)
   }
-  return Response.json({ results: rows.map(r => ({ ...r, domains: byBusiness.get(r.id) ?? [] })) })
+
+  // Flag businesses already seen in an earlier scan of the same location, so the
+  // operator doesn't re-pitch a lead they've worked before.
+  const scan = (await db.select().from(scans).where(eq(scans.id, id)))[0]
+  let seenKeys = new Set<string>()
+  if (scan) {
+    const earlier = await db
+      .select({ name: businesses.name })
+      .from(businesses)
+      .innerJoin(scans, eq(businesses.scanId, scans.id))
+      .where(and(eq(scans.location, scan.location), lt(scans.createdAt, scan.createdAt)))
+    seenKeys = new Set(earlier.map(e => normalizeBusinessKey(e.name)))
+  }
+
+  return Response.json({
+    results: rows.map(r => ({
+      ...r,
+      domains: byBusiness.get(r.id) ?? [],
+      seenBefore: seenKeys.has(normalizeBusinessKey(r.name)),
+    })),
+  })
 }

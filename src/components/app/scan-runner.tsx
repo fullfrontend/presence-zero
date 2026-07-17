@@ -17,11 +17,27 @@ const PHASES = ['fetch', 'process', 'retry', 'done'] as const
 export default function ScanRunner({ scanId }: { scanId: string }) {
   const [scan, setScan] = useState<ScanState | null>(null)
   const [working, setWorking] = useState(false)
+  const [provider, setProvider] = useState<string | null>(null)
+  const [etaLabel, setEtaLabel] = useState<string | null>(null)
   const driving = useRef(false)
 
   const drive = useCallback(async () => {
     if (driving.current) return
     driving.current = true
+    const started = Date.now()
+    // ETA from the observed advance cadence — computed off-render (Date.now is impure).
+    const updateEta = (s: ScanState) => {
+      if (s.status === 'running' && s.totalProcessed > 0 && s.totalFound > s.totalProcessed) {
+        const elapsed = (Date.now() - started) / 1000
+        const rate = s.totalProcessed / elapsed
+        if (rate > 0) {
+          const secs = Math.max(1, Math.round((s.totalFound - s.totalProcessed) / rate))
+          setEtaLabel(secs >= 90 ? `~${Math.round(secs / 60)}m left` : `~${secs}s left`)
+          return
+        }
+      }
+      setEtaLabel(null)
+    }
     const advanceOnce = async (): Promise<ScanState | null> => {
       try {
         const res = await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })
@@ -33,23 +49,29 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
     }
     setWorking(true)
     try {
-      let state: ScanState = await (await fetch(`/api/scans/${scanId}`)).json()
+      const initial = await (await fetch(`/api/scans/${scanId}`)).json()
+      if (typeof initial?.provider === 'string') setProvider(initial.provider)
+      let state: ScanState = initial
       setScan(state)
+      updateEta(state)
       if (state.status === 'paused') {
         const next = await advanceOnce()
         if (next === null) return
         state = next
         setScan(state)
+        updateEta(state)
       }
       while (state.status === 'running') {
         const next = await advanceOnce()
         if (next === null) break
         state = next
         setScan(state)
+        updateEta(state)
       }
     } finally {
       driving.current = false
       setWorking(false)
+      setEtaLabel(null)
     }
   }, [scanId])
 
@@ -112,10 +134,23 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
               </span>
             )}
           </span>
-          <span>{scan.totalProcessed}/{scan.totalFound} PROCESSED</span>
+          <span className="flex items-center gap-3">
+            {etaLabel && <span className="text-dim">{etaLabel}</span>}
+            <span>{scan.totalProcessed}/{scan.totalFound} PROCESSED</span>
+          </span>
         </div>
 
-        {scan.errorMessage && <p className="mt-3 text-sm text-red-400">{scan.errorMessage}</p>}
+        {scan.status === 'paused' && (
+          <p className="mt-3 text-sm text-amber-400">
+            {scan.errorMessage ? `Paused: ${scan.errorMessage}` : 'Paused — the provider is busy or rate-limited.'} Hit Resume to continue where it left off.
+          </p>
+        )}
+        {scan.status === 'failed' && (
+          <p className="mt-3 text-sm text-red-400">
+            {scan.errorMessage ?? 'The scan failed.'}
+            {provider === 'google' && ' If you selected Google Places, check that a valid API key is set in Settings.'}
+          </p>
+        )}
 
         {(scan.status === 'paused' || scan.status === 'running') && (
           <Button variant="ghost" onClick={() => { void drive() }} className="mt-4" disabled={working}>
@@ -130,7 +165,15 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
         )}
       </div>
 
-      {scan.status === 'done' && (
+      {scan.status === 'done' && scan.totalFound === 0 && (
+        <div className="rounded-xl border border-dashed border-line bg-surface/40 p-6 text-sm">
+          <p className="text-text">The provider returned no businesses for this area and category.</p>
+          <p className="mt-2 text-dim">Try a broader location, a different category, or the Google Places provider (richer coverage) — then start a new scan.</p>
+          <div className="mt-4"><Button href="/app">Start a new scan</Button></div>
+        </div>
+      )}
+
+      {scan.status === 'done' && scan.totalFound > 0 && (
         <div className="space-y-3">
           <div className="flex justify-end">
             <Button href="/app" variant="link">{'New scan'}</Button>

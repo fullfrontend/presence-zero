@@ -152,7 +152,19 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
 
   const archivedCount = scans.filter(s => s.archived).length
 
-  if (scans.length === 0) return <p className="mt-3 text-sm text-dim">No scans yet.</p>
+  if (scans.length === 0) {
+    return (
+      <div className="mt-3 rounded-xl border border-dashed border-line bg-surface/40 p-6">
+        <p className="text-sm text-text">No scans yet — run your first one above.</p>
+        <ol className="mt-3 space-y-1.5 text-xs text-dim">
+          <li><span className="text-lime">1.</span> Pick a location + category and a data source (OpenStreetMap needs no key).</li>
+          <li><span className="text-lime">2.</span> PresenceZero probes each site, checks matching domains, and scores every lead 0–100.</li>
+          <li><span className="text-lime">3.</span> Work the sorted list — expand a row for its score breakdown and a ready outreach angle.</li>
+        </ol>
+        <p className="mt-3 text-xs text-mute">New here? Try an example preset in the form above, or explore the <a href="/demo" className="text-lime underline-offset-4 hover:underline">read-only demo</a>.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="mt-4">

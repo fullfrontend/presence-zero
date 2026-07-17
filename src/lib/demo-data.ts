@@ -11,8 +11,11 @@ export interface DemoResult {
   leadStatus: 'new' | 'contacted' | 'replied' | 'won' | 'lost' | 'skipped'
   note: string | null
   domains: { domain: string; available: boolean | null }[]
+  seenBefore?: boolean
 }
 
+// Scores below are self-consistent with src/core/scoring.ts (a test enforces it):
+// presence(none 40/dead 35/parked 30) + reviews(≤25) + rating(+10 if ≥4.0) + exactCom(+15) + phone(+10).
 export const DEMO_SCAN: { location: string; category: string; results: DemoResult[] } = {
   location: 'Ottawa, ON',
   category: 'bakery',
@@ -26,7 +29,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 212,
       listedWebsite: null,
       presenceStatus: 'none',
-      score: 92,
+      score: 100, // 40 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
       domains: [
@@ -43,7 +46,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 189,
       listedWebsite: null,
       presenceStatus: 'dead',
-      score: 88,
+      score: 95, // 35 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
       domains: [
@@ -60,11 +63,11 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 267,
       listedWebsite: null,
       presenceStatus: 'parked',
-      score: 85,
+      score: 90, // 30 + 25 + 10 + 15 + 10
       leadStatus: 'new',
       note: null,
       domains: [
-        { domain: 'whiskandrise.com', available: false },
+        { domain: 'whiskandrise.com', available: true },
         { domain: 'whiskrise.ca', available: true },
       ],
     },
@@ -77,7 +80,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 156,
       listedWebsite: null,
       presenceStatus: 'none',
-      score: 82,
+      score: 85, // 40 + 25 + 10 + 0 + 10
       leadStatus: 'contacted',
       note: null,
       domains: [
@@ -94,9 +97,10 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 143,
       listedWebsite: null,
       presenceStatus: 'dead',
-      score: 78,
+      score: 80, // 35 + 25 + 10 + 0 + 10
       leadStatus: 'contacted',
       note: null,
+      seenBefore: true,
       domains: [
         { domain: 'heritagesourdough.com', available: false },
         { domain: 'heritagesourdoughco.ca', available: false },
@@ -111,7 +115,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 98,
       listedWebsite: null,
       presenceStatus: 'parked',
-      score: 72,
+      score: 75, // 30 + 25 + 10 + 0 + 10
       leadStatus: 'new',
       note: null,
       domains: [
@@ -124,11 +128,11 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       name: 'Sweet Haven Bakery',
       address: '720 Echo Dr',
       phone: '(613) 555-0125',
-      rating: 4.2,
-      reviewCount: 84,
+      rating: null,
+      reviewCount: 30,
       listedWebsite: null,
       presenceStatus: 'none',
-      score: 65,
+      score: 65, // 40 + 15 + 0 + 0 + 10
       leadStatus: 'new',
       note: null,
       domains: [
@@ -138,14 +142,31 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
     },
     {
       id: 'd8',
+      name: 'Golden Grain Bakery',
+      address: '512 Gladstone Ave',
+      phone: '(613) 555-0134',
+      rating: 4.0,
+      reviewCount: 20,
+      listedWebsite: null,
+      presenceStatus: 'parked',
+      score: 60, // 30 + 10 + 10 + 0 + 10
+      leadStatus: 'won',
+      note: 'Signed — 5-page site, build starts in Aug',
+      domains: [
+        { domain: 'goldengrainbakery.com', available: false },
+        { domain: 'goldengrain.ca', available: false },
+      ],
+    },
+    {
+      id: 'd9',
       name: 'Rise & Shine',
       address: '1245 Wellington St',
       phone: '(613) 555-0179',
-      rating: 4.1,
-      reviewCount: 67,
+      rating: null,
+      reviewCount: 25,
       listedWebsite: null,
       presenceStatus: 'dead',
-      score: 60,
+      score: 58, // 35 + 13 + 0 + 0 + 10
       leadStatus: 'new',
       note: null,
       domains: [
@@ -154,20 +175,21 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       ],
     },
     {
-      id: 'd9',
-      name: 'Golden Grain Bakery',
-      address: '512 Gladstone Ave',
-      phone: '(613) 555-0134',
-      rating: 4.0,
-      reviewCount: 52,
+      id: 'd14',
+      name: 'Morning Glory Bakery',
+      address: '1120 Colonel By Dr',
+      phone: null,
+      rating: null,
+      reviewCount: 10,
       listedWebsite: null,
-      presenceStatus: 'parked',
-      score: 55,
-      leadStatus: 'won',
-      note: 'Signed — 5-page site, build starts in Aug',
+      presenceStatus: 'none',
+      score: 45, // 40 + 5 + 0 + 0 + 0
+      leadStatus: 'new',
+      note: null,
+      seenBefore: true,
       domains: [
-        { domain: 'goldengrainbakery.com', available: false },
-        { domain: 'goldengrain.ca', available: false },
+        { domain: 'morningglory.com', available: false },
+        { domain: 'morninglorybakery.ca', available: false },
       ],
     },
     {
@@ -221,27 +243,10 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       reviewCount: 31,
       listedWebsite: null,
       presenceStatus: 'probe_failed',
-      score: 15,
+      score: null,
       leadStatus: 'new',
       note: null,
       domains: [{ domain: 'thebreadline.ca', available: false }],
-    },
-    {
-      id: 'd14',
-      name: 'Morning Glory Bakery',
-      address: '1120 Colonel By Dr',
-      phone: '(613) 555-0172',
-      rating: 4.1,
-      reviewCount: 73,
-      listedWebsite: null,
-      presenceStatus: 'none',
-      score: 45,
-      leadStatus: 'new',
-      note: null,
-      domains: [
-        { domain: 'morningglory.com', available: false },
-        { domain: 'morninglorybakery.ca', available: false },
-      ],
     },
   ],
 }

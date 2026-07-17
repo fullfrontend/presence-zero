@@ -7,12 +7,15 @@ import { DomainChips } from './domain-chips'
 import { ScoreHistogram } from './score-histogram'
 import { Skeleton } from './skeleton'
 import { Tour, type TourStep } from './tour'
+import { LeadDetail } from './lead-detail'
+import { ScanSummary } from './scan-summary'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
   id: string; name: string; address: string | null; phone: string | null
   rating: number | null; reviewCount: number | null; listedWebsite: string | null
   presenceStatus: string | null; score: number | null; leadStatus: string; note: string | null
+  category?: string | null; seenBefore?: boolean
   domains: DomainInfo[]
 }
 
@@ -96,8 +99,8 @@ function compareValues(a: number | string | null, b: number | string | null, dir
 }
 
 export default function ResultsTable(
-  { scanId, readOnly = false, initialResults, autoTour = false }:
-  { scanId: string; readOnly?: boolean; initialResults?: Result[]; autoTour?: boolean },
+  { scanId, readOnly = false, initialResults, autoTour = false, location }:
+  { scanId: string; readOnly?: boolean; initialResults?: Result[]; autoTour?: boolean; location?: string | null },
 ) {
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
@@ -107,6 +110,7 @@ export default function ResultsTable(
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [tourOpen, setTourOpen] = useState(false)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
 
   // Auto-run the tour once per browser on pages that opt in (e.g. the read-only demo).
   useEffect(() => {
@@ -173,6 +177,7 @@ export default function ResultsTable(
 
   return (
     <div className="space-y-3">
+      <ScanSummary results={results} />
       <div data-tour="toolbar" className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           Min score
@@ -246,41 +251,80 @@ export default function ResultsTable(
                   <td className="px-3 py-2"><Skeleton className="h-4 w-28" /></td>
                 </tr>
               ))
-            ) : sorted.map(r => (
-              <tr key={r.id} className="border-t border-line align-top">
-                <td className="px-3 py-2"><ScoreCell score={r.score} /></td>
-                <td className="px-3 py-2">
-                  <div className="text-text">{r.name}</div>
-                  <div className="text-xs text-mute">
-                    {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
-                  </div>
-                </td>
-                <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} /></td>
-                <td className="px-3 py-2"><DomainChips domains={r.domains} /></td>
-                <td className="px-3 py-2 text-xs text-dim">{r.phone}</td>
-                <td className="px-3 py-2">
-                  {readOnly
-                    ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{r.leadStatus}</span>
-                    : (
-                      <select className={SELECT_CLS} value={r.leadStatus}
-                        onChange={e => { void patch(r.id, { leadStatus: e.target.value }) }}>
-                        {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-                      </select>
-                    )}
-                </td>
-                <td className="px-3 py-2">
-                  {readOnly
-                    ? <span className="text-xs text-dim">{r.note ?? '—'}</span>
-                    : (
-                      <input className={INPUT_CLS} defaultValue={r.note ?? ''}
-                        onBlur={e => { if (e.target.value !== (r.note ?? '')) void patch(r.id, { note: e.target.value }) }} />
-                    )}
-                </td>
-              </tr>
-            ))}
+            ) : sorted.flatMap(r => {
+              const open = expandedId === r.id
+              const detailId = `lead-detail-${r.id}`
+              return [
+                <tr key={r.id} className="border-t border-line align-top">
+                  <td className="px-3 py-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(open ? null : r.id)}
+                      aria-expanded={open}
+                      aria-controls={detailId}
+                      title={open ? 'Hide breakdown & pitch' : 'Show breakdown & pitch'}
+                      className="flex items-start gap-1 rounded text-left hover:opacity-90 focus-visible:outline focus-visible:outline-lime/60"
+                    >
+                      <ScoreCell score={r.score} />
+                      <span aria-hidden="true" className={`mt-0.5 text-[10px] text-mute transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
+                    </button>
+                  </td>
+                  <td className="px-3 py-2">
+                    <div className="flex items-center gap-2 text-text">
+                      {r.name}
+                      {r.seenBefore && (
+                        <span title="This business appeared in an earlier scan of the same area" className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-mute">seen before</span>
+                      )}
+                    </div>
+                    <div className="text-xs text-mute">
+                      {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} /></td>
+                  <td className="px-3 py-2"><DomainChips domains={r.domains} /></td>
+                  <td className="px-3 py-2 text-xs text-dim">{r.phone}</td>
+                  <td className="px-3 py-2">
+                    {readOnly
+                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{r.leadStatus}</span>
+                      : (
+                        <select className={SELECT_CLS} value={r.leadStatus}
+                          onChange={e => { void patch(r.id, { leadStatus: e.target.value }) }}>
+                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      )}
+                  </td>
+                  <td className="px-3 py-2">
+                    {readOnly
+                      ? <span className="text-xs text-dim">{r.note ?? '—'}</span>
+                      : (
+                        <input className={INPUT_CLS} defaultValue={r.note ?? ''}
+                          onBlur={e => { if (e.target.value !== (r.note ?? '')) void patch(r.id, { note: e.target.value }) }} />
+                      )}
+                  </td>
+                </tr>,
+                open && (
+                  <tr key={`${r.id}-detail`} className="border-t border-line/50 bg-base/20">
+                    <td colSpan={COLUMNS.length} id={detailId} className="px-3 py-3">
+                      <LeadDetail row={r} location={location} />
+                    </td>
+                  </tr>
+                ),
+              ]
+            })}
           </tbody>
         </table>
-        {!loading && visible.length === 0 && <p className="p-4 text-sm text-dim">No results match the filters.</p>}
+        {!loading && visible.length === 0 && (
+          <div className="p-4 text-sm text-dim">
+            {results.length === 0
+              ? 'No businesses in this scan yet.'
+              : (
+                <>
+                  No results match the current filters.
+                  <span className="text-mute"> Try lowering <span className="text-text">Min score</span>{leadsOnly && <> or turning off <span className="text-text">Leads only</span></>}{hasPhoneOnly && <> or <span className="text-text">Has phone only</span></>}.</span>
+                </>
+              )}
+          </div>
+        )}
       </div>
     </div>
   )

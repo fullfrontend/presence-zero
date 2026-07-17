@@ -20,7 +20,7 @@ PresenceZero is an open-source, self-hosted tool that scans a location and busin
 2. **Probe** — it visits each listed website and labels it `none`, `dead`, `parked`, or `alive`. The first three are your leads.
 3. **Check domains** — for each lead it derives likely domain names from the business name and checks availability via [RDAP](https://about.rdap.org/) (no key needed), surfacing the exact-match `.com`/ccTLD if it's free.
 4. **Score** — each lead gets a 0–100 opportunity score (no website + real customers + an available domain = a hot lead). The table sorts hottest-first.
-5. **Work the list** — filter, set a lead status, add notes, and export to CSV to take into your own workflow.
+5. **Work the list** — filter, sort, and set a lead status or note. Expand any row for a plain-language **score breakdown** (why it scored what it did) and a **ready-to-personalize outreach angle** you can copy — then export to CSV to take into your own workflow.
 
 ## Quick start
 
@@ -101,6 +101,8 @@ Every lead gets a score out of 100, built from weighted signals. Defaults live i
 
 Edit `scoring.config.ts` directly to retune weights for your market — there's no UI for it by design, since it's a one-line config file meant to be forked.
 
+Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
+
 ## Tech stack
 
 Next.js 16 (App Router) · TypeScript (strict) · SQLite via Drizzle ORM + libSQL · Zod · Vitest · Tailwind CSS. The domain engine (`src/core/`) is plain framework-free TypeScript, so providers, probes, scoring, and the scan pipeline run and test independently of the web app.
@@ -108,7 +110,7 @@ Next.js 16 (App Router) · TypeScript (strict) · SQLite via Drizzle ORM + libSQ
 ## Known limitations
 
 - **No built-in auth.** Keep self-hosted and Vercel deployments private — anyone with the URL can use the app and see your leads.
-- **No private-IP filtering on the website probe.** The presence probe fetches user/provider-supplied URLs without filtering out private/internal IP ranges, so it carries some SSRF surface. The blast radius is bounded — the probe only ever reports back `alive`/`dead`/`parked` — but don't expose a deployment to untrusted users.
+- **Website-probe SSRF is guarded, with a residual caveat.** The presence probe only fetches `http(s)` URLs, follows redirects manually, and DNS-resolves every hop — rejecting private, loopback, link-local, and cloud-metadata (`169.254.169.254`) addresses before making a request. The remaining residual is DNS rebinding (a hostname that resolves to a public IP at validation time and a private one at fetch time); the blast radius stays bounded because the probe only ever reports back `alive`/`dead`/`parked`. Still, don't expose a deployment to untrusted users.
 - **Large CSV imports are held in memory for export.** Very large imports (tens of thousands of rows) may use significant memory. The app is intended for realistic local-business-scan sizes, not bulk data processing.
 
 ## Ethics
