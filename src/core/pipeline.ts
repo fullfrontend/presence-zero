@@ -4,13 +4,13 @@ import { randomUUID } from 'node:crypto'
 import type { Db } from '@/db/client'
 import { businesses, domainCandidates, scans, settings } from '@/db/schema'
 import { getProvider, ProviderError, type Provider } from './providers/provider'
-import { createWebsiteProbe } from './probes/website-probe'
+import { createWebsiteProbe, type ProbeResult } from './probes/website-probe'
 import { generateDomainCandidates } from './probes/domains'
 import { createRdapChecker } from './probes/rdap'
 import { createDrizzleRdapCache } from './probes/rdap-cache-store'
 import { createGooglePhoneLookup } from './enrich/google-phone'
 import { computeScore } from './scoring'
-import type { ProviderConfig, ScanArea } from './types'
+import type { PresenceStatus, ProviderConfig, ScanArea } from './types'
 
 export type SecretName = 'google_api_key' | 'apify_token'
 
@@ -22,7 +22,7 @@ const ENV_BY_SECRET: Record<SecretName, string> = {
 export interface PipelineDeps {
   db: Db
   getProviderById?: (id: string) => Provider
-  probe?: (url: string) => Promise<'alive' | 'dead' | 'parked'>
+  probe?: (url: string) => Promise<ProbeResult>
   checkDomain?: (domain: string) => Promise<boolean | null>
   getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
@@ -80,7 +80,10 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
 
   const processBusiness = async (b: BusinessRow): Promise<void> => {
     try {
-      const presence = b.listedWebsite ? await probe(b.listedWebsite) : 'none'
+      const outcome: { status: PresenceStatus; detail: string } = b.listedWebsite
+        ? await probe(b.listedWebsite)
+        : { status: 'none', detail: 'No website listed on the source listing.' }
+      const presence = outcome.status
       let exactComAvailable = false
       if (presence !== 'alive') {
         const candidates = generateDomainCandidates(b.name, scan.countryCode)
@@ -99,10 +102,15 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         exactComAvailable, hasPhone: !!(b.phone || found),
       })
       await db.update(businesses)
-        .set({ presenceStatus: presence, score, ...(found ? { phone: found } : {}) })
+        .set({ presenceStatus: presence, probeDetail: outcome.detail, score, ...(found ? { phone: found } : {}) })
         .where(eq(businesses.id, b.id))
     } catch {
-      await db.update(businesses).set({ presenceStatus: 'probe_failed', score: 0 }).where(eq(businesses.id, b.id))
+      await db.update(businesses)
+        .set({
+          presenceStatus: 'probe_failed', score: 0,
+          probeDetail: 'The check itself failed — re-check to retry.',
+        })
+        .where(eq(businesses.id, b.id))
     }
   }
 

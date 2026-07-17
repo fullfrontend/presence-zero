@@ -1,0 +1,1 @@
+ALTER TABLE `businesses` ADD `probe_detail` text;

@@ -38,7 +38,7 @@ function deps(db: Db, overrides: Partial<PipelineDeps> = {}): PipelineDeps {
   return {
     db,
     getProviderById: () => mockProvider(),
-    probe: async url => (url.includes('dead') ? 'dead' : 'alive'),
+    probe: async url => ({ status: url.includes('dead') ? 'dead' as const : 'alive' as const, detail: 'test' }),
     checkDomain: async domain => domain === 'joesbakery.com',
     getSecret: async () => undefined,
     batchSize: 2,
@@ -143,7 +143,7 @@ describe('pipeline', () => {
     const d = deps(db, {
       probe: async url => {
         if (url.includes('alive')) { attempts++; throw new Error('boom') }
-        return 'dead'
+        return { status: 'dead' as const, detail: 'test' }
       },
     })
     const res = await runToCompletion(db, d)
@@ -223,7 +223,7 @@ describe('pipeline', () => {
       // no key configured anywhere -> default enrichPhone is a no-op that always returns null.
       const d: PipelineDeps = {
         db, getProviderById: noPhoneProvider,
-        probe: async () => 'dead', checkDomain: async () => false, batchSize: 2,
+        probe: async () => ({ status: 'dead' as const, detail: 'test' }), checkDomain: async () => false, batchSize: 2,
       }
       const res = await runToCompletion(db, d)
       expect(res.status).toBe('done')
@@ -258,5 +258,38 @@ describe('pipeline', () => {
     expect(seen!.maxPlaces).toBe(25)
     const row = (await db.select().from(scans).where(eq(scans.id, 's-apify')))[0]
     expect(row.providerConfig ?? '').not.toContain('tok-secret')
+  })
+
+  it('stores the probe detail, and a reason for none and probe_failed', async () => {
+    const db = createDb(':memory:')
+    await migrate(db, { migrationsFolder: 'drizzle' })
+    await db.insert(scans).values({
+      id: 'pd1', createdAt: new Date(), location: 'Ottawa, ON', category: 'bakery',
+      countryCode: 'ca', provider: 'fake', phase: 'process',
+    })
+    await db.insert(businesses).values([
+      { id: 'p1', scanId: 'pd1', name: 'Dead Co', listedWebsite: 'http://dead.example' },
+      { id: 'p2', scanId: 'pd1', name: 'No Site Co' },
+      { id: 'p3', scanId: 'pd1', name: 'Boom Co', listedWebsite: 'http://boom.example' },
+    ])
+    await advanceScan('pd1', {
+      db,
+      getProviderById: () => ({ id: 'fake', fetchPage: async () => ({ businesses: [], nextCursor: null }) }),
+      probe: async url => {
+        if (url.includes('boom')) throw new Error('probe exploded')
+        return { status: 'dead' as const, detail: 'Returned HTTP 503.' }
+      },
+      checkDomain: async () => false,
+      getSecret: async () => undefined,
+      batchSize: 10,
+    })
+    const rows = await db.select().from(businesses).where(eq(businesses.scanId, 'pd1'))
+    const byId = new Map(rows.map(r => [r.id, r]))
+    expect(byId.get('p1')!.presenceStatus).toBe('dead')
+    expect(byId.get('p1')!.probeDetail).toBe('Returned HTTP 503.')
+    expect(byId.get('p2')!.presenceStatus).toBe('none')
+    expect(byId.get('p2')!.probeDetail).toMatch(/No website listed/)
+    expect(byId.get('p3')!.presenceStatus).toBe('probe_failed')
+    expect(byId.get('p3')!.probeDetail).toMatch(/check itself failed/)
   })
 })

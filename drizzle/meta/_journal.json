@@ -15,6 +15,13 @@
       "when": 1784207967124,
       "tag": "0001_wakeful_stick",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1784286339371,
+      "tag": "0002_secret_leech",
+      "breakpoints": true
     }
   ]
 }

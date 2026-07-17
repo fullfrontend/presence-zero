@@ -10,18 +10,63 @@ const publicLookup = async () => ['93.184.216.34']
 
 describe('website probe', () => {
   it('classifies a normal page as alive', async () => {
-    expect(await createWebsiteProbe(respond('<html>Welcome to our bakery</html>'), { lookup: publicLookup })('example.com')).toBe('alive')
+    const r = await createWebsiteProbe(respond('<html>Welcome to our bakery</html>'), { lookup: publicLookup })('example.com')
+    expect(r.status).toBe('alive')
+    expect(r.detail).toBe('Responded normally.')
   })
   it('classifies parked pages via patterns', async () => {
-    expect(await createWebsiteProbe(respond(parkedHtml), { lookup: publicLookup })('example.com')).toBe('parked')
+    const r = await createWebsiteProbe(respond(parkedHtml), { lookup: publicLookup })('example.com')
+    expect(r.status).toBe('parked')
+    expect(r.detail).toBe('Matched a registrar for-sale page.')
   })
-  it('classifies HTTP 500 as dead', async () => {
-    expect(await createWebsiteProbe(respond('oops', 503), { lookup: publicLookup })('example.com')).toBe('dead')
+  it('reports the real status code for a 5xx', async () => {
+    const r = await createWebsiteProbe(respond('oops', 503), { lookup: publicLookup })('example.com')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toBe('Returned HTTP 503.')
   })
-  it('classifies network failure as dead', async () => {
-    const failing = (async () => { throw new TypeError('boom') }) as unknown as typeof fetch
-    expect(await createWebsiteProbe(failing, { lookup: publicLookup })('nope.example')).toBe('dead')
+  it('reports a DNS failure distinctly', async () => {
+    const failingLookup = async () => { throw new Error('ENOTFOUND') }
+    const r = await createWebsiteProbe(respond('x'), { lookup: failingLookup })('nope.example')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toMatch(/DNS lookup failed/)
   })
+  it('reports a blocked private address distinctly', async () => {
+    const privateLookup = async () => ['127.0.0.1']
+    const r = await createWebsiteProbe(respond('x'), { lookup: privateLookup })('localhost.example')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toMatch(/private or internal/)
+  })
+  it('reports a non-http scheme distinctly', async () => {
+    const r = await createWebsiteProbe(respond('x'), { lookup: publicLookup })('ftp://example.com')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toBe('Not an http or https address.')
+  })
+  it('distinguishes a timeout from a plain connection failure', async () => {
+    const hang = (async (_u: RequestInfo | URL, init?: RequestInit) =>
+      new Promise<Response>((_res, rej) => {
+        init?.signal?.addEventListener('abort', () => rej(new Error('aborted')))
+      })) as unknown as typeof fetch
+    const timedOut = await createWebsiteProbe(hang, { lookup: publicLookup, timeoutMs: 10 })('example.com')
+    expect(timedOut.status).toBe('dead')
+    expect(timedOut.detail).toBe('Timed out after 0s.')
+
+    const refused = (async () => { throw new TypeError('ECONNREFUSED') }) as unknown as typeof fetch
+    const r = await createWebsiteProbe(refused, { lookup: publicLookup })('example.com')
+    expect(r.detail).toBe('The connection failed.')
+  })
+  it('reports a redirect with no destination distinctly', async () => {
+    const redir = (async () => new Response('', { status: 302 })) as unknown as typeof fetch
+    const r = await createWebsiteProbe(redir, { lookup: publicLookup })('example.com')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toBe('Redirected with no destination.')
+  })
+  it('reports a redirect loop distinctly', async () => {
+    const loop = (async () => new Response('', { status: 302, headers: { location: 'https://example.com/next' } })) as unknown as typeof fetch
+    const r = await createWebsiteProbe(loop, { lookup: publicLookup })('example.com')
+    expect(r.status).toBe('dead')
+    expect(r.detail).toBe('Redirect loop — more than 5 hops.')
+  })
+
   it('prepends https:// to bare domains', async () => {
     let seen = ''
     const spy = (async (url: RequestInfo | URL) => { seen = String(url); return new Response('ok') }) as typeof fetch
@@ -38,7 +83,7 @@ describe('website probe', () => {
     })
     const fetchFn = (async () => new Response(stream, { status: 200 })) as typeof fetch
     const result = await createWebsiteProbe(fetchFn, { lookup: publicLookup })('example.com')
-    expect(result).toBe('alive')
+    expect(result.status).toBe('alive')
     expect(pulled).toBeLessThanOrEqual(3)
     expect(cancelled).toBe(true)
   })
@@ -49,7 +94,7 @@ describe('website probe', () => {
     let called = false
     const spy = (async () => { called = true; return new Response('ok') }) as typeof fetch
     const result = await createWebsiteProbe(spy, { lookup: async () => ['10.0.0.1'] })('intranet.local')
-    expect(result).toBe('dead')
+    expect(result.status).toBe('dead')
     expect(called).toBe(false)
   })
 
@@ -57,7 +102,7 @@ describe('website probe', () => {
     let called = false
     const spy = (async () => { called = true; return new Response('ok') }) as typeof fetch
     const result = await createWebsiteProbe(spy, { lookup: publicLookup })('ftp://example.com')
-    expect(result).toBe('dead')
+    expect(result.status).toBe('dead')
     expect(called).toBe(false)
   })
 
@@ -69,7 +114,7 @@ describe('website probe', () => {
       return new Response(null, { status: 302, headers: { location: 'https://metadata.internal/' } })
     }) as typeof fetch
     const result = await createWebsiteProbe(fetchFn, { lookup })('public.example')
-    expect(result).toBe('dead')
+    expect(result.status).toBe('dead')
     expect(calls).toBe(1) // fetched the public hop once, blocked before fetching the private redirect target
   })
 
@@ -82,13 +127,13 @@ describe('website probe', () => {
       return new Response('<html>hello</html>', { status: 200 })
     }) as typeof fetch
     const result = await createWebsiteProbe(fetchFn, { lookup })('example.com')
-    expect(result).toBe('alive')
+    expect(result.status).toBe('alive')
     expect(calls).toBe(2)
   })
 
   it('gives up after too many redirects', async () => {
     const fetchFn = (async () => new Response(null, { status: 302, headers: { location: 'https://example.com/next' } })) as typeof fetch
     const result = await createWebsiteProbe(fetchFn, { lookup: publicLookup })('example.com')
-    expect(result).toBe('dead')
+    expect(result.status).toBe('dead')
   })
 })

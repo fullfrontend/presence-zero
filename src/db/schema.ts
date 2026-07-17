@@ -31,6 +31,7 @@ export const businesses = sqliteTable('businesses', {
   reviewCount: integer('review_count'),
   listedWebsite: text('listed_website'),
   presenceStatus: text('presence_status', { enum: ['none', 'alive', 'dead', 'parked', 'probe_failed'] }),
+  probeDetail: text('probe_detail'),
   retried: integer('retried', { mode: 'boolean' }).notNull().default(false),
   score: integer('score'),
   leadStatus: text('lead_status', { enum: ['new', 'contacted', 'replied', 'won', 'lost', 'skipped'] }).notNull().default('new'),

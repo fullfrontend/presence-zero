@@ -8,6 +8,12 @@ export const PARKED_PATTERNS: RegExp[] = [
 
 const MAX_REDIRECTS = 5
 
+/** A presence verdict plus the human reason behind it. */
+export interface ProbeResult {
+  status: 'alive' | 'dead' | 'parked'
+  detail: string
+}
+
 /** Resolves a hostname to its IP addresses. Injectable so tests never touch the network. */
 export type HostLookup = (host: string) => Promise<string[]>
 
@@ -49,7 +55,8 @@ async function readBounded(res: Response, maxBytes: number): Promise<string> {
 }
 
 /**
- * Probes a listed website and labels it `alive | dead | parked`.
+ * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked`
+ * label plus the human-readable reason behind it.
  *
  * SSRF-hardened: only http(s) is fetched, redirects are followed manually, and
  * every hop's host is DNS-resolved and checked against private/loopback/link-local/
@@ -68,7 +75,8 @@ export function createWebsiteProbe(
   const timeoutMs = options.timeoutMs ?? 8000
   const lookup = options.lookup ?? defaultLookup
 
-  return async function probe(url: string): Promise<'alive' | 'dead' | 'parked'> {
+  return async function probe(url: string): Promise<ProbeResult> {
+    const dead = (detail: string): ProbeResult => ({ status: 'dead', detail })
     const hasScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(url)
     let target = hasScheme ? url : `https://${url}`
     const ctrl = new AbortController()
@@ -76,12 +84,18 @@ export function createWebsiteProbe(
     try {
       for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
         let parsed: URL
-        try { parsed = new URL(target) } catch { return 'dead' }
-        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return 'dead'
+        try { parsed = new URL(target) } catch { return dead('Not a valid web address.') }
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+          return dead('Not an http or https address.')
+        }
 
         let addresses: string[]
-        try { addresses = await lookup(parsed.hostname) } catch { return 'dead' }
-        if (addresses.length === 0 || addresses.some(isBlockedAddress)) return 'dead'
+        try { addresses = await lookup(parsed.hostname) } catch {
+          return dead('DNS lookup failed — the domain no longer resolves.')
+        }
+        if (addresses.length === 0 || addresses.some(isBlockedAddress)) {
+          return dead('Blocked — resolves to a private or internal address.')
+        }
 
         const res = await fetchFn(target, {
           signal: ctrl.signal,
@@ -91,18 +105,23 @@ export function createWebsiteProbe(
 
         if (res.status >= 300 && res.status < 400) {
           const location = res.headers.get('location')
-          if (!location) return 'dead'
-          try { target = new URL(location, target).toString() } catch { return 'dead' }
+          if (!location) return dead('Redirected with no destination.')
+          try { target = new URL(location, target).toString() } catch {
+            return dead('Redirected to an invalid address.')
+          }
           continue
         }
-        if (res.status >= 500) return 'dead'
+        if (res.status >= 500) return dead(`Returned HTTP ${res.status}.`)
 
         const html = await readBounded(res, 100_000)
-        return PARKED_PATTERNS.some(p => p.test(html)) ? 'parked' : 'alive'
+        return PARKED_PATTERNS.some(p => p.test(html))
+          ? { status: 'parked', detail: 'Matched a registrar for-sale page.' }
+          : { status: 'alive', detail: 'Responded normally.' }
       }
-      return 'dead' // exceeded the redirect budget
+      return dead(`Redirect loop — more than ${MAX_REDIRECTS} hops.`)
     } catch {
-      return 'dead'
+      // The abort signal is the source of truth for "timed out" — never sniff error text.
+      return dead(ctrl.signal.aborted ? `Timed out after ${Math.round(timeoutMs / 1000)}s.` : 'The connection failed.')
     } finally {
       clearTimeout(timer)
     }

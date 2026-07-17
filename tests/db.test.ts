@@ -6,7 +6,7 @@ process.env.DATABASE_URL = ':memory:'
 import { describe, it, expect } from 'vitest'
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { createDb, getDb } from '@/db/client'
-import { scans } from '@/db/schema'
+import { scans, businesses } from '@/db/schema'
 
 describe('db', () => {
   it('creates schema and round-trips a scan row', async () => {
@@ -43,5 +43,20 @@ describe('db', () => {
     expect(rows[0].id).toBe('g1')
     expect(rows[0].status).toBe('running')
     expect(rows[0].phase).toBe('fetch')
+  })
+
+  it('stores a probe detail alongside the presence status', async () => {
+    const db = createDb(':memory:')
+    await migrate(db, { migrationsFolder: 'drizzle' })
+    await db.insert(scans).values({
+      id: 'sd1', createdAt: new Date(), location: 'Ottawa, ON', category: 'bakery',
+      countryCode: 'ca', provider: 'csv',
+    })
+    await db.insert(businesses).values({
+      id: 'bd1', scanId: 'sd1', name: 'Joe', presenceStatus: 'dead',
+      probeDetail: 'Returned HTTP 503.',
+    })
+    const row = (await db.select().from(businesses))[0]
+    expect(row.probeDetail).toBe('Returned HTTP 503.')
   })
 })
