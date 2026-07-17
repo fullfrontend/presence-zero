@@ -82,7 +82,9 @@ export function createApifyProvider(deps: ApifyDeps = {}): Provider {
         const res = await fetchFn(`${API_BASE}/acts/${ACTOR_ID}/runs`, {
           method: 'POST', headers, body: JSON.stringify(input),
         })
-        const body = await readJson(res, token)
+        // costlyRetry: this POST may already have spent money if res.ok — an unparseable
+        // body must not be recoverable, or Resume (cursor === null) re-POSTs and double-bills.
+        const body = await readJson(res, token, { costlyRetry: true })
         const runId = (body as { data?: { id?: string } }).data?.id
         // The run-start POST may already have spent money even though we can't read
         // the run id back — recoverable here would let Resume start a second run and
@@ -115,7 +117,9 @@ export function createApifyProvider(deps: ApifyDeps = {}): Provider {
       const run = (runBody as { data?: { status?: string; defaultDatasetId?: string } }).data
       const status = run?.status
 
-      if (status === 'READY' || status === 'RUNNING') {
+      // ABORTING/TIMING-OUT are transitional — they will settle into ABORTED/TIMED-OUT
+      // (or SUCCEEDED) on their own, so keep polling exactly like READY/RUNNING.
+      if (status === 'READY' || status === 'RUNNING' || status === 'ABORTING' || status === 'TIMING-OUT') {
         return { businesses: [], nextCursor: `apify:${runId}:${polls + 1}` }
       }
       if (status === 'SUCCEEDED') {
@@ -129,8 +133,14 @@ export function createApifyProvider(deps: ApifyDeps = {}): Provider {
           .filter((b): b is RawBusiness => b !== null)
         return { businesses, nextCursor: null }
       }
-      if (status === 'ABORTED' || status === 'ABORTING' || status === 'TIMED-OUT' || status === 'TIMING-OUT') {
-        throw new ProviderError('The Apify run was aborted or timed out — resume to retry.', true)
+      // ABORTED/TIMED-OUT are terminal — the run is dead and Resume can only re-poll
+      // the same dead run and land right back here. Non-recoverable forces a fresh scan
+      // instead of an infinite pause loop.
+      if (status === 'ABORTED' || status === 'TIMED-OUT') {
+        const verb = status === 'ABORTED' ? 'aborted' : 'timed out'
+        throw new ProviderError(
+          `The Apify run was ${verb} and cannot be resumed — start a new scan. The run is still visible in your Apify console.`,
+        )
       }
       throw new ProviderError('The Apify run failed — check the run in your Apify console.')
     },
@@ -144,9 +154,18 @@ function redact(text: string, token: string): string {
 const CREDIT_ERROR_TYPES = new Set(['limit-reached', 'monthly-usage-limit-exceeded', 'account-usage-limit-exceeded'])
 const AUTH_ERROR_TYPES = new Set(['token-not-found', 'missing-api-token', 'missing-actor-rights', 'insufficient-permissions'])
 
-async function readJson(res: Response, token: string): Promise<unknown> {
+async function readJson(res: Response, token: string, opts: { costlyRetry?: boolean } = {}): Promise<unknown> {
   if (res.ok) {
-    try { return await res.json() } catch { throw new ProviderError('Apify returned an unreadable response.', true) }
+    try { return await res.json() } catch {
+      // costlyRetry: res.ok means this request (the run-start POST) may already have
+      // spent money, so an unparseable body must be non-recoverable — Resume must not
+      // re-POST and double-bill. Poll/dataset calls are free, so they stay recoverable.
+      throw opts.costlyRetry
+        ? new ProviderError(
+            'Apify returned an unreadable response after starting the run — check your Apify console for a possibly-started run before retrying.',
+          )
+        : new ProviderError('Apify returned an unreadable response.', true)
+    }
   }
   let type = ''
   let message = ''

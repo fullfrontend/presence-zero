@@ -21,7 +21,7 @@ export type PastScan = {
 
 type Patchable = Pick<PastScan, 'pinned' | 'archived' | 'label' | 'title'>
 
-function csvContentFor(s: PastScan): string | undefined {
+export function csvContentFor(s: PastScan): string | undefined {
   if (s.provider !== 'csv') return undefined
   try {
     const cfg = JSON.parse(s.providerConfig || '{}')
@@ -33,7 +33,7 @@ function csvContentFor(s: PastScan): string | undefined {
 
 // Re-running an Apify scan must bill the same place cap the user originally chose —
 // omitting this lets the POST /api/scans route silently fall back to its own default.
-function maxPlacesFor(s: PastScan): number | undefined {
+export function maxPlacesFor(s: PastScan): number | undefined {
   if (s.provider !== 'apify') return undefined
   try {
     const cfg = JSON.parse(s.providerConfig || '{}')

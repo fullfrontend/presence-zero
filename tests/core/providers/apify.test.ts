@@ -161,4 +161,45 @@ describe('apify provider — errors', () => {
     expect(err.recoverable).toBe(false)
     expect(err.message).toMatch(/run failed/i)
   })
+
+  it.each(['ABORTED', 'TIMED-OUT'] as const)(
+    'maps a terminal %s run to a non-recoverable error instead of an unresumable pause loop',
+    async status => {
+      const body = JSON.stringify({ data: { id: 'RUN123', status } })
+      const p = createApifyProvider({ fetchFn: jsonFetch(body), sleep: noSleep })
+      const err = await p.fetchPage(area, 'apify:RUN123:1', { apifyToken: 't' }).catch(e => e)
+      expect(err).toBeInstanceOf(ProviderError)
+      expect(err.recoverable).toBe(false)
+      expect(err.nextCursor).toBeUndefined()
+      expect(err.message).toMatch(/start a new scan/i)
+      expect(err.message).toMatch(/apify console/i)
+    },
+  )
+
+  it.each(['ABORTING', 'TIMING-OUT'] as const)(
+    'keeps polling a transitional %s run instead of throwing',
+    async status => {
+      const body = JSON.stringify({ data: { id: 'RUN123', status } })
+      const p = createApifyProvider({ fetchFn: jsonFetch(body), sleep: noSleep })
+      const res = await p.fetchPage(area, 'apify:RUN123:5', { apifyToken: 't' })
+      expect(res.businesses).toEqual([])
+      expect(res.nextCursor).toBe('apify:RUN123:6')
+    },
+  )
+
+  it('treats an unparseable body on the run-start POST as non-recoverable — the POST may already have spent money', async () => {
+    const fetchFn = vi.fn(async () => new Response('not json', { status: 200 })) as unknown as typeof fetch
+    const p = createApifyProvider({ fetchFn, sleep: noSleep })
+    const err = await p.fetchPage(area, null, { apifyToken: 't' }).catch(e => e)
+    expect(err).toBeInstanceOf(ProviderError)
+    expect(err.recoverable).toBe(false)
+  })
+
+  it('treats an unparseable body on a poll as recoverable — polling is free and genuinely transient', async () => {
+    const fetchFn = vi.fn(async () => new Response('not json', { status: 200 })) as unknown as typeof fetch
+    const p = createApifyProvider({ fetchFn, sleep: noSleep })
+    const err = await p.fetchPage(area, 'apify:RUN123:1', { apifyToken: 't' }).catch(e => e)
+    expect(err).toBeInstanceOf(ProviderError)
+    expect(err.recoverable).toBe(true)
+  })
 })

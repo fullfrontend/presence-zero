@@ -10,7 +10,7 @@ const DEFAULT_APIFY_MAX_PLACES_CEILING = 100
  */
 export function parseApifyMaxPlacesCeiling(raw: string | undefined): number {
   const n = Number(raw)
-  return Number.isFinite(n) && n > 0 ? n : DEFAULT_APIFY_MAX_PLACES_CEILING
+  return Number.isFinite(n) && n > 0 ? Math.trunc(n) : DEFAULT_APIFY_MAX_PLACES_CEILING
 }
 
 // Read once at module scope (matching src/server/pipeline-deps.ts), not per request.
