@@ -4,19 +4,20 @@
 
 [![CI](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml/badge.svg)](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
+
+**[Live site](https://presencezero.its-tahir.com/)** · **[Live demo](https://presencezero.its-tahir.com/demo)** · **[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
 
 PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs free on Docker or Vercel. It's a lead *finder* — not an outreach or CRM tool.
 
 **Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
 
+![PresenceZero demo — expand a lead to see the score breakdown and outreach pitch.](public/screenshots/demo-expand.gif)
+
+If this helps you find leads, a star helps others find the project.
+
 ![PresenceZero — “Find the businesses whose web presence is zero.” The landing page with a live scored lead preview.](public/screenshots/landing-hero.png)
-
-Every lead expands to a plain-language **score breakdown** and a ready-to-personalize **outreach angle** — so you go from “here’s a lead” to “here’s what to say” in one click:
-
-![PresenceZero results table with a lead expanded, showing why it scores 100 and a drafted outreach pitch with a copy button.](public/screenshots/demo-lead-detail.png)
 
 ## How it works
 
@@ -133,13 +134,7 @@ PresenceZero is a lead **finder**, not a spam tool. It has no bulk-email, auto-o
 
 ## Contributing
 
-Contributions are welcome! Adding a new lead-source provider is a single, contained change:
-
-1. Implement the `Provider` interface ([`src/core/providers/provider.ts`](src/core/providers/provider.ts)) — one file, one `id`, one `fetchPage(area, cursor, config)` method returning `{ businesses, nextCursor }`.
-2. Add fixtures under `fixtures/` and tests under `tests/` that exercise it against those fixtures (no live network calls in tests).
-3. Register it in [`src/core/providers/index.ts`](src/core/providers/index.ts)'s `registerBuiltInProviders()`.
-
-`src/core/` is plain TypeScript with no Next.js or React imports — everything runs and tests independently of the web app. Run `npm test`, `npm run lint`, and `npx tsc --noEmit` before opening a PR (CI runs all three plus a build).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: quality gates must pass (`npm test`, `npm run lint`, `npx tsc --noEmit`, `npm run build`); `src/core/` stays framework-free; new providers implement `Provider` and register in `registerBuiltInProviders()`. Mass-outreach features will not be accepted.
 
 ## License
 

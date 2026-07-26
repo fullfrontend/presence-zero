@@ -48,3 +48,8 @@ CLAUDE.md
 # local databases
 *.db
 *.db-journal
+
+# recording scratch (demo GIF tooling)
+tmp-demo-frames/
+.tmp-demo-record/
+.github/og-raw.png
