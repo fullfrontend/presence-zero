@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { DEMO_SCAN } from '@/lib/demo-data'
 import ResultsTable from '@/components/app/results-table'
 import { SectionTag } from '@/components/brand/section-tag'
@@ -14,8 +15,30 @@ export default function DemoPage() {
     <main className="mx-auto max-w-6xl px-6 py-12">
       <SectionTag>{'// LIVE DEMO — READ ONLY'}</SectionTag>
       <h1 className="mt-3 text-3xl font-semibold tracking-tight">{DEMO_SCAN.category} <span className="text-mute">in</span> {DEMO_SCAN.location}</h1>
-      <p className="mt-3 max-w-2xl text-sm text-dim">A real scored result set. Filtering and sorting work; scanning and editing are disabled. <a href="https://github.com/its-tahir/presence-zero" className="text-lime underline-offset-4 hover:underline">Self-host</a> to run your own. Want it built or white-labeled for your business?{' '}
-        <a href="mailto:hello@its-tahir.com" className="text-lime underline-offset-4 hover:underline">Get in touch</a>.</p>
+      <p className="mt-3 max-w-2xl text-sm text-dim">
+        Expand any row for a score breakdown and a ready-to-personalize outreach angle.
+        Filtering and sorting work; scanning and editing are disabled.
+      </p>
+      <div className="mt-5 flex flex-wrap items-center gap-3">
+        <a
+          href="https://github.com/its-tahir/presence-zero"
+          className="inline-flex items-center gap-2 rounded-md bg-lime px-5 py-2.5 text-sm font-medium text-base transition hover:brightness-105"
+        >
+          Self-host in 2 minutes
+        </a>
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 rounded-md border border-line px-5 py-2.5 text-sm text-text transition hover:border-lime/60"
+        >
+          Back to landing
+        </Link>
+        <span className="text-sm text-mute">
+          White-label?{' '}
+          <a href="mailto:hello@its-tahir.com" className="text-lime underline-offset-4 hover:underline">
+            Get in touch
+          </a>
+        </span>
+      </div>
       <div className="mt-8"><ResultsTable scanId="demo" readOnly initialResults={DEMO_SCAN.results} autoTour location={DEMO_SCAN.location} /></div>
     </main>
   )

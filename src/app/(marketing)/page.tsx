@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Hero } from '@/components/landing/hero'
+import { TrustStrip } from '@/components/landing/trust-strip'
 import { HowItWorks } from '@/components/landing/how-it-works'
 import { WhyManual } from '@/components/landing/why-manual'
 import { Features } from '@/components/landing/features'
@@ -18,6 +19,7 @@ export default function LandingPage() {
     <>
       <JsonLd />
       <Hero />
+      <TrustStrip />
       <Reveal><HowItWorks /></Reveal>
       <Reveal><WhyManual /></Reveal>
       <Reveal><Features /></Reveal>

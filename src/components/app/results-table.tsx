@@ -270,10 +270,10 @@ export default function ResultsTable(
                     </button>
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-2 text-text">
-                      {r.name}
+                    <div className="flex flex-wrap items-center gap-2 text-text">
+                      <span className="min-w-0">{r.name}</span>
                       {r.seenBefore && (
-                        <span title="This business appeared in an earlier scan of the same area" className="rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-mute">seen before</span>
+                        <span title="This business appeared in an earlier scan of the same area" className="shrink-0 whitespace-nowrap rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-mute">seen before</span>
                       )}
                     </div>
                     <div className="text-xs text-mute">

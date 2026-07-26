@@ -19,7 +19,6 @@ export function Hero() {
         <div className="mt-8 flex flex-wrap items-center gap-3">
           <Button href="/demo">Explore live demo</Button>
           <Button href="https://github.com/its-tahir/presence-zero" variant="ghost">Get it on GitHub ★</Button>
-          <Button href="#quickstart" variant="link">Run it in 2 minutes →</Button>
         </div>
       </div>
       <HeroPipeline />
