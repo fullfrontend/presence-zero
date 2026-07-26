@@ -52,3 +52,16 @@ export const resultsQuerySchema = z.object({
   presence: z.enum(['none', 'alive', 'dead', 'parked', 'probe_failed']).optional(),
   leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']).optional(),
 })
+
+const truthyFlag = z
+  .union([z.literal('1'), z.literal('true'), z.literal('0'), z.literal('false')])
+  .optional()
+  .transform(v => v === '1' || v === 'true')
+
+/** CSV export query — mirrors the results-table visible filters. */
+export const exportQuerySchema = z.object({
+  minScore: z.coerce.number().int().min(0).max(100).optional(),
+  leadsOnly: truthyFlag,
+  hasPhone: truthyFlag,
+  leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']).optional(),
+})

@@ -12,7 +12,6 @@ export default async function ScanPage({ params }: { params: Promise<{ id: strin
         </Link>
         <div className="mt-4">
           <SectionTag>{'// SCAN'}</SectionTag>
-          <h1 className="mt-3 text-2xl font-semibold tracking-tight">Scan results</h1>
         </div>
       </div>
       <ScanRunner scanId={id} />

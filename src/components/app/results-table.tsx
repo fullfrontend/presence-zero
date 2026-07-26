@@ -9,6 +9,8 @@ import { Skeleton } from './skeleton'
 import { Tour, type TourStep } from './tour'
 import { LeadDetail } from './lead-detail'
 import { ScanSummary } from './scan-summary'
+import { presenceMeta } from '@/lib/presence'
+import { buildExportQuery, type LeadStatus } from '@/lib/result-filters'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
@@ -85,7 +87,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="toolbar"]',
     title: 'Filter, sort, export',
-    body: 'Filter by minimum score or leads-only, sort any column by clicking its header, and export the whole list to CSV.',
+    body: 'Filter by score, leads-only, phone, or pipeline status. Export downloads the rows you’re looking at — not the whole unfiltered scan.',
   },
 ]
 
@@ -106,6 +108,7 @@ export default function ResultsTable(
   const [minScore, setMinScore] = useState(0)
   const [leadsOnly, setLeadsOnly] = useState(true)
   const [hasPhoneOnly, setHasPhoneOnly] = useState(false)
+  const [leadStatusFilter, setLeadStatusFilter] = useState<LeadStatus | ''>('')
   const [loading, setLoading] = useState(false)
   const [sortKey, setSortKey] = useState<SortKey>('score')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
@@ -170,10 +173,17 @@ export default function ResultsTable(
 
   // Live mode: the server already applies minScore. Read-only mode has no server round trip, so filter locally.
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
-  const byLeads = leadsOnly ? byMinScore.filter(r => r.presenceStatus !== 'alive') : byMinScore
-  const visible = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
+  const byLeads = leadsOnly ? byMinScore.filter(r => presenceMeta(r.presenceStatus).isLead) : byMinScore
+  const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
+  const visible = leadStatusFilter ? byPhone.filter(r => r.leadStatus === leadStatusFilter) : byPhone
   const activeColumn = COLUMNS.find(c => c.key === sortKey) ?? COLUMNS[0]
   const sorted = [...visible].sort((a, b) => compareValues(activeColumn.value(a), activeColumn.value(b), sortDir))
+  const exportHref = `/api/scans/${scanId}/export${buildExportQuery({
+    minScore,
+    leadsOnly,
+    hasPhoneOnly,
+    leadStatus: leadStatusFilter,
+  })}`
 
   return (
     <div className="space-y-3">
@@ -193,6 +203,17 @@ export default function ResultsTable(
           <input type="checkbox" checked={hasPhoneOnly} onChange={e => setHasPhoneOnly(e.target.checked)} className="accent-lime" />
           Has phone only
         </label>
+        <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
+          Status
+          <select
+            className={SELECT_CLS}
+            value={leadStatusFilter}
+            onChange={e => setLeadStatusFilter(e.target.value as LeadStatus | '')}
+          >
+            <option value="">All</option>
+            {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </label>
         {visible.length >= 2 && (
           <div data-tour="histogram">
             <ScoreHistogram scores={visible.map(r => r.score)} />
@@ -205,7 +226,7 @@ export default function ResultsTable(
             <Button variant="ghost" disabled className="cursor-not-allowed opacity-40">Export CSV</Button>
           </div>
         ) : (
-          <Button variant="ghost" href={`/api/scans/${scanId}/export`} className="ml-auto">Export CSV</Button>
+          <Button variant="ghost" href={exportHref} className="ml-auto">Export CSV</Button>
         )}
       </div>
       <Tour steps={TOUR_STEPS} open={tourOpen} onClose={() => setTourOpen(false)} />
@@ -320,7 +341,7 @@ export default function ResultsTable(
               : (
                 <>
                   No results match the current filters.
-                  <span className="text-mute"> Try lowering <span className="text-text">Min score</span>{leadsOnly && <> or turning off <span className="text-text">Leads only</span></>}{hasPhoneOnly && <> or <span className="text-text">Has phone only</span></>}.</span>
+                  <span className="text-mute"> Try lowering <span className="text-text">Min score</span>{leadsOnly && <> or turning off <span className="text-text">Leads only</span></>}{hasPhoneOnly && <> or <span className="text-text">Has phone only</span></>}{leadStatusFilter && <> or clearing <span className="text-text">Status</span></>}.</span>
                 </>
               )}
           </div>

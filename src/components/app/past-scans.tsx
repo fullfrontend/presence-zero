@@ -219,7 +219,10 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
               tabIndex={0}
               onClick={() => router.push(`/app/scans/${s.id}`)}
               onKeyDown={e => {
-                if (e.key === 'Enter') router.push(`/app/scans/${s.id}`)
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  router.push(`/app/scans/${s.id}`)
+                }
               }}
               className={`group flex cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 transition-colors hover:bg-surface ${
                 s.archived ? 'opacity-50' : ''
@@ -283,7 +286,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                         e.stopPropagation()
                         startEditLabel(s)
                       }}
-                      className={`${microLabel} rounded-full border border-line px-2 py-0.5 text-mute opacity-0 transition-opacity hover:text-text group-hover:opacity-100 focus:opacity-100`}
+                      className={`${microLabel} rounded-full border border-line px-2 py-0.5 text-mute opacity-100 transition-opacity hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100`}
                     >
                       + label
                     </button>
@@ -298,7 +301,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
               <div className="flex items-center gap-2">
                 <span className={`${microLabel} text-mute`}>{s.status}</span>
                 <div
-                  className="flex flex-wrap items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                  className="flex flex-wrap items-center gap-1.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   onClick={e => e.stopPropagation()}
                 >
                   <button

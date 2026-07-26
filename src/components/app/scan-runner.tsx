@@ -10,21 +10,38 @@ interface ScanState {
   totalFound: number
   totalProcessed: number
   errorMessage: string | null
+  location?: string
+  category?: string
+  provider?: string
+  title?: string | null
+  label?: string | null
+  createdAt?: string | Date | number
 }
 
 const PHASES = ['fetch', 'process', 'retry', 'done'] as const
+
+function formatScanWhen(createdAt: ScanState['createdAt']): string | null {
+  if (createdAt == null) return null
+  const d = createdAt instanceof Date ? createdAt : new Date(createdAt)
+  if (Number.isNaN(d.getTime())) return null
+  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+}
 
 export default function ScanRunner({ scanId }: { scanId: string }) {
   const [scan, setScan] = useState<ScanState | null>(null)
   const [working, setWorking] = useState(false)
   const [provider, setProvider] = useState<string | null>(null)
   const [etaLabel, setEtaLabel] = useState<string | null>(null)
+  const [driveError, setDriveError] = useState<string | null>(null)
+  const [interrupted, setInterrupted] = useState(false)
   const driving = useRef(false)
 
   const drive = useCallback(async () => {
     if (driving.current) return
     driving.current = true
     const started = Date.now()
+    setDriveError(null)
+    setInterrupted(false)
     // ETA from the observed advance cadence — computed off-render (Date.now is impure).
     const updateEta = (s: ScanState) => {
       if (s.status === 'running' && s.totalProcessed > 0 && s.totalFound > s.totalProcessed) {
@@ -41,15 +58,22 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
     const advanceOnce = async (): Promise<ScanState | null> => {
       try {
         const res = await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })
-        if (!res.ok) return null
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({})) as { error?: string }
+          setDriveError(body.error ?? `Advance failed (HTTP ${res.status}). Your progress is saved — continue when ready.`)
+          setInterrupted(true)
+          return null
+        }
         return await res.json() as ScanState
       } catch {
+        setDriveError('Network error while advancing the scan. Progress is saved — hit Continue to resume.')
+        setInterrupted(true)
         return null
       }
     }
     setWorking(true)
     try {
-      const initial = await (await fetch(`/api/scans/${scanId}`)).json()
+      const initial = await (await fetch(`/api/scans/${scanId}`)).json() as ScanState
       if (typeof initial?.provider === 'string') setProvider(initial.provider)
       let state: ScanState = initial
       setScan(state)
@@ -94,9 +118,26 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
 
   const pct = scan.totalFound > 0 ? Math.round((scan.totalProcessed / scan.totalFound) * 100) : 0
   const activeIndex = PHASES.indexOf(scan.phase as (typeof PHASES)[number])
+  const headline = scan.title?.trim()
+    || (scan.category && scan.location ? `${scan.category} in ${scan.location}` : 'Scan results')
+  const when = formatScanWhen(scan.createdAt)
+  const showContinue = interrupted
+    || scan.status === 'paused'
+    || (scan.status === 'running' && !working)
 
   return (
     <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
+        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-mute">
+          {scan.location && <span className="text-dim">{scan.location}</span>}
+          {scan.category && <span>· {scan.category}</span>}
+          {scan.provider && <span>· {scan.provider}</span>}
+          {scan.label && <span className="rounded border border-lime/40 px-1.5 py-0.5 text-lime">{scan.label}</span>}
+          {when && <span>· {when}</span>}
+        </p>
+      </div>
+
       <div className="rounded-xl border border-line bg-surface p-6">
         <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
           {PHASES.map((phase, i) => (
@@ -142,8 +183,11 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
 
         {scan.status === 'paused' && (
           <p className="mt-3 text-sm text-amber-400">
-            {scan.errorMessage ? `Paused: ${scan.errorMessage}` : 'Paused — the provider is busy or rate-limited.'} Hit Resume to continue where it left off.
+            {scan.errorMessage ? `Paused: ${scan.errorMessage}` : 'Paused — the provider is busy or rate-limited.'} Hit Continue to resume where it left off.
           </p>
+        )}
+        {driveError && (
+          <p className="mt-3 text-sm text-amber-400" role="alert">{driveError}</p>
         )}
         {scan.status === 'failed' && (
           <p className="mt-3 text-sm text-red-400">
@@ -152,9 +196,9 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
           </p>
         )}
 
-        {(scan.status === 'paused' || scan.status === 'running') && (
+        {showContinue && (
           <Button variant="ghost" onClick={() => { void drive() }} className="mt-4" disabled={working}>
-            {working ? 'Resuming…' : 'Resume scan'}
+            {working ? 'Continuing…' : interrupted || scan.status === 'running' ? 'Continue scan' : 'Resume scan'}
           </Button>
         )}
 
@@ -178,7 +222,7 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
           <div className="flex justify-end">
             <Button href="/app" variant="link">{'New scan'}</Button>
           </div>
-          <ResultsTable scanId={scanId} />
+          <ResultsTable scanId={scanId} location={scan.location ?? null} />
         </div>
       )}
     </div>

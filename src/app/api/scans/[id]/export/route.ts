@@ -1,6 +1,8 @@
 import { desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { businesses, domainCandidates } from '@/db/schema'
+import { matchesResultFilters } from '@/lib/result-filters'
+import { exportQuerySchema } from '@/server/validation'
 
 function csvCell(v: unknown): string {
   let s = v === null || v === undefined ? '' : String(v)
@@ -10,11 +12,22 @@ function csvCell(v: unknown): string {
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s
 }
 
-export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params
+  const url = new URL(req.url)
+  const parsed = exportQuerySchema.safeParse(Object.fromEntries(url.searchParams))
+  if (!parsed.success) return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
+  const { minScore, leadsOnly, hasPhone, leadStatus } = parsed.data
+
   const db = await getDb()
   const rows = await db.select().from(businesses).where(eq(businesses.scanId, id)).orderBy(desc(businesses.score))
-  const ids = rows.map(r => r.id)
+  const filtered = rows.filter(r => matchesResultFilters(r, {
+    minScore,
+    leadsOnly: leadsOnly || false,
+    hasPhoneOnly: hasPhone || false,
+    leadStatus: leadStatus ?? '',
+  }))
+  const ids = filtered.map(r => r.id)
   const candidates = ids.length
     ? await db.select().from(domainCandidates).where(inArray(domainCandidates.businessId, ids))
     : []
@@ -23,7 +36,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (c.available === true) available.set(c.businessId, [...(available.get(c.businessId) ?? []), c.domain])
   }
   const header = 'name,address,phone,category,rating,review_count,website,presence,probe_detail,score,lead_status,note,available_domains'
-  const lines = rows.map(r => [
+  const lines = filtered.map(r => [
     r.name, r.address, r.phone, r.category, r.rating, r.reviewCount, r.listedWebsite,
     r.presenceStatus, r.probeDetail, r.score, r.leadStatus, r.note, (available.get(r.id) ?? []).join(' '),
   ].map(csvCell).join(','))
