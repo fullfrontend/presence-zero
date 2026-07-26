@@ -35,6 +35,11 @@ export const patchBusinessSchema = z.object({
   note: z.string().max(2000).optional(),
 }).refine(d => d.leadStatus !== undefined || d.note !== undefined, { message: 'nothing to update' })
 
+export const bulkPatchBusinessesSchema = z.object({
+  ids: z.array(z.string().min(1)).min(1).max(200),
+  leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']),
+})
+
 export const patchScanSchema = z.object({
   pinned: z.boolean().optional(),
   archived: z.boolean().optional(),

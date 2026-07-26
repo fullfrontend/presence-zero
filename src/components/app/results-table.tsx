@@ -30,9 +30,7 @@ const INPUT_CLS = 'w-36 rounded border border-line bg-surface px-2 py-1 text-xs 
 type SortDir = 'asc' | 'desc'
 type SortKey = 'score' | 'name' | 'presence' | 'domains' | 'phone' | 'status' | 'note'
 
-// Lead-quality rank: leads group together, best leads first (ascending).
 const PRESENCE_RANK: Record<string, number> = { none: 0, dead: 1, parked: 2, probe_failed: 3, alive: 4 }
-// Lead-pipeline rank: follows the natural progression of a lead.
 const STATUS_RANK: Record<string, number> = { new: 0, contacted: 1, replied: 2, won: 3, lost: 4, skipped: 5 }
 
 interface Column {
@@ -72,7 +70,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="status"]',
     title: 'Lead pipeline',
-    body: 'Track each lead: new → contacted → replied → won or lost (or skipped). Update it inline.',
+    body: 'Track each lead: new → contacted → replied → won or lost (or skipped). Update it inline, or select several rows and mark them in bulk.',
   },
   {
     selector: '[data-tour="note"]',
@@ -91,7 +89,6 @@ const TOUR_STEPS: TourStep[] = [
   },
 ]
 
-// Nulls always sort last, regardless of direction; only the substantive comparison flips with dir.
 function compareValues(a: number | string | null, b: number | string | null, dir: SortDir): number {
   if (a == null && b == null) return 0
   if (a == null) return 1
@@ -101,8 +98,16 @@ function compareValues(a: number | string | null, b: number | string | null, dir
 }
 
 export default function ResultsTable(
-  { scanId, readOnly = false, initialResults, autoTour = false, location }:
-  { scanId: string; readOnly?: boolean; initialResults?: Result[]; autoTour?: boolean; location?: string | null },
+  { scanId, readOnly = false, initialResults, autoTour = false, location, refreshKey, partial = false }:
+  {
+    scanId: string
+    readOnly?: boolean
+    initialResults?: Result[]
+    autoTour?: boolean
+    location?: string | null
+    refreshKey?: number
+    partial?: boolean
+  },
 ) {
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
@@ -114,8 +119,10 @@ export default function ResultsTable(
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [tourOpen, setTourOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [bulkStatus, setBulkStatus] = useState<LeadStatus>('contacted')
+  const [bulkBusy, setBulkBusy] = useState(false)
 
-  // Auto-run the tour once per browser on pages that opt in (e.g. the read-only demo).
   useEffect(() => {
     if (!autoTour) return
     const runOnce = () => {
@@ -125,7 +132,7 @@ export default function ResultsTable(
           window.localStorage.setItem('pz-demo-tour-seen', '1')
         }
       } catch {
-        // localStorage unavailable (private mode, disabled storage, etc.) — skip auto-run silently.
+        // localStorage unavailable — skip auto-run silently.
       }
     }
     runOnce()
@@ -135,8 +142,8 @@ export default function ResultsTable(
     if (readOnly) return
     let mounted = true
 
-    const load = async () => {
-      setLoading(true)
+    const load = async (soft: boolean) => {
+      if (!soft) setLoading(true)
       const params = new URLSearchParams()
       if (minScore > 0) params.set('minScore', String(minScore))
       const res = await fetch(`/api/scans/${scanId}/results?${params}`)
@@ -147,19 +154,40 @@ export default function ResultsTable(
       }
     }
 
-    void load()
+    void load(results.length > 0 && refreshKey != null)
 
     return () => { mounted = false }
-  }, [scanId, minScore, readOnly])
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- soft reload when refreshKey ticks; avoid resetting selection thrash
+  }, [scanId, minScore, readOnly, refreshKey])
 
-  async function patch(id: string, body: { leadStatus?: string; note?: string }) {
-    if (readOnly) return
-    await fetch(`/api/businesses/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+  async function reload() {
     const params = new URLSearchParams()
     if (minScore > 0) params.set('minScore', String(minScore))
     const res = await fetch(`/api/scans/${scanId}/results?${params}`)
     const data = await res.json()
     setResults(data.results)
+  }
+
+  async function patch(id: string, body: { leadStatus?: string; note?: string }) {
+    if (readOnly) return
+    await fetch(`/api/businesses/${id}`, { method: 'PATCH', body: JSON.stringify(body) })
+    await reload()
+  }
+
+  async function applyBulkStatus() {
+    if (readOnly || selected.size === 0) return
+    setBulkBusy(true)
+    try {
+      await fetch('/api/businesses/bulk', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: [...selected], leadStatus: bulkStatus }),
+      })
+      setSelected(new Set())
+      await reload()
+    } finally {
+      setBulkBusy(false)
+    }
   }
 
   function handleSort(key: SortKey) {
@@ -171,7 +199,15 @@ export default function ResultsTable(
     }
   }
 
-  // Live mode: the server already applies minScore. Read-only mode has no server round trip, so filter locally.
+  function toggleSelected(id: string) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
   const byLeads = leadsOnly ? byMinScore.filter(r => presenceMeta(r.presenceStatus).isLead) : byMinScore
   const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
@@ -185,8 +221,30 @@ export default function ResultsTable(
     leadStatus: leadStatusFilter,
   })}`
 
+  const allVisibleSelected = sorted.length > 0 && sorted.every(r => selected.has(r.id))
+  const colCount = COLUMNS.length + (readOnly ? 0 : 1)
+
+  function toggleSelectAllVisible() {
+    if (allVisibleSelected) {
+      setSelected(prev => {
+        const next = new Set(prev)
+        for (const r of sorted) next.delete(r.id)
+        return next
+      })
+    } else {
+      setSelected(prev => {
+        const next = new Set(prev)
+        for (const r of sorted) next.add(r.id)
+        return next
+      })
+    }
+  }
+
   return (
     <div className="space-y-3">
+      {partial && (
+        <p className="text-xs text-dim">Some rows may still be processing — scores and domains fill in as the scan advances.</p>
+      )}
       <ScanSummary results={results} />
       <div data-tour="toolbar" className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
@@ -229,11 +287,56 @@ export default function ResultsTable(
           <Button variant="ghost" href={exportHref} className="ml-auto">Export CSV</Button>
         )}
       </div>
+
+      {!readOnly && sorted.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line bg-surface/60 px-3 py-2">
+          <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-mute">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={toggleSelectAllVisible}
+              className="accent-lime"
+            />
+            Select visible ({sorted.length})
+          </label>
+          {selected.size > 0 && (
+            <>
+              <span className="font-mono text-[11px] text-dim">{selected.size} selected</span>
+              <select
+                className={SELECT_CLS}
+                value={bulkStatus}
+                onChange={e => setBulkStatus(e.target.value as LeadStatus)}
+                aria-label="Bulk lead status"
+              >
+                {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+              <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={bulkBusy} onClick={() => { void applyBulkStatus() }}>
+                {bulkBusy ? 'Updating…' : `Mark as ${bulkStatus}`}
+              </Button>
+              <button
+                type="button"
+                className="font-mono text-[11px] uppercase tracking-[0.12em] text-mute hover:text-text"
+                onClick={() => setSelected(new Set())}
+              >
+                Clear
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
       <Tour steps={TOUR_STEPS} open={tourOpen} onClose={() => setTourOpen(false)} />
-      <div className="overflow-x-auto rounded-xl border border-line">
+
+      {/* Desktop table */}
+      <div className="hidden overflow-x-auto rounded-xl border border-line md:block">
         <table className="w-full text-sm">
           <thead className="sticky top-0 bg-base">
             <tr className="font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
+              {!readOnly && (
+                <th className="w-8 px-2 py-2">
+                  <span className="sr-only">Select</span>
+                </th>
+              )}
               {COLUMNS.map(col => {
                 const active = col.key === sortKey
                 return (
@@ -260,6 +363,7 @@ export default function ResultsTable(
             {loading && visible.length === 0 ? (
               Array.from({ length: 5 }).map((_, i) => (
                 <tr key={`skeleton-${i}`} className="border-t border-line align-top">
+                  {!readOnly && <td className="px-2 py-2" />}
                   <td className="px-3 py-2"><Skeleton className="h-4 w-8" /></td>
                   <td className="px-3 py-2">
                     <Skeleton className="h-4 w-32" />
@@ -277,6 +381,17 @@ export default function ResultsTable(
               const detailId = `lead-detail-${r.id}`
               return [
                 <tr key={r.id} className="border-t border-line align-top">
+                  {!readOnly && (
+                    <td className="px-2 py-2">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggleSelected(r.id)}
+                        className="accent-lime"
+                        aria-label={`Select ${r.name}`}
+                      />
+                    </td>
+                  )}
                   <td className="px-3 py-2">
                     <button
                       type="button"
@@ -325,7 +440,7 @@ export default function ResultsTable(
                 </tr>,
                 open && (
                   <tr key={`${r.id}-detail`} className="border-t border-line/50 bg-base/20">
-                    <td colSpan={COLUMNS.length} id={detailId} className="px-3 py-3">
+                    <td colSpan={colCount} id={detailId} className="px-3 py-3">
                       <LeadDetail row={r} location={location} />
                     </td>
                   </tr>
@@ -337,7 +452,7 @@ export default function ResultsTable(
         {!loading && visible.length === 0 && (
           <div className="p-4 text-sm text-dim">
             {results.length === 0
-              ? 'No businesses in this scan yet.'
+              ? (partial ? 'Waiting for the first processed leads…' : 'No businesses in this scan yet.')
               : (
                 <>
                   No results match the current filters.
@@ -346,6 +461,87 @@ export default function ResultsTable(
               )}
           </div>
         )}
+      </div>
+
+      {/* Mobile cards */}
+      <div className="space-y-3 md:hidden">
+        {loading && visible.length === 0 && (
+          Array.from({ length: 3 }).map((_, i) => (
+            <div key={`ms-${i}`} className="rounded-xl border border-line bg-surface p-4">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="mt-2 h-3 w-40" />
+            </div>
+          ))
+        )}
+        {!loading && visible.length === 0 && (
+          <div className="rounded-xl border border-dashed border-line p-4 text-sm text-dim">
+            {results.length === 0
+              ? (partial ? 'Waiting for the first processed leads…' : 'No businesses in this scan yet.')
+              : 'No results match the current filters.'}
+          </div>
+        )}
+        {sorted.map(r => {
+          const open = expandedId === r.id
+          return (
+            <article key={r.id} className="rounded-xl border border-line bg-surface p-4">
+              <div className="flex items-start gap-3">
+                {!readOnly && (
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => toggleSelected(r.id)}
+                    className="mt-1 accent-lime"
+                    aria-label={`Select ${r.name}`}
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setExpandedId(open ? null : r.id)}
+                      className="flex items-center gap-2 text-left"
+                    >
+                      <ScoreCell score={r.score} />
+                      <span className="font-medium text-text">{r.name}</span>
+                    </button>
+                    <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} />
+                  </div>
+                  <p className="mt-1 text-xs text-mute">
+                    {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
+                  </p>
+                  {r.phone && <p className="mt-1 text-xs text-dim">{r.phone}</p>}
+                  <div className="mt-2"><DomainChips domains={r.domains} /></div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    {readOnly
+                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{r.leadStatus}</span>
+                      : (
+                        <select className={SELECT_CLS} value={r.leadStatus}
+                          onChange={e => { void patch(r.id, { leadStatus: e.target.value }) }}>
+                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      )}
+                    {!readOnly && (
+                      <input className={`${INPUT_CLS} w-full max-w-none flex-1`} defaultValue={r.note ?? ''} placeholder="Note"
+                        onBlur={e => { if (e.target.value !== (r.note ?? '')) void patch(r.id, { note: e.target.value }) }} />
+                    )}
+                  </div>
+                  {open && (
+                    <div className="mt-3 border-t border-line pt-3">
+                      <LeadDetail row={r} location={location} />
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedId(open ? null : r.id)}
+                    className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-lime"
+                  >
+                    {open ? 'Hide score & pitch' : 'Score & pitch'}
+                  </button>
+                </div>
+              </div>
+            </article>
+          )
+        })}
       </div>
     </div>
   )
