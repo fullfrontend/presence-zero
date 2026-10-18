@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { presenceMeta, probeFallbackDetail } from '@/lib/presence'
 
 describe('presenceMeta', () => {
-  it('maps none to the jackpot lead (solid dot)', () => {
-    expect(presenceMeta('none')).toEqual({ key: 'none', label: 'NONE', dot: 'solid', isLead: true })
+  it('maps none to an unverified potential lead (solid dot)', () => {
+    expect(presenceMeta('none')).toEqual({ key: 'none', label: 'UNVERIFIED', dot: 'solid', isLead: true })
   })
   it('maps dead and parked to leads with weaker dots', () => {
     expect(presenceMeta('dead').dot).toBe('ring')

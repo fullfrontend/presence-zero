@@ -4,10 +4,11 @@ import { generatePitch } from '@/core/pitch'
 const base = { name: 'Corner Crumb Bakehouse', category: 'bakery', location: 'Ottawa, ON' }
 
 describe('generatePitch', () => {
-  it('frames a no-website lead around having no site', () => {
+  it('requires verification before pitching an unlisted website', () => {
     const p = generatePitch({ ...base, presence: 'none', rating: 4.7, reviewCount: 212, availableDomain: 'cornercrumb.com' })
     const text = [p.headline, p.angle, ...p.talkingPoints].join(' ').toLowerCase()
-    expect(text).toContain('no website')
+    expect(text).toContain('verify')
+    expect(text).not.toContain('no website at all')
   })
 
   it('frames a dead-site lead around the site being down', () => {

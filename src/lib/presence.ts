@@ -3,7 +3,7 @@ type Dot = 'solid' | 'ring' | 'half' | 'muted' | 'unknown'
 interface PresenceMeta { key: PresenceKey; label: string; dot: Dot; isLead: boolean }
 
 const MAP: Record<PresenceKey, Omit<PresenceMeta, 'key'>> = {
-  none:         { label: 'NONE',         dot: 'solid',   isLead: true },
+  none:         { label: 'UNVERIFIED',         dot: 'solid',   isLead: true },
   dead:         { label: 'DEAD',         dot: 'ring',    isLead: true },
   parked:       { label: 'PARKED',       dot: 'half',    isLead: true },
   alive:        { label: 'ALIVE',        dot: 'muted',   isLead: false },
@@ -21,7 +21,7 @@ export function presenceMeta(status: string | null): PresenceMeta {
  * not know which occurred for these rows.
  */
 const FALLBACK: Record<PresenceKey, string> = {
-  none: 'No website was listed on the source listing.',
+  none: 'No website was listed on the source listing. This does not confirm that the business has no website.',
   dead: "The listed site didn't respond — DNS failure, connection refused, HTTP 5xx, or timeout.",
   parked: 'The listed site looked like a registrar parking page.',
   alive: 'The listed site responded normally.',

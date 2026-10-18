@@ -25,7 +25,7 @@ export interface ScoreExplanation {
 }
 
 const PRESENCE_LABEL: Record<PresenceStatus, string> = {
-  none: 'No website',
+  none: 'Website unverified',
   dead: 'Dead website',
   parked: 'Parked domain',
   alive: 'Site is live',

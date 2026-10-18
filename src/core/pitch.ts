@@ -59,6 +59,18 @@ export function generatePitch(i: PitchInput): Pitch {
     }
   }
 
+  if (i.presence === 'none') {
+    return {
+      headline: 'Website presence needs verification.',
+      angle: `${i.name} has no website listed by the source. Verify whether an official site exists before offering to build one.`,
+      talkingPoints: [
+        ...(i.reviewCount != null && i.rating != null ? [`${i.reviewCount} reviews at ${i.rating}★ — check their existing web presence.`] : []),
+        ...(i.availableDomain ? [`${i.availableDomain} is available, but domain availability does not prove the business has no website.`] : []),
+      ],
+      ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
+    }
+  }
+
   const presence = i.presence as 'none' | 'dead' | 'parked'
   const points: string[] = []
 

@@ -60,7 +60,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="presence"]',
     title: 'Web presence',
-    body: 'How reachable the business’s site is. The dot encodes lead quality: solid lime = NONE (no site — the best target), ring = DEAD, half = PARKED. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
+    body: 'How reachable the business’s site is. The dot encodes lead quality: solid lime = UNVERIFIED (no site supplied by the source — needs verification), ring = DEAD, half = PARKED. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
   },
   {
     selector: '[data-tour="domains"]',
