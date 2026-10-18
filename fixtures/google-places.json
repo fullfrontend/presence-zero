@@ -1,15 +1,22 @@
 {
   "places": [
     {
-      "displayName": { "text": "Joe's Bakery" },
+      "displayName": {
+        "text": "Joe's Bakery"
+      },
       "formattedAddress": "12 Main St, Ottawa, ON",
       "nationalPhoneNumber": "(613) 555-0101",
       "rating": 4.6,
       "userRatingCount": 80,
-      "primaryTypeDisplayName": { "text": "Bakery" }
+      "primaryTypeDisplayName": {
+        "text": "Bakery"
+      },
+      "googleMapsUri": "https://maps.google.com/?cid=123"
     },
     {
-      "displayName": { "text": "Crusty Loaf" },
+      "displayName": {
+        "text": "Crusty Loaf"
+      },
       "formattedAddress": "99 Elm St, Ottawa, ON",
       "websiteUri": "https://crustyloaf.example.com",
       "rating": 4.1,

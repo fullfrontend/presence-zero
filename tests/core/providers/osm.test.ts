@@ -22,6 +22,7 @@ describe('osm provider', () => {
   it('geocodes then maps overpass elements, skipping unnamed', async () => {
     const res = await createOsmProvider(fakeFetch()).fetchPage(area, null, {})
     expect(res.businesses).toHaveLength(3)
+    expect(res.businesses[0].sourceUrl).toBe('https://www.openstreetmap.org/node/1')
     expect(res.businesses[0]).toMatchObject({ name: "Joe's Bakery", phone: '+1-613-555-0101', address: '12 Main St' })
     expect(res.businesses[1].website).toBe('https://crustyloaf.example.com')
     expect(res.nextCursor).toBeNull()
@@ -70,6 +71,7 @@ describe('osm provider', () => {
   it('fetches successfully when the category is plural (e.g. example-chip categories)', async () => {
     const res = await createOsmProvider(fakeFetch()).fetchPage({ ...area, category: 'bakeries' }, null, {})
     expect(res.businesses).toHaveLength(3)
+    expect(res.businesses[0].sourceUrl).toBe('https://www.openstreetmap.org/node/1')
   })
 })
 
@@ -104,6 +106,7 @@ it('reads source Facebook tags when no independent website is listed', async () 
   const social = readFileSync('fixtures/overpass-facebook.json', 'utf8')
   const fetchFn = (async (url: RequestInfo | URL) => new Response(String(url).includes('nominatim') ? nominatim : social)) as typeof fetch
   const result = await createOsmProvider(fetchFn).fetchPage({ location: 'Charleroi', category: 'restaurant', countryCode: 'be' }, null, {})
+  expect(result.businesses[2].facebookUrl).toBe('https://www.facebook.com/restaurant')
   expect(result.businesses[0].address).toBe('1 Rue du Test, 6000 Charleroi')
   expect(result.businesses.map(b => b.website)).toEqual([
     'https://www.facebook.com/restaurant', 'https://www.facebook.com/restaurant.local',

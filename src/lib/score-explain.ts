@@ -9,6 +9,9 @@ export interface DomainInfo {
 
 /** The subset of a results-table row the explainer/pitch need. */
 export interface ExplainableRow {
+  listedWebsite?: string | null
+  facebookUrl?: string | null
+  sourceUrl?: string | null
   name: string
   category?: string | null
   phone: string | null

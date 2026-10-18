@@ -413,3 +413,20 @@ it('does not lower lead potential for a search-discovered URL redirecting to Fac
   expect(row.listedWebsite).toBeNull()
   expect(row.score).toBe(40)
 })
+
+it('preserves Facebook and source links when an independent website is discovered', async () => {
+  const db = await freshDb()
+  await insertScan(db)
+  await runToCompletion(db, deps(db, {
+    getProviderById: () => ({ id: 'mock', fetchPage: async () => ({
+      businesses: [{ name: 'Restaurant', website: 'https://facebook.com/restaurant', facebookUrl: 'https://facebook.com/restaurant', sourceUrl: 'https://www.openstreetmap.org/node/123' }],
+      nextCursor: null,
+    }) }),
+    discoverWebsite: async () => ({ outcome: 'matched', website: 'https://restaurant.example', detail: 'Matched.' }),
+  }))
+  const row = (await db.select().from(businesses))[0]
+  expect(row).toMatchObject({
+    listedWebsite: 'https://restaurant.example', facebookUrl: 'https://facebook.com/restaurant',
+    sourceUrl: 'https://www.openstreetmap.org/node/123', presenceStatus: 'alive',
+  })
+})

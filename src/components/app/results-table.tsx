@@ -17,6 +17,7 @@ interface Result {
   id: string; name: string; address: string | null; phone: string | null
   rating: number | null; reviewCount: number | null; listedWebsite: string | null
   presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
+  facebookUrl?: string | null; sourceUrl?: string | null
   category?: string | null; seenBefore?: boolean
   domains: DomainInfo[]
 }

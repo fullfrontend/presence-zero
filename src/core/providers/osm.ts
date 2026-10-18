@@ -5,7 +5,7 @@ import { CATEGORY_TAGS, SUPPORTED_OSM_CATEGORIES, resolveOsmCategory } from './o
 
 const USER_AGENT = 'PresenceZero/0.1 (open-source lead finder)'
 
-interface OverpassElement { tags?: Record<string, string> }
+interface OverpassElement { type?: string; id?: number; tags?: Record<string, string> }
 
 function toBusiness(el: OverpassElement): RawBusiness | null {
   const t = el.tags ?? {}
@@ -21,6 +21,9 @@ function toBusiness(el: OverpassElement): RawBusiness | null {
     address,
     phone: t.phone ?? t['contact:phone'] ?? t['contact:mobile'],
     website: t.website?.trim() || t['contact:website']?.trim() || facebookUrl,
+    facebookUrl: facebookUrl || undefined,
+    sourceUrl: el.type && ['node', 'way', 'relation'].includes(el.type) && Number.isSafeInteger(el.id) && el.id! > 0
+      ? `https://www.openstreetmap.org/${el.type}/${el.id}` : undefined,
     category: t.shop ?? t.amenity ?? t.craft,
   }
 }

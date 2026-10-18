@@ -4,12 +4,12 @@ import { Provider, ProviderError } from './provider'
 const FIELD_MASK = [
   'places.displayName', 'places.formattedAddress', 'places.nationalPhoneNumber',
   'places.websiteUri', 'places.rating', 'places.userRatingCount', 'places.primaryTypeDisplayName',
-  'nextPageToken',
+  'places.googleMapsUri', 'nextPageToken',
 ].join(',')
 
 interface GooglePlace {
   displayName?: { text?: string }; formattedAddress?: string; nationalPhoneNumber?: string
-  websiteUri?: string; rating?: number; userRatingCount?: number; primaryTypeDisplayName?: { text?: string }
+  googleMapsUri?: string; websiteUri?: string; rating?: number; userRatingCount?: number; primaryTypeDisplayName?: { text?: string }
 }
 
 export function createGooglePlacesProvider(fetchFn: typeof fetch = fetch): Provider {
@@ -37,6 +37,7 @@ export function createGooglePlacesProvider(fetchFn: typeof fetch = fetch): Provi
           address: p.formattedAddress,
           phone: p.nationalPhoneNumber,
           website: p.websiteUri,
+          sourceUrl: p.googleMapsUri,
           rating: p.rating,
           reviewCount: p.userRatingCount,
           category: p.primaryTypeDisplayName?.text,

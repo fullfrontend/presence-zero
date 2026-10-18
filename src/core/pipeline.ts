@@ -86,7 +86,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
 
   const processBusiness = async (b: BusinessRow): Promise<void> => {
     try {
-      const sourceFacebook = (isFacebookUrl(b.listedWebsite) ? b.listedWebsite : null)
+      const sourceFacebook = b.facebookUrl ?? (isFacebookUrl(b.listedWebsite) ? b.listedWebsite : null)
       let website = b.listedWebsite ?? sourceFacebook
       let discoveryDetail = ''
       let searchNotFound = false
@@ -164,6 +164,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           id: randomUUID(), scanId, name: raw.name, address: raw.address, phone: raw.phone,
           category: raw.category, rating: raw.rating, reviewCount: raw.reviewCount,
           listedWebsite: raw.website,
+          facebookUrl: raw.facebookUrl ?? (isFacebookUrl(raw.website) ? raw.website : undefined),
+          sourceUrl: raw.sourceUrl,
           leadStatus: raw.closed ? ('skipped' as const) : ('new' as const),
         })))
       }

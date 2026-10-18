@@ -15,6 +15,8 @@ describe('google places provider', () => {
       name: "Joe's Bakery", phone: '(613) 555-0101', rating: 4.6, reviewCount: 80, category: 'Bakery',
     })
     expect(res.businesses[0].website).toBeUndefined()
+    expect(res.businesses[0].sourceUrl).toBe('https://maps.google.com/?cid=123')
+    expect((fetchFn as any).mock.calls[0][1].headers['X-Goog-FieldMask']).toContain('places.googleMapsUri')
     expect(res.nextCursor).toBe('page-2-token')
     const body = JSON.parse((fetchFn as any).mock.calls[0][1].body)
     expect(body.pageToken).toBe('tok-1')
