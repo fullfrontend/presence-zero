@@ -8,9 +8,15 @@ server:
   public_instance: false
   image_proxy: false
 search:
+  default_lang: "fr-BE"
   formats:
     - html
     - json
 outgoing:
   request_timeout: 8.0
   max_request_timeout: 10.0
+
+
+ui:
+  # Langue de l'interface graphique de SearXNG
+  default_locale: "fr"
