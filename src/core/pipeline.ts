@@ -94,11 +94,15 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       if ((!website || isFacebookUrl(website)) && discoverWebsite && !b.retried) {
         try {
           const discovery = await discoverWebsite({ name: b.name, address: b.address })
+          if (discovery.retryAfterMs && !discovery.website) {
+            throw new ProviderError(`SearXNG is rate limited or blocked by a CAPTCHA. Wait ${Math.ceil(discovery.retryAfterMs / 1000)} seconds before resuming. Progress is saved.`, true)
+          }
           discoveredWebsite = !!discovery.website
           website = discovery.website ?? website
           discoveryDetail = discovery.detail
           searchNotFound = discovery.outcome === 'not_found'
-        } catch {
+        } catch (err) {
+          if (err instanceof ProviderError) throw err
           discoveryDetail = 'Web search failed; website presence remains unverified.'
         }
         // Persist before probing so retries reuse the discovery instead of spending
@@ -143,7 +147,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       await db.update(businesses)
         .set({ presenceStatus: presence, probeDetail: outcome.detail, score, ...(found ? { phone: found } : {}) })
         .where(eq(businesses.id, b.id))
-    } catch {
+    } catch (err) {
+      if (err instanceof ProviderError) throw err
       await db.update(businesses)
         .set({
           presenceStatus: 'probe_failed', score: 0,
@@ -180,10 +185,12 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         .where(and(eq(businesses.scanId, scanId), isNull(businesses.presenceStatus)))
         .limit(batchSize)
       if (batch.length === 0) {
-        await update({ phase: 'retry', errorMessage: null })
+        await update({ phase: 'retry', status: 'running', errorMessage: null })
       } else {
-        for (const b of batch) await processBusiness(b)
-        await update({ totalProcessed: sql`${scans.totalProcessed} + ${batch.length}`, errorMessage: null })
+        for (const b of batch) {
+          await processBusiness(b)
+          await update({ totalProcessed: sql`${scans.totalProcessed} + 1`, status: 'running', errorMessage: null })
+        }
       }
     } else if (scan.phase === 'retry') {
       const batch = await db.select().from(businesses)
@@ -198,7 +205,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       } else {
         for (const b of batch) {
           await db.update(businesses).set({ retried: true }).where(eq(businesses.id, b.id))
-          await processBusiness(b)
+          await processBusiness({ ...b, retried: true })
         }
       }
     }

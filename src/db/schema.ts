@@ -59,3 +59,12 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 })
+
+
+export const searchThrottle = sqliteTable('search_throttle', {
+  key: text('key').primaryKey(),
+  nextAllowedAt: integer('next_allowed_at').notNull().default(0),
+  blockedUntil: integer('blocked_until').notNull().default(0),
+  leaseUntil: integer('lease_until').notNull().default(0),
+  owner: text('owner'),
+})

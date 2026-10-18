@@ -6,6 +6,7 @@ export interface WebsiteSearchInput {
 }
 
 export interface WebsiteSearchResult {
+  retryAfterMs?: number
   // Omission by an injected/legacy search is treated as inconclusive.
   outcome?: 'matched' | 'not_found' | 'inconclusive'
   website: string | null
@@ -97,7 +98,7 @@ function matchResults(hits: SearchHit[], input: WebsiteSearchInput, source: stri
 }
 
 /** The trusted operator configures this service URL; it is never taken from a lead. */
-export function createSearxngWebsiteSearch(baseUrl: string, fetchFn: typeof fetch = fetch) {
+export function createSearxngWebsiteSearch(baseUrl: string, fetchFn: typeof fetch = fetch, now: () => number = Date.now) {
   const endpoint = new URL(`${baseUrl.replace(/\/+$/, '')}/search`)
   if (!['http:', 'https:'].includes(endpoint.protocol) || endpoint.username || endpoint.password) {
     throw new Error('SEARXNG_URL must be an HTTP(S) URL without credentials.')
@@ -114,7 +115,15 @@ export function createSearxngWebsiteSearch(baseUrl: string, fetchFn: typeof fetc
         headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(12000),
         redirect: 'error',
       })
-      if (!res.ok) return { outcome: 'inconclusive', website: null, detail: `SearXNG unavailable (HTTP ${res.status}); website presence remains unverified.` }
+      if (!res.ok) {
+        const retry = res.headers.get('retry-after')
+        const seconds = retry ? Number(retry) : NaN
+        const retryAfterMs = Number.isFinite(seconds) ? Math.max(0, seconds * 1000)
+          : retry ? Math.max(0, Date.parse(retry) - now()) : 0
+        return { outcome: 'inconclusive', website: null,
+          ...([403, 429, 503].includes(res.status) ? { retryAfterMs: Number.isFinite(retryAfterMs) && retryAfterMs > 0 ? retryAfterMs : 300000 } : {}),
+          detail: `SearXNG unavailable (HTTP ${res.status}); website presence remains unverified.` }
+      }
       const data = await res.json() as {
         results?: Array<{ url: string; title: string; content?: string }>
         unresponsive_engines?: unknown[]
@@ -123,6 +132,9 @@ export function createSearxngWebsiteSearch(baseUrl: string, fetchFn: typeof fetc
       const result = matchResults(data.results.slice(0, 10).map(hit => ({
         url: hit.url, title: hit.title, description: hit.content,
       })), input, 'SearXNG')
+      if (data.unresponsive_engines?.some(engine => /captcha|too many|rate.?limit|access denied|\b429\b|suspended/i.test(JSON.stringify(engine)))) {
+        result.retryAfterMs = 300000
+      }
       if (!result.website && data.unresponsive_engines?.length) {
         result.outcome = 'inconclusive'
         result.detail = 'Some SearXNG engines were unavailable; website presence remains unverified.'

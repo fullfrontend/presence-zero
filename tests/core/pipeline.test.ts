@@ -430,3 +430,31 @@ it('preserves Facebook and source links when an independent website is discovere
     sourceUrl: 'https://www.openstreetmap.org/node/123', presenceStatus: 'alive',
   })
 })
+
+it('saves partial batch progress on a search block and resumes without recounting leads', async () => {
+  const db = await freshDb()
+  await insertScan(db)
+  await db.update(scans).set({ phase: 'process', totalFound: 2 })
+  await db.insert(businesses).values([
+    { id: 'first', scanId: 'scan1', name: 'First', address: '1 Main Street' },
+    { id: 'second', scanId: 'scan1', name: 'Second', address: '2 Main Street' },
+  ])
+  let blocked = true
+  const names: string[] = []
+  const d = deps(db, { discoverWebsite: async input => {
+    names.push(input.name)
+    return { website: null, outcome: 'not_found', detail: 'Search',
+      ...(input.name === 'Second' && blocked ? { retryAfterMs: 300000 } : {}) }
+  } })
+  const paused = await advanceScan('scan1', d)
+  expect(paused.status).toBe('paused')
+  expect(paused.totalProcessed).toBe(1)
+  expect(paused.errorMessage).toContain('Progress is saved')
+  const pending = (await db.select().from(businesses).where(eq(businesses.id, 'second')))[0]
+  expect(pending.presenceStatus).toBeNull()
+  blocked = false
+  const done = await runToCompletion(db, d)
+  expect(done.status).toBe('done')
+  expect(done.totalProcessed).toBe(2)
+  expect(names).toEqual(['First', 'Second', 'Second'])
+})

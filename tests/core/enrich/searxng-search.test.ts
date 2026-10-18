@@ -76,3 +76,15 @@ it('marks a completed search with only directories and social results as no webs
   ] }))
   expect((await search(business)).outcome).toBe('not_found')
 })
+
+it.each(['CAPTCHA', 'Too many requests', 'Access denied', 'suspended'])('detects upstream %s even on HTTP 200', async reason => {
+  const result = await createSearxngWebsiteSearch('http://searxng:8080', fake({ results: [], unresponsive_engines: [['duckduckgo', reason]] }))(business)
+  expect(result.outcome).toBe('inconclusive')
+  expect(result.retryAfterMs).toBe(300000)
+})
+
+it.each(['600', 'Thu, 01 Jan 1970 00:10:00 GMT'])('honors Retry-After %s', async header => {
+  const fetchFn = vi.fn<typeof fetch>().mockResolvedValue(new Response('', { status: 429, headers: { 'Retry-After': header } }))
+  const result = await createSearxngWebsiteSearch('http://searxng:8080', fetchFn, () => 0)(business)
+  expect(result.retryAfterMs).toBe(600000)
+})

@@ -1,3 +1,4 @@
+import { createSearchThrottle } from '@/core/enrich/search-throttle'
 import { createSearxngWebsiteSearch } from '@/core/enrich/website-search'
 import type { Db } from '@/db/client'
 import type { PipelineDeps } from '@/core/pipeline'
@@ -7,6 +8,18 @@ import { createApifyProvider, MAX_PLACES_CEILING } from '@/core/providers/apify'
 import { parseApifyMaxPlacesCeiling } from '@/server/validation'
 
 let registered = false
+
+function positiveMs(value: string | undefined, fallback: number): number {
+  const n = Number(value)
+  return Number.isFinite(n) && n >= 1 ? Math.min(Math.trunc(n), 3600000) : fallback
+}
+
+function searxngSearch(db: Db, url: string) {
+  const intervalMs = positiveMs(process.env.SEARXNG_MIN_INTERVAL_MS, 5000)
+  const cooldownMs = positiveMs(process.env.SEARXNG_COOLDOWN_MS, 300000)
+  const key = new URL(url).href.replace(/\/+$/, '')
+  return createSearchThrottle(db, key, { intervalMs, cooldownMs })(createSearxngWebsiteSearch(url))
+}
 
 export function buildPipelineDeps(db: Db): PipelineDeps {
   if (!registered) {
@@ -26,6 +39,6 @@ export function buildPipelineDeps(db: Db): PipelineDeps {
   return {
     db,
     ...(batchSize ? { batchSize } : {}),
-    ...(searxngUrl ? { discoverWebsite: createSearxngWebsiteSearch(searxngUrl) } : {}),
+    ...(searxngUrl ? { discoverWebsite: searxngSearch(db, searxngUrl) } : {}),
   }
 }

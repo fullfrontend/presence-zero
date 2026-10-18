@@ -208,7 +208,26 @@ SEARXNG_URL=http://127.0.0.1:8080
 ```
 
 Settings shows **SearXNG enabled**. Re-run a completed scan to use the new search.
-The search API accepts JSON because `docker/searxng/settings.yml` enables it.
+The launcher copies `docker/searxng/settings.example.yml` to
+`docker/searxng/settings.yml` on first use. Edit the latter for your language and
+engine preferences: it is ignored by Git and Docker builds, and subsequent launches
+preserve it. Restart SearXNG after editing it (command below). JSON output must stay enabled.
+
+Searches are serialized per SearXNG instance across scans and app workers sharing
+the database. `SEARXNG_MIN_INTERVAL_MS=5000` sets the minimum interval between
+request starts. CAPTCHA and rate-limit responses trigger a shared cooldown of at
+least `SEARXNG_COOLDOWN_MS=300000` (5 minutes), honoring longer `Retry-After` values.
+The same business is retried once after waiting. If it remains blocked, the scan
+pauses without marking that business as having no website; **Resume scan** continues
+from the saved progress. Successful businesses are saved and counted individually.
+A valid website returned by another engine is kept, while the cooldown still applies
+to subsequent requests. Ordinary engine failures remain unverified.
+
+These waits deliberately make scans longer. Keep the scan page open; use a
+long-running local/Docker server rather than a short-lived serverless request.
+The existing SQLite/libSQL database stores pacing and cooldown state across app
+restarts, so Redis is not required. Changing language alone cannot clear an upstream
+CAPTCHA; you can adjust enabled engines in your local settings file.
 The website probe retains its existing protection against private/internal URLs;
 only the operator-configured search service may be local.
 
