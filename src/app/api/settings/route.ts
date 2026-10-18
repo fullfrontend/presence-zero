@@ -12,7 +12,7 @@ export async function GET() {
   // Never return stored secret values — presence only.
   return Response.json({
     searxngEnabled: !!process.env.SEARXNG_URL?.trim(),
-    googleApiKey: has('google_api_key') ? MASK : null,
+    googleApiKey: process.env.GOOGLE_PLACES_API_KEY?.trim() || rows.some(r => r.key === 'google_api_key' && r.value.trim()) ? MASK : null,
     apifyToken: has('apify_token') ? MASK : null,
     braveSearchApiKey: has('brave_search_api_key') || process.env.BRAVE_SEARCH_API_KEY ? MASK : null,
   })

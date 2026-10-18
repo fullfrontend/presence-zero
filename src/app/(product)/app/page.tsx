@@ -1,6 +1,6 @@
-import { desc, inArray, sql } from 'drizzle-orm'
+import { desc, eq, inArray, sql } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { businesses, scans } from '@/db/schema'
+import { businesses, scans, settings } from '@/db/schema'
 import NewScanForm from '@/components/app/new-scan-form'
 import PastScans from '@/components/app/past-scans'
 import { SectionTag } from '@/components/brand/section-tag'
@@ -13,6 +13,9 @@ export default async function AppHome() {
   const configuredCountry = process.env.PRESENCEZERO_DEFAULT_COUNTRY_CODE?.trim().toLowerCase()
   const defaultCountryCode = configuredCountry && /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'be'
   const db = await getDb()
+  const storedGoogleKey = (await db.select({ value: settings.value }).from(settings)
+    .where(eq(settings.key, 'google_api_key')))[0]?.value
+  const hasGoogleKey = !!(process.env.GOOGLE_PLACES_API_KEY?.trim() || storedGoogleKey?.trim())
   const rows = await db.select().from(scans).orderBy(desc(scans.createdAt))
   const counts = await db.select({ scanId: businesses.scanId, leads: sql<number>`count(*)` })
     .from(businesses)
@@ -41,7 +44,7 @@ export default async function AppHome() {
         <SectionTag>{'// NEW SCAN'}</SectionTag>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Find businesses whose web presence is <span className="text-lime">zero</span>.</h1>
         <HeadlineRule />
-        <div className="mt-8"><NewScanForm defaultLocation={defaultLocation} defaultCountryCode={defaultCountryCode} /></div>
+        <div className="mt-8"><NewScanForm hasInitialGoogleKey={hasGoogleKey} defaultLocation={defaultLocation} defaultCountryCode={defaultCountryCode} /></div>
       </section>
       <section>
         <SectionTag>{'// PAST SCANS'}</SectionTag>

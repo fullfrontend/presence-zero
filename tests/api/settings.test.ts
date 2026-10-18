@@ -2,15 +2,17 @@
 // touches the real file DB (mirrors tests/db.test.ts).
 process.env.DATABASE_URL = ':memory:'
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { settings } from '@/db/schema'
 
 describe('settings API', () => {
+  afterEach(() => vi.unstubAllEnvs())
   // Each test starts from an empty settings table so assertions never depend
   // on execution order — the two secret keys are fixed strings, not per-test UUIDs.
   beforeEach(async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', '')
     const db = await getDb()
     await db.delete(settings)
   })
@@ -125,6 +127,22 @@ describe('settings API', () => {
       method: 'PUT', body: JSON.stringify({ braveSearchApiKey: '' }),
     }))
     expect((await (await route.GET()).json()).braveSearchApiKey).toBeNull()
+  })
+
+  it('recognizes an environment Google key without exposing it', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', 'environment-secret')
+    const route = await import('@/app/api/settings/route')
+    const raw = await (await route.GET()).text()
+    expect(JSON.parse(raw).googleApiKey).toBe('***')
+    expect(raw).not.toContain('environment-secret')
+  })
+
+  it('ignores empty Google credentials', async () => {
+    vi.stubEnv('GOOGLE_PLACES_API_KEY', '   ')
+    const db = await getDb()
+    await db.insert(settings).values({ key: 'google_api_key', value: '   ' })
+    const route = await import('@/app/api/settings/route')
+    expect((await (await route.GET()).json()).googleApiKey).toBeNull()
   })
 
 })

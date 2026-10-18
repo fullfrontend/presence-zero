@@ -35,12 +35,13 @@ function writeLastScan(data: LastScan) {
   }
 }
 
-export default function NewScanForm({ defaultLocation, defaultCountryCode }: {
+export default function NewScanForm({ defaultLocation, defaultCountryCode, hasInitialGoogleKey }: {
+  hasInitialGoogleKey: boolean
   defaultLocation: string
   defaultCountryCode: string
 }) {
   const router = useRouter()
-  const [provider, setProvider] = useState<'google' | 'osm' | 'csv' | 'apify'>('osm')
+  const [provider, setProvider] = useState<'google' | 'osm' | 'csv' | 'apify'>(hasInitialGoogleKey ? 'google' : 'osm')
   const [location, setLocation] = useState(defaultLocation)
   const [category, setCategory] = useState('')
   const [countryCode, setCountryCode] = useState(defaultCountryCode)
@@ -49,7 +50,7 @@ export default function NewScanForm({ defaultLocation, defaultCountryCode }: {
   const [hasApifyToken, setHasApifyToken] = useState<boolean | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const [hasGoogleKey, setHasGoogleKey] = useState<boolean | null>(null)
+  const [hasGoogleKey, setHasGoogleKey] = useState<boolean | null>(hasInitialGoogleKey)
   const [lastScan, setLastScan] = useState<LastScan | null>(() => {
     if (typeof window === 'undefined') return null
     return readLastScan()
