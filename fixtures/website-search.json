@@ -1,0 +1,9 @@
+{
+  "web": {
+    "results": [
+      {"title":"Chez Léon — Brussels", "url":"https://chezleon.example/brussels", "description":"Rue des Bouchers 18, 1000 Brussels, Belgium"},
+      {"title":"Chez Léon — directory", "url":"https://directory.example/chez-leon", "description":"Route de Philippeville 102, 6280 Gerpinnes, Belgium"},
+      {"title":"Chez Léon — Restaurant", "url":"https://chez-leon.example/contact", "description":"Bienvenue chez Léon", "extra_snippets":["Route de Philippeville 102, 6280 Gerpinnes, Belgique"]}
+    ]
+  }
+}

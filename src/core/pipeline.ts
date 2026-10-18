@@ -9,14 +9,16 @@ import { generateDomainCandidates } from './probes/domains'
 import { createRdapChecker } from './probes/rdap'
 import { createDrizzleRdapCache } from './probes/rdap-cache-store'
 import { createGooglePhoneLookup } from './enrich/google-phone'
+import { createWebsiteSearch, type WebsiteSearchInput, type WebsiteSearchResult } from './enrich/website-search'
 import { computeScore } from './scoring'
 import type { PresenceStatus, ProviderConfig, ScanArea } from './types'
 
-export type SecretName = 'google_api_key' | 'apify_token'
+export type SecretName = 'google_api_key' | 'apify_token' | 'brave_search_api_key'
 
 const ENV_BY_SECRET: Record<SecretName, string> = {
   google_api_key: 'GOOGLE_PLACES_API_KEY',
   apify_token: 'APIFY_TOKEN',
+  brave_search_api_key: 'BRAVE_SEARCH_API_KEY',
 }
 
 export interface PipelineDeps {
@@ -26,6 +28,7 @@ export interface PipelineDeps {
   checkDomain?: (domain: string) => Promise<boolean | null>
   getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
+  discoverWebsite?: (input: WebsiteSearchInput) => Promise<WebsiteSearchResult>
   batchSize?: number
 }
 
@@ -70,6 +73,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   }
   const apiKey = await readSecret('google_api_key')
   const apifyToken = await readSecret('apify_token')
+  const braveKey = await readSecret('brave_search_api_key')
+  const discoverWebsite = deps.discoverWebsite ?? (braveKey ? createWebsiteSearch(braveKey) : undefined)
   const enrichPhone = deps.enrichPhone ?? (apiKey ? createGooglePhoneLookup(apiKey) : async () => null)
 
   const area: ScanArea = { location: scan.location, category: scan.category, countryCode: scan.countryCode }
@@ -80,9 +85,25 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
 
   const processBusiness = async (b: BusinessRow): Promise<void> => {
     try {
-      const outcome: { status: PresenceStatus; detail: string } = b.listedWebsite
-        ? await probe(b.listedWebsite)
-        : { status: 'none', detail: 'No website was listed on the source listing.' }
+      let website = b.listedWebsite
+      let discoveryDetail = ''
+      if (!website && discoverWebsite && !b.retried) {
+        try {
+          const discovery = await discoverWebsite({ name: b.name, address: b.address })
+          website = discovery.website
+          discoveryDetail = discovery.detail
+        } catch {
+          discoveryDetail = 'Web search failed; website presence remains unverified.'
+        }
+        // Persist before probing so retries reuse the discovery instead of spending
+        // another search request. No result is ever interpreted as confirmed absence.
+        await db.update(businesses).set({ listedWebsite: website, probeDetail: discoveryDetail })
+          .where(eq(businesses.id, b.id))
+      }
+      const outcome: { status: PresenceStatus; detail: string } = website
+        ? await probe(website)
+        : { status: 'none', detail: 'No website was listed on the source listing. Website presence is unverified.' }
+      if (discoveryDetail) outcome.detail = `${discoveryDetail} ${outcome.detail}`
       const presence = outcome.status
       let exactComAvailable = false
       if (presence !== 'alive') {

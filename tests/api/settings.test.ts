@@ -19,7 +19,7 @@ describe('settings API', () => {
     const route = await import('@/app/api/settings/route')
     const res = await route.GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ googleApiKey: null, apifyToken: null })
+    expect(await res.json()).toEqual({ searxngEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
   })
 
   it('GET masks a stored secret and never leaks the raw value in the response body', async () => {
@@ -36,7 +36,7 @@ describe('settings API', () => {
     expect(raw).not.toContain(SENTINEL)
 
     const body = JSON.parse(raw)
-    expect(body).toEqual({ googleApiKey: '***', apifyToken: null })
+    expect(body).toEqual({ searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only googleApiKey stores it (backward-compat shape from the settings form)', async () => {
@@ -49,7 +49,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ googleApiKey: '***', apifyToken: null })
+    expect(await getRes.json()).toEqual({ searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only apifyToken stores it', async () => {
@@ -62,7 +62,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ googleApiKey: null, apifyToken: '***' })
+    expect(await getRes.json()).toEqual({ searxngEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
   })
 
   it('PUT with both stores each value under the exact settings table keys the pipeline reads', async () => {
@@ -110,4 +110,21 @@ describe('settings API', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0].value).toBe('second-value')
   })
+  it('stores, masks and removes the optional search key', async () => {
+    const route = await import('@/app/api/settings/route')
+    const save = await route.PUT(new Request('http://t', {
+      method: 'PUT', body: JSON.stringify({ braveSearchApiKey: 'search-secret' }),
+    }))
+    expect(save.status).toBe(200)
+    const raw = await (await route.GET()).text()
+    expect(raw).not.toContain('search-secret')
+    expect(JSON.parse(raw).braveSearchApiKey).toBe('***')
+    const db = await getDb()
+    expect((await db.select().from(settings).where(eq(settings.key, 'brave_search_api_key')))[0].value).toBe('search-secret')
+    await route.PUT(new Request('http://t', {
+      method: 'PUT', body: JSON.stringify({ braveSearchApiKey: '' }),
+    }))
+    expect((await (await route.GET()).json()).braveSearchApiKey).toBeNull()
+  })
+
 })

@@ -293,3 +293,42 @@ describe('pipeline', () => {
     expect(byId.get('p3')!.probeDetail).toMatch(/^The check itself failed\.$/)
   })
 })
+
+
+describe('website discovery in the pipeline', () => {
+  it('discovers and probes missing websites before scoring, leaving supplied sites alone', async () => {
+    const db = await freshDb()
+    await insertScan(db)
+    const lookedUp: string[] = []
+    await runToCompletion(db, deps(db, {
+      discoverWebsite: async input => {
+        lookedUp.push(input.name)
+        return { website: 'https://joes.example', detail: 'Discovered via search.' }
+      },
+    }))
+    expect(lookedUp).toEqual(["Joe's Bakery"])
+    const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
+    expect(joe.listedWebsite).toBe('https://joes.example')
+    expect(joe.presenceStatus).toBe('alive')
+    expect(joe.score).toBe(0)
+    expect(joe.probeDetail).toContain('Discovered via search')
+    expect(await db.select().from(domainCandidates).where(eq(domainCandidates.businessId, joe.id))).toHaveLength(0)
+  })
+
+  it('keeps an inconclusive search unverified and completes despite a search failure', async () => {
+    for (const fails of [false, true]) {
+      const db = await freshDb()
+      await insertScan(db)
+      const result = await runToCompletion(db, deps(db, {
+        discoverWebsite: async () => {
+          if (fails) throw new Error('offline')
+          return { website: null, detail: 'No unambiguous match.' }
+        },
+      }))
+      expect(result.status).toBe('done')
+      const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
+      expect(joe.presenceStatus).toBe('none')
+      expect(joe.probeDetail).toContain('unverified')
+    }
+  })
+})

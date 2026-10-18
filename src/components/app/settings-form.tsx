@@ -3,16 +3,21 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/brand/button'
 
 export default function SettingsForm() {
+  const [searxngEnabled, setSearxngEnabled] = useState(false)
   const [hasKey, setHasKey] = useState(false)
   const [hasToken, setHasToken] = useState(false)
   const [key, setKey] = useState('')
   const [token, setToken] = useState('')
+  const [braveKey, setBraveKey] = useState('')
+  const [hasBraveKey, setHasBraveKey] = useState(false)
   const [saved, setSaved] = useState(false)
 
   useEffect(() => {
     void fetch('/api/settings').then(r => r.json()).then(d => {
+      setSearxngEnabled(!!d.searxngEnabled)
       setHasKey(!!d.googleApiKey)
       setHasToken(!!d.apifyToken)
+      setHasBraveKey(!!d.braveSearchApiKey)
     })
   }, [])
 
@@ -21,12 +26,22 @@ export default function SettingsForm() {
     const payload: Record<string, string> = {}
     if (key) payload.googleApiKey = key
     if (token) payload.apifyToken = token
+    if (braveKey) payload.braveSearchApiKey = braveKey
     if (Object.keys(payload).length === 0) return
     const res = await fetch('/api/settings', { method: 'PUT', body: JSON.stringify(payload) })
     if (!res.ok) return
     setSaved(true)
+    if (braveKey) { setHasBraveKey(true); setBraveKey('') }
     if (key) { setHasKey(true); setKey('') }
     if (token) { setHasToken(true); setToken('') }
+  }
+
+  async function removeBraveKey() {
+    const res = await fetch('/api/settings', { method: 'PUT', body: JSON.stringify({ braveSearchApiKey: '' }) })
+    if (!res.ok) return
+    const current = await fetch('/api/settings').then(r => r.json())
+    setHasBraveKey(!!current.braveSearchApiKey)
+    setBraveKey('')
   }
 
   const label = 'block font-mono text-sm'
@@ -56,8 +71,36 @@ export default function SettingsForm() {
           Optional — only for the Apify data source. Stored in your own database and sent only to Apify. If APIFY_TOKEN is set in the environment, it takes precedence. Apify&rsquo;s free plan renews $5 of credit each month (~1,250 places); scans stop when it runs out.
         </p>
       </div>
+      <div className="rounded-md border border-line p-4 text-sm">
+        <p className="font-medium">Website discovery · {searxngEnabled ? 'SearXNG enabled' : 'SearXNG not configured'}</p>
+        <p className="mt-2 text-xs text-mute">
+          {searxngEnabled
+            ? 'Uses your SearXNG instance without an API key. SearXNG takes priority over Brave, with no automatic paid fallback. Re-run completed scans to search for missing websites.'
+            : 'For free self-hosted search, start the Docker setup and configure SEARXNG_URL. No search API key is needed.'}
+        </p>
+      </div>
+      <div>
+        <label className={label} htmlFor="brave-search-key">
+          Brave Search API key
+          {hasBraveKey && <span className="ml-2 text-lime">(a key is configured)</span>}
+        </label>
+        <input id="brave-search-key" type="password" className={input} value={braveKey}
+          autoComplete="off" onChange={e => { setBraveKey(e.target.value); setSaved(false) }} />
+        <p className="mt-2 text-mute text-xs">
+          Optional alternative when SearXNG is not configured — saving a key enables automatic website discovery for businesses without a listed website,
+          across all sources. One search per business with an address, using its name and address.
+          Matches require name and address evidence; uncertain results remain unverified.
+          Existing completed scans must be rerun. BRAVE_SEARCH_API_KEY takes precedence.
+        </p>
+        {hasBraveKey && <button type="button" onClick={removeBraveKey} className="mt-2 text-xs text-lime underline">Remove saved search key</button>}
+        <p className="mt-2 text-mute text-xs">To disable Brave discovery, remove the saved key and unset BRAVE_SEARCH_API_KEY if configured.</p>
+        <p className="mt-2 text-mute text-xs">
+          Powered by <a href="https://brave.com/search/api/" target="_blank" rel="noreferrer" className="text-lime underline">Brave Search API</a>.
+          {' '}Uses your own account and quota. Set your spending limit in Brave to stay within your free credits.
+        </p>
+      </div>
       <div className="flex items-center gap-3">
-        <Button disabled={!key && !token}>Save</Button>
+        <Button disabled={!key && !token && !braveKey}>Save</Button>
         {saved && <span className="text-lime text-sm">Saved.</span>}
       </div>
     </form>

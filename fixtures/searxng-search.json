@@ -1,0 +1,9 @@
+{
+  "query": "Chez Léon Route de Philippeville 102, 6280 Gerpinnes, Belgium official website",
+  "results": [
+    {"title":"Chez Léon — Brussels", "url":"https://chezleon.example/brussels", "content":"Rue des Bouchers 18, 1000 Brussels, Belgium"},
+    {"title":"Chez Léon — directory", "url":"https://directory.example/chez-leon", "content":"Route de Philippeville 102, 6280 Gerpinnes, Belgium"},
+    {"title":"Chez Léon — Restaurant", "url":"https://chez-leon.example/contact", "content":"Route de Philippeville 102, 6280 Gerpinnes, Belgique"}
+  ],
+  "unresponsive_engines": []
+}

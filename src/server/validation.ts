@@ -50,7 +50,8 @@ export const patchScanSchema = z.object({
 export const putSettingsSchema = z.object({
   googleApiKey: z.string().min(1).optional(),
   apifyToken: z.string().min(1).optional(),
-}).refine(d => d.googleApiKey !== undefined || d.apifyToken !== undefined, { message: 'nothing to update' })
+  braveSearchApiKey: z.string().trim().optional(),
+}).refine(d => d.googleApiKey !== undefined || d.apifyToken !== undefined || d.braveSearchApiKey !== undefined, { message: 'nothing to update' })
 
 export const resultsQuerySchema = z.object({
   minScore: z.coerce.number().int().min(0).max(100).optional(),

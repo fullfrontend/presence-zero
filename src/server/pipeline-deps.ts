@@ -1,3 +1,4 @@
+import { createSearxngWebsiteSearch } from '@/core/enrich/website-search'
 import type { Db } from '@/db/client'
 import type { PipelineDeps } from '@/core/pipeline'
 import { registerBuiltInProviders } from '@/core/providers'
@@ -21,5 +22,10 @@ export function buildPipelineDeps(db: Db): PipelineDeps {
   }
   const envBatch = Number(process.env.PRESENCEZERO_BATCH_SIZE)
   const batchSize = Number.isFinite(envBatch) && envBatch > 0 ? envBatch : undefined
-  return { db, ...(batchSize ? { batchSize } : {}) }
+  const searxngUrl = process.env.SEARXNG_URL?.trim()
+  return {
+    db,
+    ...(batchSize ? { batchSize } : {}),
+    ...(searxngUrl ? { discoverWebsite: createSearxngWebsiteSearch(searxngUrl) } : {}),
+  }
 }
