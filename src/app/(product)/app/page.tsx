@@ -9,6 +9,9 @@ import { HeadlineRule } from '@/components/brand/headline-rule'
 export const dynamic = 'force-dynamic'
 
 export default async function AppHome() {
+  const defaultLocation = process.env.PRESENCEZERO_DEFAULT_LOCATION?.trim() ?? 'Charleroi, Belgique'
+  const configuredCountry = process.env.PRESENCEZERO_DEFAULT_COUNTRY_CODE?.trim().toLowerCase()
+  const defaultCountryCode = configuredCountry && /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'be'
   const db = await getDb()
   const rows = await db.select().from(scans).orderBy(desc(scans.createdAt))
   const counts = await db.select({ scanId: businesses.scanId, leads: sql<number>`count(*)` })
@@ -38,7 +41,7 @@ export default async function AppHome() {
         <SectionTag>{'// NEW SCAN'}</SectionTag>
         <h1 className="mt-3 text-3xl font-semibold tracking-tight">Find businesses whose web presence is <span className="text-lime">zero</span>.</h1>
         <HeadlineRule />
-        <div className="mt-8"><NewScanForm /></div>
+        <div className="mt-8"><NewScanForm defaultLocation={defaultLocation} defaultCountryCode={defaultCountryCode} /></div>
       </section>
       <section>
         <SectionTag>{'// PAST SCANS'}</SectionTag>

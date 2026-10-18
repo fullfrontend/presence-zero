@@ -35,12 +35,15 @@ function writeLastScan(data: LastScan) {
   }
 }
 
-export default function NewScanForm() {
+export default function NewScanForm({ defaultLocation, defaultCountryCode }: {
+  defaultLocation: string
+  defaultCountryCode: string
+}) {
   const router = useRouter()
   const [provider, setProvider] = useState<'google' | 'osm' | 'csv' | 'apify'>('osm')
-  const [location, setLocation] = useState('')
+  const [location, setLocation] = useState(defaultLocation)
   const [category, setCategory] = useState('')
-  const [countryCode, setCountryCode] = useState('us')
+  const [countryCode, setCountryCode] = useState(defaultCountryCode)
   const [csvContent, setCsvContent] = useState('')
   const [maxPlaces, setMaxPlaces] = useState(50)
   const [hasApifyToken, setHasApifyToken] = useState<boolean | null>(null)
@@ -147,7 +150,7 @@ export default function NewScanForm() {
       )}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <label className={label}>Location
-          <input className={input} value={location} onChange={e => setLocation(e.target.value)} placeholder="Ottawa, ON" required />
+          <input className={input} value={location} onChange={e => setLocation(e.target.value)} placeholder="Charleroi, Belgique" required />
         </label>
         <label className={label}>Category
           {provider === 'osm' ? (
@@ -162,7 +165,7 @@ export default function NewScanForm() {
           )}
         </label>
         <label className={label}>Country code
-          <input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value)} maxLength={2} placeholder="us" required />
+          <input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value)} maxLength={2} placeholder="be" required />
         </label>
       </div>
       <div>
