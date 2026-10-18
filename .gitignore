@@ -53,3 +53,6 @@ CLAUDE.md
 tmp-demo-frames/
 .tmp-demo-record/
 .github/og-raw.png
+
+# Local SearXNG settings (created from the tracked example).
+/docker/searxng/settings.yml

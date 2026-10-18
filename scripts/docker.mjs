@@ -1,5 +1,5 @@
 import { randomBytes } from 'node:crypto'
-import { existsSync, writeFileSync } from 'node:fs'
+import { constants, copyFileSync, existsSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 
@@ -15,6 +15,10 @@ const commands = {
 if (!Object.hasOwn(commands, action)) {
   console.error('Usage: node scripts/docker.mjs up|search|down|config')
   process.exit(1)
+}
+const localSettings = fileURLToPath(new URL('../docker/searxng/settings.yml', import.meta.url))
+if (!existsSync(localSettings)) {
+  copyFileSync(fileURLToPath(new URL('../docker/searxng/settings.example.yml', import.meta.url)), localSettings, constants.COPYFILE_EXCL)
 }
 // Never overwrite an existing secret or print it to the console.
 if (!existsSync(config)) {

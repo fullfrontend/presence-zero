@@ -8,3 +8,5 @@ docs
 !.env.example
 *.db-*
 coverage
+
+docker/searxng/settings.yml
