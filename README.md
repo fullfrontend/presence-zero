@@ -139,3 +139,92 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: quality gates must pass (
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+
+### Optional automatic website discovery
+
+New scans default to **Charleroi, Belgique** (`be`). Set
+`PRESENCEZERO_DEFAULT_LOCATION` and `PRESENCEZERO_DEFAULT_COUNTRY_CODE` in `.env`
+to change the initial form values. Restart the app after changing the environment
+(or recreate the app container); no image rebuild is needed for these settings.
+A missing website in OSM or
+Google Places means **unverified**, not confirmed absence of a website.
+
+Add a **Brave Search API** key in Settings or set `BRAVE_SEARCH_API_KEY` to enable
+complementary searches for businesses with no listed website. Powered by
+[Brave Search API](https://brave.com/search/api/), using your own account. Set your
+Brave spending limit to stay within your free credits. Each eligible business
+uses one search request with its name and address (8-second request timeout).
+No search is made for a business that already has a website or lacks an address.
+
+Discovery conservatively requires a branded hostname, matching business name,
+and street/building number/locality evidence in the search snippets. Multiple
+matching hostnames, missing evidence, directories, and search failures remain
+unverified. This heuristic can miss legitimate sites; it is not proof of ownership
+or of absence. A selected site passes through the existing SSRF-protected probe
+and scoring pipeline. Its discovery source is recorded in the presence tooltip.
+Live sites score zero and disappear from the leads-only view.
+
+Completed scans are snapshots: use **Rerun** after enabling discovery to create a
+fresh scan. Automated tests use synthetic search fixtures and never the network.
+
+### PresenceZero + SearXNG with Docker
+
+SearXNG provides complementary website search without a paid search API key.
+It uses upstream search engines, which may rate-limit requests or return incomplete
+results. Missing or ambiguous matches remain **UNVERIFIED**. SearXNG takes priority
+when `SEARXNG_URL` is set; failures never trigger an automatic fallback to Brave.
+
+**Run everything in Docker** (Docker Desktop / Docker Engine must be running):
+
+```bash
+npm run docker:up
+```
+
+Open PresenceZero at http://localhost:3000 and SearXNG at http://localhost:8080.
+Both ports bind only to localhost. The launcher creates a random SearXNG secret in
+`.env.docker` with restricted permissions, preserves it on later runs, and builds
+the app. This file is ignored by Git and excluded from Docker build context.
+You can set `PRESENCEZERO_PORT=3001` or `SEARXNG_PORT=8081` in `.env.docker` if needed.
+Compose passes optional settings from `.env` to the app, but overrides its database
+path and SearXNG address for the container network.
+
+Docker uses a **separate persistent database** in the `presencezero-data` volume.
+Your existing local `presencezero.db` and scans are untouched. Configure your Google
+or Apify keys in the Docker app if needed; OSM needs no key. Do not use `down -v`
+unless you intend to delete Docker's saved data.
+
+**Keep your existing local app and scans**, running only SearXNG in Docker:
+
+```bash
+npm run docker:search
+```
+
+Add this to your existing `.env` (adjust the port if you changed it), then restart
+`npm run dev`:
+
+```dotenv
+SEARXNG_URL=http://127.0.0.1:8080
+```
+
+Settings shows **SearXNG enabled**. Re-run a completed scan to use the new search.
+The search API accepts JSON because `docker/searxng/settings.yml` enables it.
+The website probe retains its existing protection against private/internal URLs;
+only the operator-configured search service may be local.
+
+**Operations**:
+
+```bash
+# Stop both services, preserving data
+npm run docker:down
+# SearXNG logs
+docker compose --env-file .env.docker logs --tail=100 searxng
+# After changing SearXNG settings
+docker compose --env-file .env.docker restart searxng
+# Check configuration without displaying secrets
+node scripts/docker.mjs config
+```
+
+The Compose file follows the official SearXNG image's `latest` channel. To update it,
+run `docker compose --env-file .env.docker pull searxng`, then `npm run docker:up`
+(or `npm run docker:search` for local development).
