@@ -33,3 +33,11 @@ describe('buildExportQuery', () => {
     expect(buildExportQuery({ minScore: 0, leadsOnly: false })).toBe('')
   })
 })
+
+it('includes Facebook in leads-only results and exports', () => {
+  expect(matchesResultFilters(row({ presenceStatus: 'facebook', score: 70 }), { leadsOnly: true })).toBe(true)
+})
+
+it('includes no-site-found leads in results and exports', () => {
+  expect(matchesResultFilters(row({ presenceStatus: 'not_found' }), { leadsOnly: true })).toBe(true)
+})

@@ -1,3 +1,4 @@
+import { isFacebookUrl } from '../probes/facebook'
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
 import { CATEGORY_TAGS, SUPPORTED_OSM_CATEGORIES, resolveOsmCategory } from './osm-categories'
@@ -9,12 +10,17 @@ interface OverpassElement { tags?: Record<string, string> }
 function toBusiness(el: OverpassElement): RawBusiness | null {
   const t = el.tags ?? {}
   if (!t.name) return null
-  const address = [t['addr:housenumber'], t['addr:street'], t['addr:city']].filter(Boolean).join(' ') || undefined
+  const street = [t['addr:housenumber'], t['addr:street']].filter(Boolean).join(' ')
+  const locality = [t['addr:postcode'], t['addr:city']].filter(Boolean).join(' ')
+  const address = [street, locality].filter(Boolean).join(', ') || undefined
+  const facebook = t['contact:facebook'] ?? t.facebook
+  const facebookUrl = facebook && (isFacebookUrl(facebook) ? facebook
+    : /^[a-zA-Z0-9._-]+$/.test(facebook) ? `https://www.facebook.com/${facebook}` : undefined)
   return {
     name: t.name,
     address,
     phone: t.phone ?? t['contact:phone'] ?? t['contact:mobile'],
-    website: t.website ?? t['contact:website'],
+    website: t.website?.trim() || t['contact:website']?.trim() || facebookUrl,
     category: t.shop ?? t.amenity ?? t.craft,
   }
 }

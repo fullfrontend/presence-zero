@@ -3,15 +3,15 @@ import { computeScore, explainScore } from '@/core/scoring'
 
 describe('computeScore', () => {
   it('hot lead: no site, 80 reviews, 4.6 rating, exact domain free, phone listed = 100', () => {
-    expect(computeScore({ presence: 'none', reviewCount: 80, rating: 4.6, exactComAvailable: true, hasPhone: true })).toBe(100)
+    expect(computeScore({ presence: 'not_found', reviewCount: 80, rating: 4.6, exactComAvailable: true, hasPhone: true })).toBe(100)
   })
   it('cool lead: no site, 3 reviews, no rating, no domain, no phone', () => {
     // 40 + round(3/50*25)=2 → 42
-    expect(computeScore({ presence: 'none', reviewCount: 3, rating: null, exactComAvailable: false, hasPhone: false })).toBe(42)
+    expect(computeScore({ presence: 'not_found', reviewCount: 3, rating: null, exactComAvailable: false, hasPhone: false })).toBe(42)
   })
   it('parked site scores lower than dead which is lower than none', () => {
     const base = { reviewCount: 0, rating: null, exactComAvailable: false, hasPhone: false }
-    const none = computeScore({ ...base, presence: 'none' })
+    const none = computeScore({ ...base, presence: 'not_found' })
     const dead = computeScore({ ...base, presence: 'dead' })
     const parked = computeScore({ ...base, presence: 'parked' })
     expect(none).toBeGreaterThan(dead)
@@ -23,8 +23,8 @@ describe('computeScore', () => {
     expect(computeScore({ ...base, presence: 'probe_failed' })).toBe(0)
   })
   it('review points cap at 50 reviews', () => {
-    const at50 = computeScore({ presence: 'none', reviewCount: 50, rating: null, exactComAvailable: false, hasPhone: false })
-    const at500 = computeScore({ presence: 'none', reviewCount: 500, rating: null, exactComAvailable: false, hasPhone: false })
+    const at50 = computeScore({ presence: 'not_found', reviewCount: 50, rating: null, exactComAvailable: false, hasPhone: false })
+    const at500 = computeScore({ presence: 'not_found', reviewCount: 500, rating: null, exactComAvailable: false, hasPhone: false })
     expect(at50).toBe(65) // 40 + 25
     expect(at500).toBe(at50)
   })
@@ -32,13 +32,13 @@ describe('computeScore', () => {
 
 describe('explainScore', () => {
   it('factors sum to computeScore for a full lead', () => {
-    const input = { presence: 'none', reviewCount: 200, rating: 4.7, exactComAvailable: true, hasPhone: true } as const
+    const input = { presence: 'not_found', reviewCount: 200, rating: 4.7, exactComAvailable: true, hasPhone: true } as const
     const ex = explainScore(input)
     expect(ex.total).toBe(computeScore(input))
     expect(ex.factors.reduce((s, f) => s + f.points, 0)).toBe(ex.total)
   })
   it('reconciles the exactDomain factor to a supplied total', () => {
-    const input = { presence: 'none', reviewCount: 200, rating: 4.7, exactComAvailable: false, hasPhone: true } as const
+    const input = { presence: 'not_found', reviewCount: 200, rating: 4.7, exactComAvailable: false, hasPhone: true } as const
     const total = computeScore({ ...input, exactComAvailable: true })
     const ex = explainScore(input, { total })
     const dom = ex.factors.find(f => f.key === 'exactDomain')!
@@ -49,7 +49,7 @@ describe('explainScore', () => {
   })
   it('reconciliation clamps a residual into the exactDomain range', () => {
     // total below the sum of unambiguous factors → exactDomain clamps to 0, never negative
-    const input = { presence: 'none', reviewCount: 50, rating: 5, exactComAvailable: true, hasPhone: true } as const
+    const input = { presence: 'not_found', reviewCount: 50, rating: 5, exactComAvailable: true, hasPhone: true } as const
     const ex = explainScore(input, { total: 60 })
     const dom = ex.factors.find(f => f.key === 'exactDomain')!
     expect(dom.points).toBeGreaterThanOrEqual(0)
@@ -73,4 +73,21 @@ describe('explainScore', () => {
     expect(byKey.phone.hit).toBe(false)
     expect(ex.factors.map(f => f.key)).toEqual(['presence', 'reviews', 'rating', 'exactDomain', 'phone'])
   })
+})
+
+it('scores Facebook distinctly from absent and live sites, with a consistent breakdown', () => {
+  const base = { reviewCount: 50, rating: 5, exactComAvailable: true, hasPhone: true }
+  const explanation = explainScore({ ...base, presence: 'facebook' })
+  expect(explanation.total).toBe(85)
+  expect(explanation.factors[0].points).toBe(25)
+  expect(explanation.factors.reduce((sum, factor) => sum + factor.points, 0)).toBe(85)
+  expect(explanation.total).toBeLessThan(computeScore({ ...base, presence: 'not_found' }))
+  expect(explanation.total).toBeGreaterThan(computeScore({ ...base, presence: 'alive' }))
+})
+
+it('orders no site found, Facebook, unverified and live presence with equal signals', () => {
+  const base = { reviewCount: 50, rating: 5, exactComAvailable: true, hasPhone: true }
+  const scores = (['not_found', 'facebook', 'none', 'alive'] as const)
+    .map(presence => computeScore({ ...base, presence }))
+  expect(scores).toEqual([100, 85, 75, 0])
 })

@@ -50,3 +50,18 @@ describe('website discovery', () => {
     }
   })
 })
+
+it('distinguishes a completed empty search from missing or inconclusive search data', async () => {
+  const search = (data: unknown) => createWebsiteSearch('secret', fetchResult(data))(business)
+  expect((await search({ web: { results: [] } })).outcome).toBe('not_found')
+  expect((await search({})).outcome).toBe('inconclusive')
+  expect((await search({ web: { results: [fixture.web.results[0]] } })).outcome).toBe('not_found')
+})
+
+it('does not count search-only Facebook or directories as an independent website', async () => {
+  const search = createWebsiteSearch('secret', fetchResult({ web: { results: [
+    fixture.web.results[1],
+    { ...fixture.web.results[2], url: 'https://www.facebook.com/chezleon' },
+  ] } }))
+  expect((await search(business)).outcome).toBe('not_found')
+})

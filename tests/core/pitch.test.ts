@@ -58,3 +58,10 @@ describe('generatePitch', () => {
     expect(p.suggestedDomain).toBeUndefined()
   })
 })
+
+it('suggests complementing Facebook without claiming an independent site is absent', () => {
+  const pitch = generatePitch({ name: 'Restaurant', presence: 'facebook' })
+  expect(pitch.headline).toContain('Facebook')
+  expect(pitch.angle).toContain('Check whether a separate website already exists')
+  expect(pitch.angle).not.toContain('already has a working site')
+})

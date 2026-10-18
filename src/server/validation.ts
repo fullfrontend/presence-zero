@@ -55,7 +55,7 @@ export const putSettingsSchema = z.object({
 
 export const resultsQuerySchema = z.object({
   minScore: z.coerce.number().int().min(0).max(100).optional(),
-  presence: z.enum(['none', 'alive', 'dead', 'parked', 'probe_failed']).optional(),
+  presence: z.enum(['not_found', 'none', 'facebook', 'alive', 'dead', 'parked', 'probe_failed']).optional(),
   leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']).optional(),
 })
 

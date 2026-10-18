@@ -30,7 +30,7 @@ const INPUT_CLS = 'w-36 rounded border border-line bg-surface px-2 py-1 text-xs 
 type SortDir = 'asc' | 'desc'
 type SortKey = 'score' | 'name' | 'presence' | 'domains' | 'phone' | 'status' | 'note'
 
-const PRESENCE_RANK: Record<string, number> = { none: 0, dead: 1, parked: 2, probe_failed: 3, alive: 4 }
+const PRESENCE_RANK: Record<string, number> = { not_found: 0, dead: 1, parked: 2, facebook: 3, none: 4, alive: 5, probe_failed: 6 }
 const STATUS_RANK: Record<string, number> = { new: 0, contacted: 1, replied: 2, won: 3, lost: 4, skipped: 5 }
 
 interface Column {
@@ -60,7 +60,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="presence"]',
     title: 'Web presence',
-    body: 'How reachable the business’s site is. The dot encodes lead quality: solid lime = UNVERIFIED (no site supplied by the source — needs verification), ring = DEAD, half = PARKED. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
+    body: 'How reachable the business’s site is. The dot encodes lead quality: NO SITE FOUND = no results after search, FACEBOOK = social presence, UNVERIFIED = incomplete or inconclusive verification. DEAD and PARKED remain separate website problems. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
   },
   {
     selector: '[data-tour="domains"]',

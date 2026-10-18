@@ -62,3 +62,17 @@ describe('SearXNG website discovery', () => {
     expect(() => createSearxngWebsiteSearch('http://user:password@example.com')).toThrow()
   })
 })
+
+it('only marks an empty search as not found when upstream engines completed', async () => {
+  const search = (data: unknown) => createSearxngWebsiteSearch('http://searxng:8080', fake(data))(business)
+  expect((await search({ results: [], unresponsive_engines: [] })).outcome).toBe('not_found')
+  expect((await search({ results: [], unresponsive_engines: [['google', 'timeout']] })).outcome).toBe('inconclusive')
+  expect((await search({})).outcome).toBe('inconclusive')
+})
+
+it('marks a completed search with only directories and social results as no website found', async () => {
+  const search = createSearxngWebsiteSearch('http://searxng:8080', fake({ results: [
+    fixture.results[1], { ...fixture.results[2], url: 'https://www.facebook.com/chezleon' },
+  ] }))
+  expect((await search(business)).outcome).toBe('not_found')
+})

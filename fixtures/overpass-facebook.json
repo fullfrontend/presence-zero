@@ -1,0 +1,6 @@
+{"elements":[
+  {"tags":{"name":"Facebook contact","addr:housenumber":"1","addr:street":"Rue du Test","addr:postcode":"6000","addr:city":"Charleroi","contact:facebook":"https://www.facebook.com/restaurant"}},
+  {"tags":{"name":"Facebook handle","facebook":"restaurant.local"}},
+  {"tags":{"name":"Independent site","website":"https://restaurant.example","contact:facebook":"https://www.facebook.com/restaurant"}},
+  {"tags":{"name":"Invalid Facebook","contact:facebook":"https://example.com/facebook"}}
+]}

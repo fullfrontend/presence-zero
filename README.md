@@ -228,3 +228,25 @@ node scripts/docker.mjs config
 The Compose file follows the official SearXNG image's `latest` channel. To update it,
 run `docker compose --env-file .env.docker pull searxng`, then `npm run docker:up`
 (or `npm run docker:search` for local development).
+
+### Facebook presence
+
+A Facebook URL (including mobile links and redirects to Facebook) is classified
+as **FACEBOOK**, rather than a live independent website. These businesses remain
+in lead results and exports. The presence factor contributes **25 points**, versus
+40 when no site was found after search, 15 for unverified presence, and 0 for a live independent site; other score factors
+are unchanged (Facebook maximum: 85/100). Tune this in `scoring.config.ts`.
+When search is configured, a listed Facebook page also triggers a search for an
+independent website. An inconclusive search preserves the Facebook URL and status.
+Re-run existing scans to apply the new classification and scoring.
+
+
+Presence priority (with other scoring factors equal): **no site found → Facebook
+→ unverified website → live independent website**. Presence points are 40, 25,
+15 and 0 respectively. `not_found` means a completed search found no matching independent website,
+even if it returned directories, social profiles or unrelated results. It is not
+proof of absence. Facebook presence is taken from source listings (including OSM
+`contact:facebook` / `facebook` tags), never from search results. No search, missing data, ambiguous matches,
+errors or unavailable search engines remain `none` (the legacy code for
+**UNVERIFIED**). Dead and parked sites retain their separate diagnoses and weights.
+Re-run historical scans to refresh stored scores after changing these weights.

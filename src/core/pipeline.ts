@@ -1,3 +1,4 @@
+import { isFacebookUrl, FACEBOOK_DETAIL } from './probes/facebook'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
 import { randomUUID } from 'node:crypto'
@@ -85,13 +86,18 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
 
   const processBusiness = async (b: BusinessRow): Promise<void> => {
     try {
-      let website = b.listedWebsite
+      const sourceFacebook = (isFacebookUrl(b.listedWebsite) ? b.listedWebsite : null)
+      let website = b.listedWebsite ?? sourceFacebook
       let discoveryDetail = ''
-      if (!website && discoverWebsite && !b.retried) {
+      let searchNotFound = false
+      let discoveredWebsite = false
+      if ((!website || isFacebookUrl(website)) && discoverWebsite && !b.retried) {
         try {
           const discovery = await discoverWebsite({ name: b.name, address: b.address })
-          website = discovery.website
+          discoveredWebsite = !!discovery.website
+          website = discovery.website ?? website
           discoveryDetail = discovery.detail
+          searchNotFound = discovery.outcome === 'not_found'
         } catch {
           discoveryDetail = 'Web search failed; website presence remains unverified.'
         }
@@ -100,9 +106,21 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         await db.update(businesses).set({ listedWebsite: website, probeDetail: discoveryDetail })
           .where(eq(businesses.id, b.id))
       }
-      const outcome: { status: PresenceStatus; detail: string } = website
-        ? await probe(website)
-        : { status: 'none', detail: 'No website was listed on the source listing. Website presence is unverified.' }
+      const outcome: { status: PresenceStatus; detail: string } = isFacebookUrl(website)
+        ? { status: 'facebook', detail: FACEBOOK_DETAIL }
+        : website
+          ? await probe(website)
+          : { status: searchNotFound ? 'not_found' : 'none', detail: searchNotFound
+            ? 'No website found after search.'
+            : 'No website was listed on the source listing. Website presence is unverified.' }
+      if (discoveredWebsite && outcome.status === 'facebook') {
+        // Facebook evidence must come from the original listing, not web search.
+        outcome.status = isFacebookUrl(sourceFacebook) ? 'facebook' : 'not_found'
+        outcome.detail = isFacebookUrl(sourceFacebook) ? FACEBOOK_DETAIL
+          : 'The discovered URL leads to Facebook, not an independent website. Search-only Facebook results do not change lead potential.'
+        await db.update(businesses).set({ listedWebsite: b.listedWebsite })
+          .where(eq(businesses.id, b.id))
+      }
       if (discoveryDetail) outcome.detail = `${discoveryDetail} ${outcome.detail}`
       const presence = outcome.status
       let exactComAvailable = false

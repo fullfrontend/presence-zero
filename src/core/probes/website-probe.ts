@@ -1,3 +1,4 @@
+import { isFacebookUrl, FACEBOOK_DETAIL } from './facebook'
 import { lookup as dnsLookup } from 'node:dns/promises'
 import { isBlockedAddress } from './ip-guard'
 
@@ -10,7 +11,7 @@ const MAX_REDIRECTS = 5
 
 /** A presence verdict plus the human reason behind it. */
 export interface ProbeResult {
-  status: 'alive' | 'dead' | 'parked'
+  status: 'alive' | 'dead' | 'parked' | 'facebook'
   detail: string
 }
 
@@ -55,13 +56,14 @@ async function readBounded(res: Response, maxBytes: number): Promise<string> {
 }
 
 /**
- * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked`
+ * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked | facebook`
  * label plus the human-readable reason behind it.
  *
  * SSRF-hardened: only http(s) is fetched, redirects are followed manually, and
  * every hop's host is DNS-resolved and checked against private/loopback/link-local/
  * metadata ranges before any request. A blocked or malformed target is treated as
- * `dead` — the probe never widens its output surface beyond those three labels.
+ * `dead` — the probe returns only a status and explanation. Facebook destinations are
+ * classified without fetching the social page.
  *
  * Accepts either a positional `fetchFn` (with optional options) or an options object.
  */
@@ -88,6 +90,8 @@ export function createWebsiteProbe(
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
           return dead('Not an http or https address.')
         }
+
+        if (isFacebookUrl(target)) return { status: 'facebook', detail: FACEBOOK_DETAIL }
 
         let addresses: string[]
         try { addresses = await lookup(parsed.hostname) } catch {

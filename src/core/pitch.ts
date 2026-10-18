@@ -48,6 +48,23 @@ const GOOD_RATING = 4.0
  * never a mass-mail template (PresenceZero is a finder, not a spam tool).
  */
 export function generatePitch(i: PitchInput): Pitch {
+  if (i.presence === 'facebook') {
+    return {
+      headline: 'A Facebook presence to complement with an independent website.',
+      angle: `${i.name} lists a Facebook page. Check whether a separate website already exists before proposing a site that complements their social presence.`,
+      talkingPoints: ['An independent site can bring together services, contact details and booking information alongside Facebook.'],
+      ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
+    }
+  }
+  if (i.presence === 'not_found') {
+    return {
+      headline: 'No website found after search.',
+      angle: `The search found no website for ${i.name}. Confirm this with the business before offering to build one.`,
+      talkingPoints: ['A search with no results is not proof that the business has no website.'],
+      ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
+    }
+  }
+
   const isLead = i.presence === 'none' || i.presence === 'dead' || i.presence === 'parked'
   const who = i.category ? `This ${i.category}` : 'This business'
 

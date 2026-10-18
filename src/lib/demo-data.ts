@@ -6,7 +6,7 @@ export interface DemoResult {
   rating: number | null
   reviewCount: number | null
   listedWebsite: string | null
-  presenceStatus: 'none' | 'alive' | 'dead' | 'parked' | 'probe_failed'
+  presenceStatus: 'not_found' | 'none' | 'facebook' | 'alive' | 'dead' | 'parked' | 'probe_failed'
   probeDetail: string | null
   score: number | null
   leadStatus: 'new' | 'contacted' | 'replied' | 'won' | 'lost' | 'skipped'
@@ -16,7 +16,7 @@ export interface DemoResult {
 }
 
 // Scores below are self-consistent with src/core/scoring.ts (a test enforces it):
-// presence(none 40/dead 35/parked 30) + reviews(≤25) + rating(+10 if ≥4.0) + exactCom(+15) + phone(+10).
+// presence(unverified 15/dead 35/parked 30) + reviews(≤25) + rating(+10 if ≥4.0) + exactCom(+15) + phone(+10).
 export const DEMO_SCAN: { location: string; category: string; results: DemoResult[] } = {
   location: 'Ottawa, ON',
   category: 'bakery',
@@ -31,7 +31,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       listedWebsite: null,
       presenceStatus: 'none',
       probeDetail: 'No website listed on the source listing.',
-      score: 100, // 40 + 25 + 10 + 15 + 10
+      score: 75, // Includes 15 points for unverified presence
       leadStatus: 'new',
       note: null,
       domains: [
@@ -85,7 +85,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       listedWebsite: null,
       presenceStatus: 'none',
       probeDetail: 'No website listed on the source listing.',
-      score: 85, // 40 + 25 + 10 + 0 + 10
+      score: 60, // Includes 15 points for unverified presence
       leadStatus: 'contacted',
       note: null,
       domains: [
@@ -140,7 +140,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       listedWebsite: null,
       presenceStatus: 'none',
       probeDetail: 'No website listed on the source listing.',
-      score: 65, // 40 + 15 + 0 + 0 + 10
+      score: 40, // Includes 15 points for unverified presence
       leadStatus: 'new',
       note: null,
       domains: [
@@ -194,7 +194,7 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
       listedWebsite: null,
       presenceStatus: 'none',
       probeDetail: 'No website listed on the source listing.',
-      score: 45, // 40 + 5 + 0 + 0 + 0
+      score: 20, // Includes 15 points for unverified presence
       leadStatus: 'new',
       note: null,
       seenBefore: true,

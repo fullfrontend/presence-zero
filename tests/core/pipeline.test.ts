@@ -64,8 +64,8 @@ describe('pipeline', () => {
     const biz = await db.select().from(businesses).where(eq(businesses.scanId, 'scan1'))
     const joe = biz.find(b => b.name === "Joe's Bakery")!
     expect(joe.presenceStatus).toBe('none')
-    // none 40 + reviews 25 (80 capped) + rating 10 + exact domain 15 + phone 10 = 100
-    expect(joe.score).toBe(100)
+    // unverified 15 + reviews 25 + rating 10 + exact domain 15 + phone 10 = 75
+    expect(joe.score).toBe(75)
     expect(biz.find(b => b.name === 'Crusty Loaf')!.presenceStatus).toBe('alive')
     expect(biz.find(b => b.name === 'Dead Site Bikes')!.presenceStatus).toBe('dead')
 
@@ -331,4 +331,85 @@ describe('website discovery in the pipeline', () => {
       expect(joe.probeDetail).toContain('unverified')
     }
   })
+})
+
+it('treats Facebook as a separate lead and still searches for an independent site', async () => {
+  for (const discoveryOutcome of ['disabled', 'missing', 'failed', 'found'] as const) {
+    const db = await freshDb()
+    await insertScan(db)
+    const facebook = 'https://www.facebook.com/restaurant'
+    let searched = 0
+    const probed: string[] = []
+    await runToCompletion(db, deps(db, {
+      getProviderById: () => ({ id: 'mock', fetchPage: async () => ({
+        businesses: [{ name: 'Restaurant', website: facebook, address: 'Rue du Test 1, 6000 Charleroi', phone: '123' }], nextCursor: null,
+      }) }),
+      discoverWebsite: discoveryOutcome === 'disabled' ? undefined : async () => {
+        searched++
+        if (discoveryOutcome === 'failed') throw new Error('offline')
+        return { website: discoveryOutcome === 'found' ? 'https://restaurant.example' : null, detail: 'Search result.' }
+      },
+      probe: async url => { probed.push(url); return { status: 'alive', detail: 'Responded normally.' } },
+    }))
+    const row = (await db.select().from(businesses))[0]
+    expect(searched).toBe(discoveryOutcome === 'disabled' ? 0 : 1)
+    if (discoveryOutcome === 'found') {
+      expect(row.presenceStatus).toBe('alive')
+      expect(row.score).toBe(0)
+      expect(row.listedWebsite).toBe('https://restaurant.example')
+      expect(probed).toEqual(['https://restaurant.example'])
+    } else {
+      expect(row.presenceStatus).toBe('facebook')
+      expect(row.score).toBe(35) // 25 presence + 10 phone
+      expect(row.listedWebsite).toBe(facebook)
+      expect(row.probeDetail).toContain('Facebook')
+      expect(probed).toEqual([])
+      expect((await db.select().from(domainCandidates)).length).toBeGreaterThan(0)
+    }
+  }
+})
+
+it('distinguishes a completed search finding nothing from an inconclusive search', async () => {
+  for (const outcome of ['not_found', 'inconclusive'] as const) {
+    const db = await freshDb()
+    await insertScan(db)
+    await runToCompletion(db, deps(db, {
+      discoverWebsite: async () => ({ outcome, website: null, detail: 'Search completed.' }),
+    }))
+    const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
+    expect(joe.presenceStatus).toBe(outcome === 'not_found' ? 'not_found' : 'none')
+    expect(joe.score).toBe(outcome === 'not_found' ? 100 : 75)
+  }
+})
+
+it('ranks no listed site or Facebook above source Facebook with identical lead signals', async () => {
+  for (const website of [undefined, 'https://www.facebook.com/restaurant', 'https://restaurant.example']) {
+    const db = await freshDb()
+    await insertScan(db)
+    await runToCompletion(db, deps(db, {
+      getProviderById: () => ({ id: 'mock', fetchPage: async () => ({
+        businesses: [{ name: 'Restaurant', website }], nextCursor: null,
+      }) }),
+      discoverWebsite: async () => ({ outcome: 'not_found', website: null, detail: 'Only directories or social results.' }),
+      checkDomain: async () => false,
+    }))
+    const row = (await db.select().from(businesses))[0]
+    expect(row.presenceStatus).toBe(!website ? 'not_found' : website.includes('facebook') ? 'facebook' : 'alive')
+    expect(row.score).toBe(!website ? 40 : website.includes('facebook') ? 25 : 0)
+  }
+})
+
+it('does not lower lead potential for a search-discovered URL redirecting to Facebook', async () => {
+  const db = await freshDb()
+  await insertScan(db)
+  await runToCompletion(db, deps(db, {
+    getProviderById: () => ({ id: 'mock', fetchPage: async () => ({ businesses: [{ name: 'Restaurant' }], nextCursor: null }) }),
+    discoverWebsite: async () => ({ outcome: 'matched', website: 'https://restaurant.example', detail: 'Search match.' }),
+    probe: async () => ({ status: 'facebook', detail: 'Redirected to Facebook.' }),
+    checkDomain: async () => false,
+  }))
+  const row = (await db.select().from(businesses))[0]
+  expect(row.presenceStatus).toBe('not_found')
+  expect(row.listedWebsite).toBeNull()
+  expect(row.score).toBe(40)
 })

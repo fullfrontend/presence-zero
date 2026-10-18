@@ -33,7 +33,7 @@ describe('scan API flow', () => {
     expect(status).toBe('done')
 
     const resultsRoute = await import('@/app/api/scans/[id]/results/route')
-    const resultsRes = await resultsRoute.GET(new Request('http://t/api/x/results?minScore=50'), { params: Promise.resolve({ id }) })
+    const resultsRes = await resultsRoute.GET(new Request('http://t/api/x/results?minScore=0'), { params: Promise.resolve({ id }) })
     const { results } = await resultsRes.json()
     expect(results).toHaveLength(3)
     expect(results[0].name).toBe("Joe's Bakery")

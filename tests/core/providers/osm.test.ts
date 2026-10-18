@@ -99,3 +99,14 @@ describe('resolveOsmCategory', () => {
     expect(resolveOsmCategory('unicorns')).toBeNull()
   })
 })
+
+it('reads source Facebook tags when no independent website is listed', async () => {
+  const social = readFileSync('fixtures/overpass-facebook.json', 'utf8')
+  const fetchFn = (async (url: RequestInfo | URL) => new Response(String(url).includes('nominatim') ? nominatim : social)) as typeof fetch
+  const result = await createOsmProvider(fetchFn).fetchPage({ location: 'Charleroi', category: 'restaurant', countryCode: 'be' }, null, {})
+  expect(result.businesses[0].address).toBe('1 Rue du Test, 6000 Charleroi')
+  expect(result.businesses.map(b => b.website)).toEqual([
+    'https://www.facebook.com/restaurant', 'https://www.facebook.com/restaurant.local',
+    'https://restaurant.example', undefined,
+  ])
+})

@@ -25,7 +25,9 @@ export interface ScoreExplanation {
 }
 
 const PRESENCE_LABEL: Record<PresenceStatus, string> = {
+  not_found: 'No website found after search',
   none: 'Website unverified',
+  facebook: 'Facebook page, no independent site verified',
   dead: 'Dead website',
   parked: 'Parked domain',
   alive: 'Site is live',
@@ -47,7 +49,7 @@ function clamp(n: number, lo: number, hi: number): number {
 export function explainScore(i: ScoreInput, opts?: { total?: number }): ScoreExplanation {
   const isLead = i.presence !== 'alive' && i.presence !== 'probe_failed'
 
-  const presencePts = isLead ? W.presence[i.presence as 'none' | 'dead' | 'parked'] : 0
+  const presencePts = isLead ? W.presence[i.presence as keyof typeof W.presence] : 0
   const reviewPts = isLead
     ? Math.round(Math.min(i.reviewCount ?? 0, W.reviewsCap) / W.reviewsCap * W.reviewsMax)
     : 0
@@ -62,7 +64,7 @@ export function explainScore(i: ScoreInput, opts?: { total?: number }): ScoreExp
   }
 
   const factors: ScoreFactor[] = [
-    { key: 'presence', label: PRESENCE_LABEL[i.presence], points: presencePts, max: W.presence.none, hit: presencePts > 0 },
+    { key: 'presence', label: PRESENCE_LABEL[i.presence], points: presencePts, max: W.presence.not_found, hit: presencePts > 0 },
     { key: 'reviews', label: i.reviewCount ? `${i.reviewCount} reviews` : 'Few/no reviews', points: reviewPts, max: W.reviewsMax, hit: reviewPts > 0 },
     { key: 'rating', label: i.rating != null ? `Rating ${i.rating}` : 'No rating', points: ratingPts, max: W.goodRating, hit: ratingPts > 0 },
     { key: 'exactDomain', label: 'Exact-match .com free', points: domainPts, max: W.exactDomainAvailable, hit: domainPts > 0 },

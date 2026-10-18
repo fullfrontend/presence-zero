@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { presenceMeta, probeFallbackDetail } from '@/lib/presence'
 
 describe('presenceMeta', () => {
-  it('maps none to an unverified potential lead (solid dot)', () => {
-    expect(presenceMeta('none')).toEqual({ key: 'none', label: 'UNVERIFIED', dot: 'solid', isLead: true })
+  it('maps none to an unverified potential lead (unknown dot)', () => {
+    expect(presenceMeta('none')).toEqual({ key: 'none', label: 'UNVERIFIED', dot: 'unknown', isLead: true })
   })
   it('maps dead and parked to leads with weaker dots', () => {
     expect(presenceMeta('dead').dot).toBe('ring')
@@ -29,4 +29,9 @@ describe('probeFallbackDetail', () => {
       expect(probeFallbackDetail(s as string | null).length).toBeGreaterThan(0)
     }
   })
+})
+
+it('shows Facebook as a distinct potential lead', () => {
+  expect(presenceMeta('facebook')).toMatchObject({ label: 'FACEBOOK', isLead: true })
+  expect(probeFallbackDetail('facebook')).toContain('not an independent website')
 })
