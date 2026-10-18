@@ -36,7 +36,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "docker:up": "node scripts/docker.mjs up",
+    "docker:down": "node scripts/docker.mjs down",
+    "docker:search": "node scripts/docker.mjs search"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",
