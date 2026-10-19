@@ -1,0 +1,8 @@
+{
+  "done": true,
+  "done_reason": "stop",
+  "message": {
+    "role": "assistant",
+    "content": "{\"summary\":\"Le restaurant présente son offre, mais certains signaux HTML peuvent être améliorés.\",\"websiteQuality\":35,\"brief\":\"Revoir les métadonnées et vérifier les parcours de réservation.\",\"findings\":[{\"observation\":\"La page collectée ne déclare pas de description.\",\"recommendation\":\"Rédiger une description adaptée au restaurant.\",\"evidenceId\":\"page-1\",\"quote\":\"No meta description found in retrieved document\"}]}"
+  }
+}

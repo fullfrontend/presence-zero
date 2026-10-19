@@ -1,3 +1,4 @@
+import type { AuditLead } from './audit/types'
 import { isFacebookUrl, FACEBOOK_DETAIL } from './probes/facebook'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { SQLiteUpdateSetSource } from 'drizzle-orm/sqlite-core'
@@ -30,6 +31,7 @@ export interface PipelineDeps {
   getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
   discoverWebsite?: (input: WebsiteSearchInput) => Promise<WebsiteSearchResult>
+  auditLead?: AuditLead
   batchSize?: number
 }
 
@@ -147,6 +149,15 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       await db.update(businesses)
         .set({ presenceStatus: presence, probeDetail: outcome.detail, score, ...(found ? { phone: found } : {}) })
         .where(eq(businesses.id, b.id))
+      if (deps.auditLead && !b.auditReport) {
+        // Auditing is optional enrichment; an inference failure must not overwrite presence/scoring.
+        try {
+          const auditReport = await deps.auditLead({ name: b.name, address: b.address, phone: b.phone || found,
+            category: b.category ?? scan.category, rating: b.rating, reviewCount: b.reviewCount,
+            website, presence })
+          await db.update(businesses).set({ auditReport }).where(eq(businesses.id, b.id))
+        } catch { /* Injected audit failures leave the completed business check intact. */ }
+      }
     } catch (err) {
       if (err instanceof ProviderError) throw err
       await db.update(businesses)

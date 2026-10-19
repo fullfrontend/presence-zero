@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "id": "default",
+  "context": {
+    "businessName": "Your agency",
+    "services": ["Website creation", "Website redesign", "Local visibility improvements"],
+    "targetCustomers": ["Local independent businesses"],
+    "market": "French-speaking Belgium",
+    "tone": "Clear, concise and factual. Separate observed facts from suggestions.",
+    "priorities": ["Clear services", "Easy contact and booking", "Trustworthy business information"],
+    "constraints": ["Do not invent prices, customer references, performance gains or legal conclusions."]
+  },
+  "prompts": {
+    "evidenceSelection": "Select excerpts about business identity, services, contact details, booking and customer reassurance. Keep exact original wording; include evidence that contradicts an apparent weakness.",
+    "leadSummary": "Summarize the business context and propose a realistic project direction aligned with the agency services. An unverified website is not proof that no website exists. Do not generate an outreach message.",
+    "websiteAudit": "Assess whether the sampled pages clearly explain the offer, establish trust and help visitors contact or book. Distinguish minor editorial improvements from substantial redesign opportunities. Explain the proposed scope of work using the supplied evidence. Do not penalize a simple website just because it is simple."
+  }
+}

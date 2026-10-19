@@ -458,3 +458,34 @@ it('saves partial batch progress on a search block and resumes without recountin
   expect(done.totalProcessed).toBe(2)
   expect(names).toEqual(['First', 'Second', 'Second'])
 })
+
+it('persists an optional audit without changing presence, score or progress', async () => {
+  const { createLeadAuditor } = await import('@/core/audit/audit-lead')
+  const db = await freshDb()
+  await insertScan(db)
+  const auditLead = createLeadAuditor({
+    model: 'test-local', language: 'fr', opportunityThreshold: 60, minRating: 0,
+    minReviews: 0, maxReviews: 1000000, excludeEcommerce: false,
+    crawl: async () => [],
+    infer: async () => ({ summary: 'Business profile', brief: 'Verify presence', websiteQuality: null, findings: [] }),
+  })
+  const result = await runToCompletion(db, deps(db, { auditLead }))
+  expect(result.status).toBe('done')
+  expect(result.totalProcessed).toBe(3)
+  const rows = await db.select().from(businesses)
+  expect(rows.find(r => r.name === "Joe's Bakery")?.auditReport?.status).toBe('complete')
+  const alive = rows.find(r => r.name === 'Crusty Loaf')!
+  expect(alive.presenceStatus).toBe('alive')
+  expect(alive.score).toBe(0)
+  expect(alive.auditReport?.status).toBe('unverified')
+})
+
+it('an optional auditor failure never turns a successful probe into a failure', async () => {
+  const db = await freshDb()
+  await insertScan(db)
+  const result = await runToCompletion(db, deps(db, { auditLead: async () => { throw new Error('Ollama offline') } }))
+  expect(result.status).toBe('done')
+  const alive = (await db.select().from(businesses)).find(r => r.name === 'Crusty Loaf')!
+  expect(alive.presenceStatus).toBe('alive')
+  expect(alive.score).toBe(0)
+})

@@ -1,3 +1,4 @@
+import type { AuditReport } from '@/core/audit/types'
 import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
 
 export const scans = sqliteTable('scans', {
@@ -34,6 +35,7 @@ export const businesses = sqliteTable('businesses', {
   sourceUrl: text('source_url'),
   presenceStatus: text('presence_status', { enum: ['not_found', 'none', 'facebook', 'alive', 'dead', 'parked', 'probe_failed'] }),
   probeDetail: text('probe_detail'),
+  auditReport: text('audit_report', { mode: 'json' }).$type<AuditReport>(),
   retried: integer('retried', { mode: 'boolean' }).notNull().default(false),
   score: integer('score'),
   leadStatus: text('lead_status', { enum: ['new', 'contacted', 'replied', 'won', 'lost', 'skipped'] }).notNull().default('new'),

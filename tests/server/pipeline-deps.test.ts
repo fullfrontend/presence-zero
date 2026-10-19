@@ -24,3 +24,22 @@ it('leaves existing Brave selection available when SearXNG is not configured', (
   vi.stubEnv('SEARXNG_URL', '')
   expect(buildPipelineDeps(createDb(':memory:')).discoverWebsite).toBeUndefined()
 })
+
+it('wires configured Ollama summaries and defaults to one business per step', async () => {
+  vi.stubEnv('AI_AUDIT_ENABLED', 'true')
+  vi.stubEnv('OLLAMA_MODEL', 'local-test')
+  vi.stubEnv('AI_AUDIT_LANGUAGE', 'nl')
+  vi.stubEnv('PRESENCEZERO_BATCH_SIZE', '')
+  const fetchFn = vi.fn<typeof fetch>(async () => Response.json({ done: true, message: { content: JSON.stringify({
+    summary: 'Profiel', brief: 'Controleer de website', websiteQuality: null, findings: [],
+  }) } }))
+  vi.stubGlobal('fetch', fetchFn)
+  const deps = buildPipelineDeps(createDb(':memory:'))
+  expect(deps.batchSize).toBe(1)
+  const report = await deps.auditLead!({ name: 'Business', address: null, phone: null, category: null, rating: null,
+    reviewCount: null, website: null, presence: 'none' })
+  expect(report.status).toBe('complete')
+  expect(report.language).toBe('nl')
+  expect(report.opportunityScore).toBeNull()
+  expect(String(fetchFn.mock.calls[0][0])).toBe('http://127.0.0.1:11434/api/chat')
+})

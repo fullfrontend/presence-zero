@@ -1,0 +1,1 @@
+ALTER TABLE `businesses` ADD `audit_report` text;
