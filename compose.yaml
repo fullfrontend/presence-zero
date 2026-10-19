@@ -4,6 +4,8 @@ services:
     restart: unless-stopped
     ports:
       - "127.0.0.1:${PRESENCEZERO_PORT:-3000}:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     env_file:
       - path: .env
         required: false

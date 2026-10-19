@@ -5,6 +5,8 @@ import { spawnSync } from 'node:child_process'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const config = fileURLToPath(new URL('../.env.docker', import.meta.url))
+const appEnv = fileURLToPath(new URL('../.env', import.meta.url))
+if (existsSync(appEnv)) process.loadEnvFile(appEnv)
 const action = process.argv[2]
 const commands = {
   up: ['up', '-d', '--build'],
@@ -24,7 +26,8 @@ if (!existsSync(localSettings)) {
 if (!existsSync(config)) {
   writeFileSync(config, `SEARXNG_SECRET=${randomBytes(32).toString('hex')}\n`, { mode: 0o600, flag: 'wx' })
 }
-const result = spawnSync('docker', ['compose', '--env-file', config, ...commands[action]], {
+const layers = process.env.AI_PROMPTS_DIR?.trim() ? ['-f', 'compose.yaml', '-f', 'compose.ai-prompts.yaml'] : []
+const result = spawnSync('docker', ['compose', '--env-file', config, ...layers, ...commands[action]], {
   cwd: root, stdio: 'inherit',
 })
 if (result.error) console.error(result.error.message)

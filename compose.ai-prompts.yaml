@@ -1,0 +1,11 @@
+# Optional layer, automatically included by scripts/docker.mjs when AI_PROMPTS_DIR is set.
+# Operator profiles stay outside the build context and are mounted read-only.
+services:
+  presencezero:
+    environment:
+      AI_PROMPTS_DIR: /run/presencezero-prompts
+    volumes:
+      - type: bind
+        source: ${AI_PROMPTS_DIR:?Set an absolute external prompt directory}
+        target: /run/presencezero-prompts
+        read_only: true
