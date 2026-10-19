@@ -279,6 +279,14 @@ Re-run historical scans to refresh stored scores after changing these weights.
 
 ### Local AI audits with Ollama
 
+`AI_AUDIT_ENABLED` is the global switch for **all AI features**. Only `true`
+in `.env` enables the light and heavy models, evidence preparation, lead summaries
+and website audits. With `false` or an unset flag, no Ollama requests, AI-specific
+crawling or private prompt-profile loading occur, even if models and
+`AI_AUDIT_PREPARE_EVIDENCE=true` are configured. Restart the app (or recreate its
+container) after changing the flag. Existing saved reports remain visible; normal
+website probes, lead scoring and independently enabled search continue to work.
+
 Optional audits bring the business-analysis concepts from Lead Hunter into this
 single-operator app: official-site identity checks, bounded evidence collection,
 website quality estimates, project briefs, and evidence-backed qualification.

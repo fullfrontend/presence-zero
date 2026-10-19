@@ -83,7 +83,8 @@ export default function SettingsForm() {
         <p className="font-medium">{t("Local AI audit · ")}{aiAudit.enabled ? t("Configured") : t("Disabled")}</p>
         <p className="mt-2 text-xs text-mute">{aiAudit.error ? system(aiAudit.error) : (aiAudit.enabled
           ? t("Profile: {0}. Preparation / profiles: {1}. Website audits: {2} · {3}. New scans collect evidence and request an audit from your Ollama server. Availability is checked when a scan runs. Re-run completed scans to add audits.", { 0: aiAudit.profile, 1: aiAudit.lightModel, 2: aiAudit.model, 3: aiAudit.language })
-          : t("Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key."))}</p>
+          : t("Disabled"))}</p>
+        <p className="mt-2 text-xs text-mute">{t("AI_AUDIT_ENABLED in .env controls all AI features. Set true to enable both models, evidence preparation, lead summaries and website audits; false disables all AI calls. Restart the app after changes. Configuring models alone does not enable AI.")}</p>
       </div>
       <div className="rounded-md border border-line p-4 text-sm">
         <p className="font-medium">{t("Website discovery · ")}{searxngEnabled ? t("SearXNG enabled") : braveSearchEnabled ? t("Brave Search enabled") : t("Search disabled")}</p>

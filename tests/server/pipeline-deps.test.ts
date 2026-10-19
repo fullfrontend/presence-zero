@@ -1,6 +1,8 @@
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { afterEach, expect, it, vi } from 'vitest'
 import { createDb } from '@/db/client'
+import { scans, businesses } from '@/db/schema'
+import { advanceScan } from '@/core/pipeline'
 import { buildPipelineDeps } from '@/server/pipeline-deps'
 
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals() })
@@ -64,4 +66,43 @@ it('allows Brave opt-in independently of a disabled SearXNG URL', () => {
   const deps = buildPipelineDeps(createDb(':memory:'))
   expect(deps.discoverWebsite).toBeUndefined()
   expect(deps.braveSearchEnabled).toBe(true)
+})
+
+
+it.each([undefined, 'false', 'TRUE', '1'])('disables the entire AI workflow with global flag %s', async flag => {
+  vi.stubEnv('AI_AUDIT_ENABLED', flag)
+  vi.stubEnv('OLLAMA_MODEL', 'configured-heavy-model')
+  vi.stubEnv('OLLAMA_LIGHT_MODEL', 'configured-light-model')
+  vi.stubEnv('AI_AUDIT_PREPARE_EVIDENCE', 'true')
+  // An invalid private profile must never be loaded while AI is disabled.
+  vi.stubEnv('AI_PROMPTS_DIR', '/nonexistent/private-profile')
+  vi.stubEnv('AI_PROMPT_PROFILE', 'invalid/profile')
+  vi.stubEnv('SEARXNG_ENABLED', 'false')
+  vi.stubEnv('BRAVE_SEARCH_ENABLED', 'false')
+  const fetchFn = vi.fn<typeof fetch>(async () => { throw new Error('Unexpected network call') })
+  vi.stubGlobal('fetch', fetchFn)
+  const db = createDb(':memory:')
+  await migrate(db, { migrationsFolder: 'drizzle' })
+  await db.insert(scans).values({ id: 'ai-disabled', createdAt: new Date(), location: 'Charleroi', countryCode: 'be', category: 'bakery', provider: 'mock' })
+  const deps = buildPipelineDeps(db)
+  expect(deps.auditLead).toBeUndefined()
+  const scanDeps = {
+    ...deps,
+    getSecret: async () => undefined,
+    getProviderById: () => ({ id: 'mock', async fetchPage() {
+      return { businesses: [
+        { name: 'No website bakery', address: '1 Rue Neuve, Charleroi' },
+        { name: 'Website bakery', website: 'https://bakery.example', address: '2 Rue Neuve, Charleroi' },
+      ], nextCursor: null }
+    } }),
+    probe: async () => ({ status: 'alive' as const, detail: 'test' }),
+    checkDomain: async () => false,
+  }
+  let result = await advanceScan('ai-disabled', scanDeps)
+  for (let i = 0; i < 10 && result.status === 'running'; i++) result = await advanceScan('ai-disabled', scanDeps)
+  expect(result.status).toBe('done')
+  expect(result.totalProcessed).toBe(2)
+  const rows = await db.select().from(businesses)
+  expect(rows.every(row => row.auditReport === null)).toBe(true)
+  expect(fetchFn).not.toHaveBeenCalled()
 })

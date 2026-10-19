@@ -314,7 +314,6 @@
   "Configured": "Configuré",
   "Disabled": "Désactivé",
   "Profile: {0}. Preparation / profiles: {1}. Website audits: {2} · {3}. New scans collect evidence and request an audit from your Ollama server. Availability is checked when a scan runs. Re-run completed scans to add audits.": "Profil : {0}. Préparation et résumés : {1}. Audits de sites : {2} · {3}. Les nouvelles analyses collectent des preuves et sollicitent votre serveur Ollama. Sa disponibilité est vérifiée au lancement. Relancez les anciennes analyses pour y ajouter un audit.",
-  "Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key.": "Activez AI_AUDIT_ENABLED et sélectionnez OLLAMA_MODEL dans votre environnement. Ollama fournit des audits de site internet et des résumés de prospects locaux sans clé API cloud.",
   "Website discovery ·": "Découverte de site internet ·",
   "SearXNG enabled": "SearXNG activé",
   "SearXNG not configured": "SearXNG non configuré",
@@ -561,5 +560,6 @@
   "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.": "Enregistrer une clé n’active pas la recherche. Brave nécessite BRAVE_SEARCH_ENABLED=true dans .env et s’utilise uniquement si SearXNG est inactif. Une recherche par commerce disposant d’une adresse ; les correspondances incertaines restent non vérifiées. Relancez les scans terminés. BRAVE_SEARCH_API_KEY est prioritaire sur la clé enregistrée.",
   "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.": "Pour désactiver la recherche Brave, définissez BRAVE_SEARCH_ENABLED=false dans .env et redémarrez l’application. Vous pouvez conserver la clé.",
   "Brave Search enabled": "Brave Search activé",
-  "Search disabled": "Recherche désactivée"
+  "Search disabled": "Recherche désactivée",
+  "AI_AUDIT_ENABLED in .env controls all AI features. Set true to enable both models, evidence preparation, lead summaries and website audits; false disables all AI calls. Restart the app after changes. Configuring models alone does not enable AI.": "AI_AUDIT_ENABLED dans .env contrôle toutes les fonctions IA. Définissez true pour activer les deux modèles, la préparation des preuves, les synthèses et les audits de sites ; false désactive tous les appels IA. Redémarrez l’application après modification. Configurer les modèles seuls n’active pas l’IA."
 }

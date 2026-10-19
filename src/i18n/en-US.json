@@ -314,7 +314,6 @@
   "Configured": "Configured",
   "Disabled": "Disabled",
   "Profile: {0}. Preparation / profiles: {1}. Website audits: {2} · {3}. New scans collect evidence and request an audit from your Ollama server. Availability is checked when a scan runs. Re-run completed scans to add audits.": "Profile: {0}. Preparation / profiles: {1}. Website audits: {2} · {3}. New scans collect evidence and request an audit from your Ollama server. Availability is checked when a scan runs. Re-run completed scans to add audits.",
-  "Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key.": "Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key.",
   "Website discovery ·": "Website discovery ·",
   "SearXNG enabled": "SearXNG enabled",
   "SearXNG not configured": "SearXNG not configured",
@@ -561,5 +560,6 @@
   "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.": "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.",
   "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.": "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.",
   "Brave Search enabled": "Brave Search enabled",
-  "Search disabled": "Search disabled"
+  "Search disabled": "Search disabled",
+  "AI_AUDIT_ENABLED in .env controls all AI features. Set true to enable both models, evidence preparation, lead summaries and website audits; false disables all AI calls. Restart the app after changes. Configuring models alone does not enable AI.": "AI_AUDIT_ENABLED in .env controls all AI features. Set true to enable both models, evidence preparation, lead summaries and website audits; false disables all AI calls. Restart the app after changes. Configuring models alone does not enable AI."
 }
