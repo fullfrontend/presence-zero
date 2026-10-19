@@ -1,3 +1,5 @@
+'use client'
+import { useI18n } from '@/i18n/client'
 import type { AuditReport } from '@/core/audit/types'
 import { isQualifiedLead } from '@/lib/result-filters'
 import { presenceMeta } from '@/lib/presence'
@@ -27,6 +29,7 @@ const PRESENCE_ORDER = ['not_found', 'facebook', 'none', 'alive', 'dead', 'parke
  * tokens) rather than a chart — the data's job here is headline magnitude, not comparison.
  */
 export function ScanSummary({ results }: { results: SummaryRow[] }) {
+  const { t, number } = useI18n()
   if (results.length < 2) return null
 
   const leads = results.filter(isQualifiedLead)
@@ -42,20 +45,20 @@ export function ScanSummary({ results }: { results: SummaryRow[] }) {
   const mix = PRESENCE_ORDER.map(key => ({ key, meta: presenceMeta(key), count: counts.get(key) ?? 0 })).filter(m => m.count > 0)
 
   return (
-    <section aria-label="Scan summary" className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <Stat value={String(leads.length)} label="Leads" hint={`of ${results.length} found`} />
-      <Stat value={String(avgScore)} label="Avg lead score" hint="0–100" />
-      <Stat value={String(withDomain)} label="Domains free" hint="matching .com/ccTLD" />
+    <section aria-label={t("Scan summary")} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <Stat value={number(leads.length)} label={t("Leads")} hint={t("of {0} found", { 0: results.length })} />
+      <Stat value={number(avgScore)} label={t("Avg lead score")} hint="0–100" />
+      <Stat value={number(withDomain)} label={t("Domains free")} hint={t("matching .com/ccTLD")} />
       <div className="col-span-2 rounded-lg border border-line bg-surface px-4 py-3 sm:col-span-1">
-        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Presence</div>
+        <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Presence")}</div>
         <ul className="mt-1.5 space-y-1">
           {mix.map(m => (
             <li key={m.key} className="flex items-center justify-between gap-2 text-[11px]">
               <span className={`flex items-center gap-1.5 ${m.meta.isLead ? 'text-dim' : 'text-mute'}`}>
                 <span aria-hidden="true" className={`inline-block h-1.5 w-1.5 rounded-full ${m.meta.isLead ? 'bg-lime' : 'bg-mute/50'}`} />
-                {m.meta.label}
+                {t(m.meta.label)}
               </span>
-              <span className="font-mono tabular-nums text-mute">{m.count}</span>
+              <span className="font-mono tabular-nums text-mute">{number(m.count)}</span>
             </li>
           ))}
         </ul>

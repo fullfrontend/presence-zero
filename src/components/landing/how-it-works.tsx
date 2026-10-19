@@ -1,3 +1,5 @@
+'use client'
+import { useI18n } from '@/i18n/client'
 import { SectionTag } from '@/components/brand/section-tag'
 import { HeadlineRule } from '@/components/brand/headline-rule'
 
@@ -30,19 +32,19 @@ const STEPS = [
 ] as const
 
 export function HowItWorks() {
+  const { t } = useI18n()
   return (
     <section id="how" className="mx-auto max-w-6xl px-6 py-24 lg:py-32">
-      <SectionTag>{'// HOW IT WORKS'}</SectionTag>
+      <SectionTag>{t("// HOW IT WORKS")}</SectionTag>
       <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-        Local business lead generation, from search to CSV.
-      </h2>
+        {t("Local business lead generation, from search to CSV.")}</h2>
       <HeadlineRule />
       <ol className="mt-14 grid gap-10 lg:grid-cols-5 lg:gap-6">
         {STEPS.map((step) => (
           <li key={step.n} className="lg:border-l lg:border-line lg:pl-6">
             <div className="font-mono text-sm text-lime">{step.n}</div>
-            <div className="mt-3 text-lg font-medium text-text">{step.title}</div>
-            <p className="mt-2 text-sm leading-relaxed text-dim">{step.body}</p>
+            <div className="mt-3 text-lg font-medium text-text">{t(step.title)}</div>
+            <p className="mt-2 text-sm leading-relaxed text-dim">{t(step.body)}</p>
           </li>
         ))}
       </ol>

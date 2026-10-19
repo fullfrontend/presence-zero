@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Button } from '@/components/brand/button'
 
@@ -35,6 +36,7 @@ function computePos(rect: Rect, tip: HTMLElement | null): Pos {
 }
 
 export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolean; onClose: () => void }) {
+  const { t } = useI18n()
   const [stepIndex, setStepIndex] = useState(0)
   const [dir, setDir] = useState<1 | -1>(1)
   const [rect, setRect] = useState<Rect | null>(null)
@@ -178,16 +180,16 @@ export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolea
         ref={tooltipRef}
         role="dialog"
         aria-modal="true"
-        aria-label={step.title}
+        aria-label={t(step.title)}
         tabIndex={-1}
         className="pointer-events-auto fixed max-w-xs rounded-lg border border-line bg-base p-4 shadow-xl outline-none"
         style={{ top: pos.top, left: pos.left }}
       >
         <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
-          Step {stepIndex + 1} of {steps.length}
+          {t("Step ")}{stepIndex + 1} {t(" of ")}{steps.length}
         </div>
-        <div className="mt-1.5 font-medium text-text">{step.title}</div>
-        <p className="mt-1 text-sm text-dim">{step.body}</p>
+        <div className="mt-1.5 font-medium text-text">{t(step.title)}</div>
+        <p className="mt-1 text-sm text-dim">{t(step.body)}</p>
         <div className="mt-3 flex items-center gap-2">
           <Button
             variant="ghost"
@@ -195,18 +197,16 @@ export function Tour({ steps, open, onClose }: { steps: TourStep[]; open: boolea
             disabled={stepIndex === 0}
             className="px-3 py-1 text-xs disabled:cursor-not-allowed disabled:opacity-40"
           >
-            Back
-          </Button>
+            {t("Back")}</Button>
           <Button variant="primary" onClick={goNext} className="px-3 py-1 text-xs">
-            {isLast ? 'Done' : 'Next'}
+            {isLast ? t("Done") : t("Next")}
           </Button>
           <button
             type="button"
             onClick={() => onCloseRef.current()}
             className="ml-auto font-mono text-[11px] text-mute underline-offset-4 hover:text-text hover:underline"
           >
-            Skip
-          </button>
+            {t("Skip")}</button>
         </div>
       </div>
     </div>

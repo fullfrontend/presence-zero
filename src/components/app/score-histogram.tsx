@@ -1,5 +1,8 @@
+'use client'
+import { useI18n } from '@/i18n/client'
 // Buckets of 20; lime bars for lead buckets, violet for the 0-19 (alive/none-lead) bucket.
 export function ScoreHistogram({ scores }: { scores: (number | null)[] }) {
+  const { t } = useI18n()
   const vals = scores.map(s => s ?? 0)
   if (vals.length < 2) return null
   const buckets = [0, 0, 0, 0, 0]
@@ -10,7 +13,7 @@ export function ScoreHistogram({ scores }: { scores: (number | null)[] }) {
   return (
     <figure className="m-0">
       <span className="sr-only">
-        Score distribution: {buckets.map((b, i) => `${b} in ${ranges[i]}`).join(', ')}.
+        {t("Score distribution: ")}{buckets.map((b, i) => t("{0} in {1}", { 0: b, 1: ranges[i] })).join(', ')}.
       </span>
       <div className="flex items-end gap-1" aria-hidden="true">
         {buckets.map((b, i) => (

@@ -416,3 +416,31 @@ The Docker launcher reads `.env` and, when `AI_PROMPTS_DIR` is set, includes
 `/run/presencezero-prompts`; the image contains only the generic example. For manual
 Compose use, load `.env` and `.env.docker` and include both Compose files. Use an
 absolute host path for the mount, with `AI_PROMPT_PROFILE` selecting the file.
+
+## Interface languages
+
+The interface supports **French (`fr-FR`)** and **American English (`en-US`)**.
+Use the language selector in the navigation bar. The preference is saved in a
+`pz-locale` cookie for one year and applies throughout the app and demo, without
+changing page URLs. Locale selection follows this order:
+
+1. Explicit language selected in this browser.
+2. Browser `Accept-Language` preferences (French and English regional variants
+   map to `fr-FR` and `en-US`, respecting their priority).
+3. `PRESENCEZERO_DEFAULT_LOCALE`, defaulting to `en-US`.
+
+Dates and numbers use the selected regional formats. Displayed timestamps use
+UTC, explicitly labeled, to keep server and browser rendering consistent.
+Business names, locations, notes, source URLs, collected evidence and existing
+AI prose are preserved. The UI language does not restart scans or change scoring,
+provider IDs, saved statuses, CSV column names or CSV numeric values.
+`AI_AUDIT_LANGUAGE` separately controls **new** Ollama reports; switching the
+interface language does not regenerate or translate existing reports. Unknown
+external provider errors remain in their original language.
+
+Translation catalogs live in `src/i18n/fr-FR.json` and `src/i18n/en-US.json`.
+English source messages serve as keys, with numbered placeholders for dynamic
+values. Use `useI18n()` in client components and `getI18n()` on the server. Never
+translate identifiers or user/business data. Domain pitch generation accepts an
+optional presentation callback and remains framework-free. Tests cover locale
+negotiation, catalog placeholders, regional formats and rendered components.

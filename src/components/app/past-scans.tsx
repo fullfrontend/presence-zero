@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
@@ -47,6 +48,7 @@ const microLabel = 'font-mono text-[10px] uppercase tracking-[0.14em]'
 const actionBtn = `${microLabel} rounded border border-line px-2 py-1 text-mute transition-colors hover:border-lime/40 hover:text-text disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-line disabled:hover:text-mute`
 
 export default function PastScans({ scans: initialScans }: { scans: PastScan[] }) {
+  const { t, number, system } = useI18n()
   const router = useRouter()
   const [scans, setScans] = useState<PastScan[]>(initialScans)
   const [search, setSearch] = useState('')
@@ -80,12 +82,12 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
       .then(async res => {
         if (!res.ok) {
           const data = await res.json().catch(() => ({}))
-          throw new Error(data.error ?? 'Update failed')
+          throw new Error(data.error ?? t("Update failed"))
         }
       })
       .catch(err => {
         setScans(previous)
-        flashError(id, err instanceof Error ? err.message : 'Update failed')
+        flashError(id, err instanceof Error ? err.message : t("Update failed"))
       })
       .finally(() => setBusyId(cur => (cur === id ? null : cur)))
   }
@@ -141,10 +143,10 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
         }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error ?? 'Failed to start scan')
+      if (!res.ok) throw new Error(data.error ?? t("Failed to start scan"))
       router.push(`/app/scans/${data.id}`)
     } catch (err) {
-      flashError(s.id, err instanceof Error ? err.message : 'Failed to start scan')
+      flashError(s.id, err instanceof Error ? err.message : t("Failed to start scan"))
       setBusyId(cur => (cur === s.id ? null : cur))
     }
   }
@@ -155,27 +157,27 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
       .filter(s => showArchived || !s.archived)
       .filter(s => {
         if (!q) return true
-        const title = s.title || `${s.category} in ${s.location}`
+        const title = s.title || t("{0} in {1}", { 0: s.category, 1: s.location })
         return [s.location, s.category, s.label ?? '', title].some(v => v.toLowerCase().includes(q))
       })
       .sort((a, b) => {
         if (a.pinned !== b.pinned) return a.pinned ? -1 : 1
         return b.createdAt - a.createdAt
       })
-  }, [scans, search, showArchived])
+  }, [scans, search, showArchived, t])
 
   const archivedCount = scans.filter(s => s.archived).length
 
   if (scans.length === 0) {
     return (
       <div className="mt-3 rounded-xl border border-dashed border-line bg-surface/40 p-6">
-        <p className="text-sm text-text">No scans yet — run your first one above.</p>
+        <p className="text-sm text-text">{t("No scans yet — run your first one above.")}</p>
         <ol className="mt-3 space-y-1.5 text-xs text-dim">
-          <li><span className="text-lime">1.</span> Pick a location + category and a data source (OpenStreetMap needs no key).</li>
-          <li><span className="text-lime">2.</span> PresenceZero probes each site, checks matching domains, and scores every lead 0–100.</li>
-          <li><span className="text-lime">3.</span> Work the sorted list — expand a row for its score breakdown and a ready outreach angle.</li>
+          <li><span className="text-lime">1.</span> {t(" Pick a location + category and a data source (OpenStreetMap needs no key).")}</li>
+          <li><span className="text-lime">2.</span> {t(" PresenceZero probes each site, checks matching domains, and scores every lead 0–100.")}</li>
+          <li><span className="text-lime">3.</span> {t(" Work the sorted list — expand a row for its score breakdown and a ready outreach angle.")}</li>
         </ol>
-        <p className="mt-3 text-xs text-mute">New here? Try an example preset in the form above, or explore the <a href="/demo" className="text-lime underline-offset-4 hover:underline">read-only demo</a>.</p>
+        <p className="mt-3 text-xs text-mute">{t("New here? Try an example preset in the form above, or explore the ")}<a href="/demo" className="text-lime underline-offset-4 hover:underline">{t("read-only demo")}</a>.</p>
       </div>
     )
   }
@@ -184,12 +186,12 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
     <div className="mt-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <label className="flex-1 min-w-[200px]">
-          <span className="sr-only">Search past scans</span>
+          <span className="sr-only">{t("Search past scans")}</span>
           <input
             type="search"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Search location, category, label…"
+            placeholder={t("Search location, category, label…")}
             className="w-full rounded-md border border-line bg-base/60 px-3 py-2 text-sm text-text placeholder:text-mute"
           />
         </label>
@@ -201,16 +203,16 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
               onChange={e => setShowArchived(e.target.checked)}
               className="h-3.5 w-3.5 accent-lime"
             />
-            Show archived ({archivedCount})
+            {t("Show archived (")}{archivedCount})
           </label>
         )}
       </div>
 
-      {visible.length === 0 && <p className="mt-4 text-sm text-dim">No scans match your search.</p>}
+      {visible.length === 0 && <p className="mt-4 text-sm text-dim">{t("No scans match your search.")}</p>}
 
       <ul className="mt-4 divide-y divide-line overflow-hidden rounded-xl border border-line">
         {visible.map(s => {
-          const defaultTitle = `${s.category} in ${s.location}`
+          const defaultTitle = t("{0} in {1}", { 0: s.category, 1: s.location })
           const rerunDisabled = busyId === s.id || (s.provider === 'csv' && !csvContentFor(s))
           return (
             <li
@@ -224,18 +226,16 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                   router.push(`/app/scans/${s.id}`)
                 }
               }}
-              className={`group flex cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 transition-colors hover:bg-surface ${
-                s.archived ? 'opacity-50' : ''
-              }`}
+              className={`group flex cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-2 px-5 py-4 transition-colors hover:bg-surface ${s.archived ? 'opacity-50' : ''}`}
             >
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   {s.pinned && (
-                    <span className="text-lime" aria-hidden="true" title="Pinned">★</span>
+                    <span className="text-lime" aria-hidden="true" title={t("Pinned")}>★</span>
                   )}
                   {editingTitleId === s.id ? (
                     <label onClick={e => e.stopPropagation()}>
-                      <span className="sr-only">Rename scan</span>
+                      <span className="sr-only">{t("Rename scan")}</span>
                       <input
                         autoFocus
                         value={titleDraft}
@@ -254,7 +254,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                   )}
                   {editingLabelId === s.id ? (
                     <label onClick={e => e.stopPropagation()}>
-                      <span className="sr-only">Edit label</span>
+                      <span className="sr-only">{t("Edit label")}</span>
                       <input
                         autoFocus
                         value={labelDraft}
@@ -288,18 +288,16 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                       }}
                       className={`${microLabel} rounded-full border border-line px-2 py-0.5 text-mute opacity-100 transition-opacity hover:text-text sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100`}
                     >
-                      + label
-                    </button>
+                      {t("+ label")}</button>
                   )}
                 </div>
                 <p className={`mt-1 ${microLabel} text-mute`}>
-                  {s.leadCount} leads · {s.totalFound} found
-                </p>
-                {errors[s.id] && <p className="mt-1 text-[11px] text-red-400">{errors[s.id]}</p>}
+                  {number(s.leadCount)} {t(" leads · ")}{number(s.totalFound)} {t(" found")}</p>
+                {errors[s.id] && <p className="mt-1 text-[11px] text-red-400">{system(errors[s.id])}</p>}
               </div>
 
               <div className="flex items-center gap-2">
-                <span className={`${microLabel} text-mute`}>{s.status}</span>
+                <span className={`${microLabel} text-mute`}>{t(s.status)}</span>
                 <div
                   className="flex flex-wrap items-center gap-1.5 opacity-100 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100"
                   onClick={e => e.stopPropagation()}
@@ -310,7 +308,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                     disabled={busyId === s.id}
                     className={`${actionBtn} ${s.pinned ? 'border-lime/40 text-lime' : ''}`}
                   >
-                    {s.pinned ? 'Unpin' : 'Pin'}
+                    {s.pinned ? t("Unpin") : t("Pin")}
                   </button>
                   <button
                     type="button"
@@ -318,15 +316,14 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                     disabled={busyId === s.id}
                     className={actionBtn}
                   >
-                    Rename
-                  </button>
+                    {t("Rename")}</button>
                   <button
                     type="button"
                     onClick={() => toggleArchive(s)}
                     disabled={busyId === s.id}
                     className={actionBtn}
                   >
-                    {s.archived ? 'Restore' : 'Archive'}
+                    {s.archived ? t("Restore") : t("Archive")}
                   </button>
                   <button
                     type="button"
@@ -334,13 +331,12 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
                     disabled={rerunDisabled}
                     title={
                       s.provider === 'csv' && !csvContentFor(s)
-                        ? "This scan's CSV content wasn't stored, so it can't be re-run."
+                        ? t("This scan's CSV content wasn't stored, so it can't be re-run.")
                         : undefined
                     }
                     className={actionBtn}
                   >
-                    Re-run
-                  </button>
+                    {t("Re-run")}</button>
                 </div>
               </div>
             </li>

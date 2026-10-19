@@ -1,75 +1,15 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useEffect, useState } from 'react'
 import { usePrefersReducedMotion } from '@/lib/motion'
 
-interface Step {
-  n: string
-  title: string
-  body: string
-  href?: string
-  linkLabel?: string
-}
-
-export const GOOGLE_STEPS: Step[] = [
-  {
-    n: '01',
-    title: 'Open the Google Cloud Console',
-    body: 'Sign in with any Google account — no credit card needed to get started.',
-    href: 'https://console.cloud.google.com/',
-    linkLabel: 'console.cloud.google.com',
-  },
-  {
-    n: '02',
-    title: 'Create or select a project',
-    body: 'Use the project picker at the top of the console. Any project works — a fresh one is fine.',
-  },
-  {
-    n: '03',
-    title: 'Enable the Places API (New)',
-    body: 'Search the API library for it and click Enable for your project.',
-    href: 'https://console.cloud.google.com/apis/library/places.googleapis.com',
-    linkLabel: 'Enable Places API (New)',
-  },
-  {
-    n: '04',
-    title: 'Create an API key',
-    body: 'Under Credentials, choose Create credentials → API key.',
-    href: 'https://console.cloud.google.com/apis/credentials',
-    linkLabel: 'Open Credentials',
-  },
-  {
-    n: '05',
-    title: 'Copy the key and paste it above',
-    body: 'Save it in the form above — it stays in your own database and is only ever sent to Google. The free tier covers typical use. You can also set it as the GOOGLE_PLACES_API_KEY environment variable instead.',
-  },
-]
-
-export const APIFY_STEPS: Step[] = [
-  {
-    n: '01',
-    title: 'Create a free Apify account',
-    body: 'No credit card. The free plan renews $5 of platform credit every month — about 1,250 places.',
-    href: 'https://apify.com/',
-    linkLabel: 'apify.com',
-  },
-  {
-    n: '02',
-    title: 'Open Settings → API & Integrations',
-    body: 'In the Apify Console sidebar, choose Settings, then the API & Integrations tab.',
-    href: 'https://console.apify.com/settings/integrations',
-    linkLabel: 'Open API & Integrations',
-  },
-  {
-    n: '03',
-    title: 'Copy your Personal API token',
-    body: 'Paste it above and save. It is stored in your own database and sent only to Apify.',
-  },
-]
+import { GOOGLE_STEPS, type Step } from './key-setup-data'
 
 const STAGGER_MS = 80
 const ACTIVE_INTERVAL_MS = 1600
 
 export default function KeySetupGuide({ steps = GOOGLE_STEPS, title = 'Get a Google Places API key' }: { steps?: Step[]; title?: string }) {
+  const { t } = useI18n()
   const reduced = usePrefersReducedMotion()
   // Under reduced motion, render always short-circuits to "revealed"/"not active" below,
   // so these initial values only matter for the (non-reduced) animated path.
@@ -96,7 +36,7 @@ export default function KeySetupGuide({ steps = GOOGLE_STEPS, title = 'Get a Goo
 
   return (
     <div className="rounded-xl border border-line bg-surface p-6">
-      <h3 className="text-sm font-medium text-mute">{title}</h3>
+      <h3 className="text-sm font-medium text-mute">{t(title)}</h3>
       <ol className="mt-5 space-y-5">
         {steps.map((step, i) => {
           const isRevealed = reduced || i < revealed
@@ -114,8 +54,8 @@ export default function KeySetupGuide({ steps = GOOGLE_STEPS, title = 'Get a Goo
               }}
             >
               <div className="font-mono text-sm text-lime">{step.n}</div>
-              <div className="mt-1 font-medium text-text">{step.title}</div>
-              <p className="mt-1 text-sm leading-relaxed text-dim">{step.body}</p>
+              <div className="mt-1 font-medium text-text">{t(step.title)}</div>
+              <p className="mt-1 text-sm leading-relaxed text-dim">{t(step.body)}</p>
               {step.href && (
                 <a
                   href={step.href}
@@ -123,7 +63,7 @@ export default function KeySetupGuide({ steps = GOOGLE_STEPS, title = 'Get a Goo
                   rel="noopener noreferrer"
                   className="mt-1.5 inline-block text-sm text-lime underline-offset-4 hover:underline"
                 >
-                  {step.linkLabel ?? step.href}
+                  {step.linkLabel ? t(step.linkLabel) : step.href}
                 </a>
               )}
             </li>

@@ -1,3 +1,5 @@
+'use client'
+import { useI18n } from '@/i18n/client'
 import { SectionTag } from '@/components/brand/section-tag'
 import { HeadlineRule } from '@/components/brand/headline-rule'
 
@@ -20,19 +22,19 @@ const AUDIENCES = [
 ] as const
 
 export function WhoFor() {
+  const { t } = useI18n()
   return (
     <section id="who" className="mx-auto max-w-6xl px-6 py-24 lg:py-32">
-      <SectionTag>{'// WHO IT’S FOR'}</SectionTag>
+      <SectionTag>{t("// WHO IT’S FOR")}</SectionTag>
       <h2 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.05] tracking-tight sm:text-5xl">
-        Built for people who sell websites and domains.
-      </h2>
+        {t("Built for people who sell websites and domains.")}</h2>
       <HeadlineRule />
       <div className="mt-14 grid gap-5 sm:grid-cols-3">
         {AUDIENCES.map((a) => (
           <div key={a.title} className="rounded-xl border border-line bg-surface p-6 transition duration-200 hover:-translate-y-0.5 hover:border-lime/40">
-            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{a.kicker}</p>
-            <h3 className="mt-3 text-lg font-medium text-text">{a.title}</h3>
-            <p className="mt-2 text-sm leading-relaxed text-dim">{a.body}</p>
+            <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{t(a.kicker)}</p>
+            <h3 className="mt-3 text-lg font-medium text-text">{t(a.title)}</h3>
+            <p className="mt-2 text-sm leading-relaxed text-dim">{t(a.body)}</p>
           </div>
         ))}
       </div>

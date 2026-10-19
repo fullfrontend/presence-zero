@@ -1,4 +1,7 @@
 'use client'
+import { formatDate } from '@/i18n/translate'
+import type { Locale } from '@/i18n/config'
+import { useI18n } from '@/i18n/client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import ResultsTable from '@/components/app/results-table'
 import { Button } from '@/components/brand/button'
@@ -20,14 +23,15 @@ interface ScanState {
 
 const PHASES = ['fetch', 'process', 'retry', 'done'] as const
 
-function formatScanWhen(createdAt: ScanState['createdAt']): string | null {
+function formatScanWhen(createdAt: ScanState['createdAt'], locale: Locale): string | null {
   if (createdAt == null) return null
   const d = createdAt instanceof Date ? createdAt : new Date(createdAt)
   if (Number.isNaN(d.getTime())) return null
-  return d.toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })
+  return formatDate(locale, d, { dateStyle: 'medium', timeStyle: 'short' }) + ' UTC'
 }
 
 export default function ScanRunner({ scanId }: { scanId: string }) {
+  const { t, locale, number, system } = useI18n()
   const [scan, setScan] = useState<ScanState | null>(null)
   const [working, setWorking] = useState(false)
   const [provider, setProvider] = useState<string | null>(null)
@@ -130,14 +134,14 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
   const pct = scan.totalFound > 0 ? Math.round((scan.totalProcessed / scan.totalFound) * 100) : 0
   const activeIndex = PHASES.indexOf(scan.phase as (typeof PHASES)[number])
   const headline = scan.title?.trim()
-    || (scan.category && scan.location ? `${scan.category} in ${scan.location}` : 'Scan results')
-  const when = formatScanWhen(scan.createdAt)
+    || (scan.category && scan.location ? t("{0} in {1}", { 0: scan.category, 1: scan.location }) : t("Scan results"))
+  const when = formatScanWhen(scan.createdAt, locale)
   const showContinue = interrupted
     || userPaused
-    || scan.status === 'paused'
+    || scan.status === "paused"
     || (scan.status === 'running' && !working)
   const showPartialResults = scan.totalProcessed > 0 && scan.totalFound > 0
-  const scanDone = scan.status === 'done'
+  const scanDone = scan.status === "done"
 
   return (
     <div className="space-y-6">
@@ -158,14 +162,14 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
             <span key={phase} className="flex items-center gap-2">
               <span
                 className={
-                  scan.status === 'done' || i === activeIndex
+                  scan.status === "done" || i === activeIndex
                     ? 'text-lime'
                     : i < activeIndex
                       ? 'text-text'
                       : 'text-mute'
                 }
               >
-                {phase.toUpperCase()}
+                {t(phase).toUpperCase()}
               </span>
               {i < PHASES.length - 1 && <span className="text-mute">→</span>}
             </span>
@@ -181,60 +185,58 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
 
         <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <span className="flex items-center gap-2">
-            {userPaused ? 'paused by you' : scan.status === 'running' ? `${scan.phase}…` : scan.status}
+            {userPaused ? t("paused by you") : scan.status === 'running' ? `${t(scan.phase)}…` : t(scan.status)}
             {working && (
               <span className="flex items-center gap-1.5 text-lime">
                 <span className="pz-spin inline-block h-3 w-3 rounded-full border border-lime border-t-transparent" />
-                {scan.status === 'paused' ? 'Retrying…' : 'Working…'}
+                {scan.status === "paused" ? t("Retrying…") : t("Working…")}
               </span>
             )}
           </span>
           <span className="flex items-center gap-3">
-            {etaLabel && <span className="text-dim">{etaLabel}</span>}
-            <span>{scan.totalProcessed}/{scan.totalFound} PROCESSED</span>
+            {etaLabel && <span className="text-dim">{system(etaLabel)}</span>}
+            <span>{number(scan.totalProcessed)}/{number(scan.totalFound)} {t("PROCESSED")}</span>
           </span>
         </div>
 
-        {scan.status === 'paused' && (
+        {scan.status === "paused" && (
           <p className="mt-3 text-sm text-amber-400">
-            {scan.errorMessage ? `Paused: ${scan.errorMessage}` : 'Paused — the provider is busy or rate-limited.'} Hit Continue to resume where it left off.
-          </p>
+            {scan.errorMessage ? t("Paused: {0}", { 0: system(scan.errorMessage) }) : t("Paused — the provider is busy or rate-limited.")} {t(" Hit Continue to resume where it left off.")}</p>
         )}
         {userPaused && (
           <p className="mt-3 text-sm text-amber-400">
-            Paused by you. Progress is saved — hit Continue when you want the scan to keep advancing.
-          </p>
+            {t("Paused by you. Progress is saved — hit Continue when you want the scan to keep advancing.")}</p>
         )}
         {driveError && (
-          <p className="mt-3 text-sm text-amber-400" role="alert">{driveError}</p>
+          <p className="mt-3 text-sm text-amber-400" role="alert">{system(driveError)}</p>
         )}
-        {scan.status === 'failed' && (
+        {scan.status === "failed" && (
           <p className="mt-3 text-sm text-red-400">
-            {scan.errorMessage ?? 'The scan failed.'}
-            {provider === 'google' && ' If you selected Google Places, check that a valid API key is set in Settings.'}
+            {scan.errorMessage ? system(scan.errorMessage) : t("The scan failed.")}
+            {provider === 'google' && t(" If you selected Google Places, check that a valid API key is set in Settings.")}
           </p>
         )}
 
         <div className="mt-4 flex flex-wrap items-center gap-3">
           {working && scan.status === 'running' && (
-            <Button variant="ghost" onClick={requestPause}>Pause</Button>
+            <Button variant="ghost" onClick={requestPause}>{t("Pause")}</Button>
           )}
           {showContinue && (
             <Button variant="ghost" onClick={() => { void drive() }} disabled={working}>
-              {working ? 'Continuing…' : interrupted || userPaused || scan.status === 'running' ? 'Continue scan' : 'Resume scan'}
+              {working ? t("Continuing…") : interrupted || userPaused || scan.status === 'running' ? t("Continue scan") : t("Resume scan")}
             </Button>
           )}
-          {scan.status === 'failed' && (
-            <Button href="/app">Start a new scan</Button>
+          {scan.status === "failed" && (
+            <Button href="/app">{t("Start a new scan")}</Button>
           )}
         </div>
       </div>
 
       {scanDone && scan.totalFound === 0 && (
         <div className="rounded-xl border border-dashed border-line bg-surface/40 p-6 text-sm">
-          <p className="text-text">The provider returned no businesses for this area and category.</p>
-          <p className="mt-2 text-dim">Try a broader location, a different category, or the Google Places provider (richer coverage) — then start a new scan.</p>
-          <div className="mt-4"><Button href="/app">Start a new scan</Button></div>
+          <p className="text-text">{t("The provider returned no businesses for this area and category.")}</p>
+          <p className="mt-2 text-dim">{t("Try a broader location, a different category, or the Google Places provider (richer coverage) — then start a new scan.")}</p>
+          <div className="mt-4"><Button href="/app">{t("Start a new scan")}</Button></div>
         </div>
       )}
 
@@ -243,12 +245,11 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
           <div className="flex flex-wrap items-center justify-between gap-2">
             {!scanDone && (
               <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-lime">
-                Live results — updating as leads finish…
-              </p>
+                {t("Live results — updating as leads finish…")}</p>
             )}
             {scanDone && (
               <div className="ml-auto">
-                <Button href="/app" variant="link">New scan</Button>
+                <Button href="/app" variant="link">{t("New scan")}</Button>
               </div>
             )}
           </div>

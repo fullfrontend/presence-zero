@@ -1,3 +1,4 @@
+import { getI18n } from '@/i18n/server'
 import { desc, eq, inArray, sql } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { businesses, scans, settings } from '@/db/schema'
@@ -9,7 +10,8 @@ import { HeadlineRule } from '@/components/brand/headline-rule'
 export const dynamic = 'force-dynamic'
 
 export default async function AppHome() {
-  const defaultLocation = process.env.PRESENCEZERO_DEFAULT_LOCATION?.trim() ?? 'Charleroi, Belgique'
+  const { t } = await getI18n()
+  const defaultLocation = process.env.PRESENCEZERO_DEFAULT_LOCATION?.trim() ?? t("Charleroi, Belgique")
   const configuredCountry = process.env.PRESENCEZERO_DEFAULT_COUNTRY_CODE?.trim().toLowerCase()
   const defaultCountryCode = configuredCountry && /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'be'
   const db = await getDb()
@@ -41,13 +43,13 @@ export default async function AppHome() {
   return (
     <div className="space-y-12">
       <section>
-        <SectionTag>{'// NEW SCAN'}</SectionTag>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">Find businesses whose web presence is <span className="text-lime">zero</span>.</h1>
+        <SectionTag>{t("// NEW SCAN")}</SectionTag>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("Find businesses whose web presence is ")}<span className="text-lime">{t("zero")}</span>.</h1>
         <HeadlineRule />
         <div className="mt-8"><NewScanForm hasInitialGoogleKey={hasGoogleKey} defaultLocation={defaultLocation} defaultCountryCode={defaultCountryCode} /></div>
       </section>
       <section>
-        <SectionTag>{'// PAST SCANS'}</SectionTag>
+        <SectionTag>{t("// PAST SCANS")}</SectionTag>
         <div className="mt-4"><PastScans scans={scanRows} /></div>
       </section>
     </div>

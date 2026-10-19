@@ -1,3 +1,4 @@
+import { englishText, type TranslateText } from './text'
 import type { PresenceStatus } from './types'
 
 export interface PitchInput {
@@ -47,42 +48,42 @@ const GOOD_RATING = 4.0
  * built only from real signals. It is a starting point for a personal message,
  * never a mass-mail template (PresenceZero is a finder, not a spam tool).
  */
-export function generatePitch(i: PitchInput): Pitch {
+export function generatePitch(i: PitchInput, t: TranslateText = englishText): Pitch {
   if (i.presence === 'facebook') {
     return {
-      headline: 'A Facebook presence to complement with an independent website.',
-      angle: `${i.name} lists a Facebook page. Check whether a separate website already exists before proposing a site that complements their social presence.`,
-      talkingPoints: ['An independent site can bring together services, contact details and booking information alongside Facebook.'],
+      headline: t("A Facebook presence to complement with an independent website."),
+      angle: t("{0} lists a Facebook page. Check whether a separate website already exists before proposing a site that complements their social presence.", { 0: i.name }),
+      talkingPoints: [t("An independent site can bring together services, contact details and booking information alongside Facebook.")],
       ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
     }
   }
   if (i.presence === 'not_found') {
     return {
-      headline: 'No website found after search.',
-      angle: `The search found no website for ${i.name}. Confirm this with the business before offering to build one.`,
-      talkingPoints: ['A search with no results is not proof that the business has no website.'],
+      headline: t("No website found after search."),
+      angle: t("The search found no website for {0}. Confirm this with the business before offering to build one.", { 0: i.name }),
+      talkingPoints: [t("A search with no results is not proof that the business has no website.")],
       ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
     }
   }
 
   const isLead = i.presence === 'none' || i.presence === 'dead' || i.presence === 'parked'
-  const who = i.category ? `This ${i.category}` : 'This business'
+  const who = i.category ? t("This {0}", { 0: t(i.category) }) : t("This business")
 
   if (!isLead) {
     return {
-      headline: `${i.name} already has a working site.`,
-      angle: `${i.name} is already online — not a website lead. Look for an SEO, redesign, or booking-flow angle instead.`,
+      headline: t("{0} already has a working site.", { 0: i.name }),
+      angle: t("{0} is already online — not a website lead. Look for an SEO, redesign, or booking-flow angle instead.", { 0: i.name }),
       talkingPoints: [],
     }
   }
 
   if (i.presence === 'none') {
     return {
-      headline: 'Website presence needs verification.',
-      angle: `${i.name} has no website listed by the source. Verify whether an official site exists before offering to build one.`,
+      headline: t("Website presence needs verification."),
+      angle: t("{0} has no website listed by the source. Verify whether an official site exists before offering to build one.", { 0: i.name }),
       talkingPoints: [
-        ...(i.reviewCount != null && i.rating != null ? [`${i.reviewCount} reviews at ${i.rating}★ — check their existing web presence.`] : []),
-        ...(i.availableDomain ? [`${i.availableDomain} is available, but domain availability does not prove the business has no website.`] : []),
+        ...(i.reviewCount != null && i.rating != null ? [t("{0} reviews at {1}★ — check their existing web presence.", { 0: i.reviewCount, 1: i.rating })] : []),
+        ...(i.availableDomain ? [t("{0} is available, but domain availability does not prove the business has no website.", { 0: i.availableDomain })] : []),
       ],
       ...(i.availableDomain ? { suggestedDomain: i.availableDomain } : {}),
     }
@@ -95,28 +96,28 @@ export function generatePitch(i: PitchInput): Pitch {
   const hasReviews = i.reviewCount != null && Number.isFinite(i.reviewCount) && i.reviewCount > 0
 
   if (hasReviews && hasRating && (i.rating as number) >= GOOD_RATING) {
-    points.push(`${i.reviewCount} reviews at ${i.rating}★ — real demand, but nowhere online to send those customers.`)
+    points.push(t("{0} reviews at {1}★ — real demand, but nowhere online to send those customers.", { 0: i.reviewCount, 1: i.rating }))
   } else if (hasReviews) {
-    points.push(`${i.reviewCount} reviews already — customers are searching for them and finding no site.`)
+    points.push(t("{0} reviews already — customers are searching for them and finding no site.", { 0: i.reviewCount }))
   } else if (hasRating && (i.rating as number) >= GOOD_RATING) {
-    points.push(`Strong ${i.rating}★ reputation with no website to back it up.`)
+    points.push(t("Strong {0}★ reputation with no website to back it up.", { 0: i.rating }))
   }
 
-  points.push(`With ${PRESENCE_FACT[presence]}, every "do they have a website?" search is a booking that goes to a competitor.`)
+  points.push(t("With {0}, every \"do they have a website?\" search is a booking that goes to a competitor.", { 0: t(PRESENCE_FACT[presence]) }))
 
   const suggestedDomain = i.availableDomain ?? undefined
   if (suggestedDomain) {
-    points.push(`The matching domain ${suggestedDomain} is still available to register — a concrete, low-friction first offer.`)
+    points.push(t("The matching domain {0} is still available to register — a concrete, low-friction first offer.", { 0: suggestedDomain }))
   }
 
-  const locationBit = i.location ? ` in ${i.location}` : ''
+  const locationBit = i.location ? t(" in {0}", { 0: i.location }) : ''
   const angle =
-    `${who}${locationBit} ${PRESENCE_HOOK[presence]}. ` +
-    `Reach out as a person who noticed${hasReviews ? ` their ${i.reviewCount} reviews` : ''}: ` +
-    `offer to get them a simple site${suggestedDomain ? ` on ${suggestedDomain}` : ''} so customers can find and book them.`
+    t("{0}{1} {2}. ", { 0: who, 1: locationBit, 2: t(PRESENCE_HOOK[presence]) }) +
+    t("Reach out as a person who noticed{0}: ", { 0: hasReviews ? t(" their {0} reviews", { 0: i.reviewCount }) : '' }) +
+    t("offer to get them a simple site{0} so customers can find and book them.", { 0: suggestedDomain ? t(" on {0}", { 0: suggestedDomain }) : '' })
 
   return {
-    headline: PRESENCE_HEADLINE[presence],
+    headline: t(PRESENCE_HEADLINE[presence]),
     angle,
     talkingPoints: points,
     ...(suggestedDomain ? { suggestedDomain } : {}),

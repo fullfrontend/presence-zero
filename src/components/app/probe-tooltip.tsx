@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useEffect, useId, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -20,6 +21,7 @@ const VIEWPORT_MARGIN = 8
 export function ProbeTooltip({
   website, detail, ariaLabel, children,
 }: { website: string | null; detail: string; ariaLabel: string; children: React.ReactNode }) {
+  const { t, system } = useI18n()
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null)
   const triggerRef = useRef<HTMLButtonElement>(null)
@@ -82,9 +84,9 @@ export function ProbeTooltip({
           className="z-30 w-64 rounded-md border border-line bg-base p-2.5 text-left shadow-lg"
         >
           {website && (
-            <span className="block break-all font-mono text-[10px] text-mute">Checked {website}</span>
+            <span className="block break-all font-mono text-[10px] text-mute">{t("Checked ")}{website}</span>
           )}
-          <span className="mt-1 block text-xs leading-relaxed text-dim">{detail}</span>
+          <span className="mt-1 block text-xs leading-relaxed text-dim">{system(detail)}</span>
         </span>,
         document.body,
       )}

@@ -1,3 +1,5 @@
+'use client'
+import { useI18n } from '@/i18n/client'
 const CHIPS = [
   'Open source',
   'Self-hosted',
@@ -7,15 +9,16 @@ const CHIPS = [
 ] as const
 
 export function TrustStrip() {
+  const { t } = useI18n()
   return (
     <div className="mx-auto max-w-6xl px-6 pb-4 lg:pb-8">
-      <ul className="flex flex-wrap items-center gap-2" aria-label="Product highlights">
+      <ul className="flex flex-wrap items-center gap-2" aria-label={t("Product highlights")}>
         {CHIPS.map((label) => (
           <li
             key={label}
             className="rounded-md border border-line px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.12em] text-mute"
           >
-            {label}
+            {t(label)}
           </li>
         ))}
       </ul>

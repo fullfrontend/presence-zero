@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useState } from 'react'
 import { AuditDetail } from './audit-detail'
 import { explainResultRow, pitchForRow, buildPitchText, type ExplainableRow } from '@/lib/score-explain'
@@ -21,14 +22,15 @@ function FactorBar({ label, points, max, hit }: { label: string; points: number;
 }
 
 export function LeadDetail({ row, location }: { row: ExplainableRow; location?: string | null }) {
+  const { t, system } = useI18n()
   const [copied, setCopied] = useState(false)
   const links = businessLinks(row)
   const explanation = explainResultRow(row)
   const isLead = presenceMeta(row.presenceStatus).isLead
-  const pitch = pitchForRow(row, location)
+  const pitch = pitchForRow(row, location, t)
 
   async function copyPitch() {
-    const text = buildPitchText(pitch)
+    const text = buildPitchText(pitch, t)
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(text)
@@ -51,13 +53,13 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
 
   return (
     <div className="grid grid-cols-1 gap-6 rounded-lg border border-line bg-base/40 p-4 md:grid-cols-2">
-      <section aria-label="Business links" className="border-b border-line pb-4 md:col-span-2">
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Website &amp; source links</h3>
+      <section aria-label={t("Business links")} className="border-b border-line pb-4 md:col-span-2">
+        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Website & source links")}</h3>
         <dl className="mt-3 grid gap-3 sm:grid-cols-3">
           {[
-            { label: 'Website', url: links.website, empty: 'Not provided or found' },
-            { label: 'Facebook', url: links.facebook, empty: 'Not provided by the source' },
-            { label: links.source ? links.sourceLabel : 'Source listing', url: links.source, empty: 'Not recorded — re-run this scan' },
+            { label: t("Website"), url: links.website, empty: t("Not provided or found") },
+            { label: t("Facebook"), url: links.facebook, empty: t("Not provided by the source") },
+            { label: links.source ? links.sourceLabel : t("Source listing"), url: links.source, empty: t("Not recorded — re-run this scan") },
           ].map(link => (
             <div key={link.label} className="min-w-0">
               <dt className="text-xs text-mute">{link.label}</dt>
@@ -65,7 +67,7 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
                 {link.url ? (
                   <a href={link.url} target="_blank" rel="noopener noreferrer" className="break-all text-lime underline-offset-4 hover:underline">
                     {link.url.replace(/^https?:\/\//, '')} <span aria-hidden="true">↗</span>
-                    <span className="sr-only"> (opens in a new tab)</span>
+                    <span className="sr-only"> {t(" (opens in a new tab)")}</span>
                   </a>
                 ) : <span className="text-xs text-mute">{link.empty}</span>}
               </dd>
@@ -73,23 +75,23 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
           ))}
         </dl>
       </section>
-      <section aria-label="Score breakdown">
-        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Why this scores {explanation.total}</h3>
+      <section aria-label={t("Score breakdown")}>
+        <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Why this scores ")}{explanation.total}</h3>
         <div className="mt-3 space-y-2">
-          {explanation.factors.map(f => <FactorBar key={f.key} label={f.label} points={f.points} max={f.max} hit={f.hit} />)}
+          {explanation.factors.map(f => <FactorBar key={f.key} label={system(f.label)} points={f.points} max={f.max} hit={f.hit} />)}
         </div>
       </section>
 
       {isLead ? (
-        <section aria-label="Outreach pitch" className="md:border-l md:border-line md:pl-6">
+        <section aria-label={t("Outreach pitch")} className="md:border-l md:border-line md:pl-6">
           <div className="flex items-center justify-between gap-3">
-            <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">Outreach angle</h3>
+            <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Outreach angle")}</h3>
             <button
               type="button"
               onClick={copyPitch}
               className="rounded border border-line px-2 py-1 font-mono text-[10px] uppercase tracking-[0.12em] text-dim transition hover:border-lime/50 hover:text-text"
             >
-              {copied ? '✓ Copied' : 'Copy pitch'}
+              {copied ? t("✓ Copied") : t("Copy pitch")}
             </button>
           </div>
           <p className="mt-3 text-sm font-medium text-text">{pitch.headline}</p>
@@ -104,11 +106,11 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
               ))}
             </ul>
           )}
-          <p className="mt-3 text-[10px] text-mute">A human starting point — personalize it before you send. PresenceZero is a finder, not a bulk-mailer.</p>
+          <p className="mt-3 text-[10px] text-mute">{t("A human starting point — personalize it before you send. PresenceZero is a finder, not a bulk-mailer.")}</p>
         </section>
       ) : (
         <section className="md:border-l md:border-line md:pl-6">
-          <p className="text-xs text-mute">Presence check: {presenceMeta(row.presenceStatus).label.toLowerCase()}. A local audit, when available, can identify website improvement opportunities.</p>
+          <p className="text-xs text-mute">{t("Presence check: ")}{presenceMeta(row.presenceStatus).label.toLowerCase()}{t(". A local audit, when available, can identify website improvement opportunities.")}</p>
         </section>
       )}
       {row.auditReport && <AuditDetail report={row.auditReport} />}

@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import type { AuditReport } from '@/core/audit/types'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/brand/button'
@@ -111,6 +112,7 @@ export default function ResultsTable(
     partial?: boolean
   },
 ) {
+  const { t, number } = useI18n()
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
   const [auditOnly, setAuditOnly] = useState(false)
@@ -123,7 +125,7 @@ export default function ResultsTable(
   const [tourOpen, setTourOpen] = useState(false)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [bulkStatus, setBulkStatus] = useState<LeadStatus>('contacted')
+  const [bulkStatus, setBulkStatus] = useState<LeadStatus>("contacted")
   const [bulkBusy, setBulkBusy] = useState(false)
 
   useEffect(() => {
@@ -212,7 +214,7 @@ export default function ResultsTable(
   }
 
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
-  const byAudit = auditOnly ? byMinScore.filter(r => r.auditReport?.status === 'complete' && r.auditReport.mode === 'website') : byMinScore
+  const byAudit = auditOnly ? byMinScore.filter(r => r.auditReport?.status === "complete" && r.auditReport.mode === 'website') : byMinScore
   const byLeads = leadsOnly ? byAudit.filter(isQualifiedLead) : byAudit
   const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
   const visible = leadStatusFilter ? byPhone.filter(r => r.leadStatus === leadStatusFilter) : byPhone
@@ -248,37 +250,32 @@ export default function ResultsTable(
   return (
     <div className="space-y-3">
       {partial && (
-        <p className="text-xs text-dim">Some rows may still be processing — scores and domains fill in as the scan advances.</p>
+        <p className="text-xs text-dim">{t("Some rows may still be processing — scores and domains fill in as the scan advances.")}</p>
       )}
       <ScanSummary results={results} />
       <div data-tour="toolbar" className="flex flex-wrap items-center gap-4">
         <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
-          Min score
-          <select className={SELECT_CLS} value={minScore} onChange={e => setMinScore(Number(e.target.value))}>
+          {t("Min score")}<select className={SELECT_CLS} value={minScore} onChange={e => setMinScore(Number(e.target.value))}>
             {MIN_SCORE_OPTIONS.map(v => <option key={v} value={v}>{v}</option>)}
           </select>
         </label>
         <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <input type="checkbox" checked={leadsOnly} onChange={e => setLeadsOnly(e.target.checked)} className="accent-lime" />
-          Leads only
-        </label>
+          {t("Leads only")}</label>
         {results.some(r => r.auditReport) && <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <input type="checkbox" checked={auditOnly} onChange={e => { setAuditOnly(e.target.checked); setMinScore(0) }} className="accent-lime" />
-          Audited websites only
-        </label>}
+          {t("Audited websites only")}</label>}
         <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <input type="checkbox" checked={hasPhoneOnly} onChange={e => setHasPhoneOnly(e.target.checked)} className="accent-lime" />
-          Has phone only
-        </label>
+          {t("Has phone only")}</label>
         <label className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
-          Status
-          <select
+          {t("Status")}<select
             className={SELECT_CLS}
             value={leadStatusFilter}
             onChange={e => setLeadStatusFilter(e.target.value as LeadStatus | '')}
           >
-            <option value="">All</option>
-            {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+            <option value="">{t("All")}</option>
+            {LEAD_STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
           </select>
         </label>
         {visible.length >= 2 && (
@@ -286,14 +283,14 @@ export default function ResultsTable(
             <ScoreHistogram scores={visible.map(r => r.score)} />
           </div>
         )}
-        <Button variant="ghost" onClick={() => setTourOpen(true)} className="px-3 py-1.5 text-xs">? Tour</Button>
+        <Button variant="ghost" onClick={() => setTourOpen(true)} className="px-3 py-1.5 text-xs">{t("? Tour")}</Button>
         {readOnly ? (
           <div className="ml-auto flex items-center gap-3">
-            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-lime">Self-host to run scans</span>
-            <Button variant="ghost" disabled className="cursor-not-allowed opacity-40">Export CSV</Button>
+            <span className="font-mono text-[10px] uppercase tracking-[0.12em] text-lime">{t("Self-host to run scans")}</span>
+            <Button variant="ghost" disabled className="cursor-not-allowed opacity-40">{t("Export CSV")}</Button>
           </div>
         ) : (
-          <Button variant="ghost" href={exportHref} className="ml-auto">Export CSV</Button>
+          <Button variant="ghost" href={exportHref} className="ml-auto">{t("Export CSV")}</Button>
         )}
       </div>
 
@@ -306,29 +303,28 @@ export default function ResultsTable(
               onChange={toggleSelectAllVisible}
               className="accent-lime"
             />
-            Select visible ({sorted.length})
+            {t("Select visible (")}{sorted.length})
           </label>
           {selected.size > 0 && (
             <>
-              <span className="font-mono text-[11px] text-dim">{selected.size} selected</span>
+              <span className="font-mono text-[11px] text-dim">{selected.size} {t(" selected")}</span>
               <select
                 className={SELECT_CLS}
                 value={bulkStatus}
                 onChange={e => setBulkStatus(e.target.value as LeadStatus)}
-                aria-label="Bulk lead status"
+                aria-label={t("Bulk lead status")}
               >
-                {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                {LEAD_STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
               </select>
               <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={bulkBusy} onClick={() => { void applyBulkStatus() }}>
-                {bulkBusy ? 'Updating…' : `Mark as ${bulkStatus}`}
+                {bulkBusy ? t("Updating…") : t("Mark as {0}", { 0: t(bulkStatus) })}
               </Button>
               <button
                 type="button"
                 className="font-mono text-[11px] uppercase tracking-[0.12em] text-mute hover:text-text"
                 onClick={() => setSelected(new Set())}
               >
-                Clear
-              </button>
+                {t("Clear")}</button>
             </>
           )}
         </div>
@@ -343,7 +339,7 @@ export default function ResultsTable(
             <tr className="font-mono text-[10px] uppercase tracking-[0.12em] text-mute">
               {!readOnly && (
                 <th className="w-8 px-2 py-2">
-                  <span className="sr-only">Select</span>
+                  <span className="sr-only">{t("Select")}</span>
                 </th>
               )}
               {COLUMNS.map(col => {
@@ -360,7 +356,7 @@ export default function ResultsTable(
                       onClick={() => handleSort(col.key)}
                       className="flex items-center gap-1 font-mono text-[10px] uppercase tracking-[0.12em] text-mute hover:text-text"
                     >
-                      {col.label}
+                      {t(col.label)}
                       {active && <span aria-hidden="true">{sortDir === 'asc' ? '▲' : '▼'}</span>}
                     </button>
                   </th>
@@ -397,7 +393,7 @@ export default function ResultsTable(
                         checked={selected.has(r.id)}
                         onChange={() => toggleSelected(r.id)}
                         className="accent-lime"
-                        aria-label={`Select ${r.name}`}
+                        aria-label={t("Select {0}", { 0: r.name })}
                       />
                     </td>
                   )}
@@ -407,11 +403,11 @@ export default function ResultsTable(
                       onClick={() => setExpandedId(open ? null : r.id)}
                       aria-expanded={open}
                       aria-controls={detailId}
-                      title={open ? 'Hide breakdown & pitch' : 'Show breakdown & pitch'}
+                      title={open ? t("Hide breakdown & pitch") : t("Show breakdown & pitch")}
                       className="flex items-start gap-1 rounded text-left hover:opacity-90 focus-visible:outline focus-visible:outline-lime/60"
                     >
                       <ScoreCell score={r.score} />
-                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title="Separate AI estimate of website improvement potential">Audit {r.auditReport.opportunityScore}/100</span>}
+                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title={t("Separate AI estimate of website improvement potential")}>{t("Audit ")}{r.auditReport.opportunityScore}/100</span>}
                       <span aria-hidden="true" className={`mt-0.5 text-[10px] text-mute transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                     </button>
                   </td>
@@ -419,11 +415,11 @@ export default function ResultsTable(
                     <div className="flex flex-wrap items-center gap-2 text-text">
                       <span className="min-w-0">{r.name}</span>
                       {r.seenBefore && (
-                        <span title="This business appeared in an earlier scan of the same area" className="shrink-0 whitespace-nowrap rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-mute">seen before</span>
+                        <span title={t("This business appeared in an earlier scan of the same area")} className="shrink-0 whitespace-nowrap rounded border border-line px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-[0.12em] text-mute">{t("seen before")}</span>
                       )}
                     </div>
                     <div className="text-xs text-mute">
-                      {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
+                      {r.address} {r.rating != null && <>· ★{number(r.rating)} ({r.reviewCount == null ? '—' : number(r.reviewCount)})</>}
                     </div>
                   </td>
                   <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /></td>
@@ -431,11 +427,11 @@ export default function ResultsTable(
                   <td className="px-3 py-2 text-xs text-dim">{r.phone}</td>
                   <td className="px-3 py-2">
                     {readOnly
-                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{r.leadStatus}</span>
+                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{t(r.leadStatus)}</span>
                       : (
                         <select className={SELECT_CLS} value={r.leadStatus}
                           onChange={e => { void patch(r.id, { leadStatus: e.target.value }) }}>
-                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
                         </select>
                       )}
                   </td>
@@ -462,11 +458,10 @@ export default function ResultsTable(
         {!loading && visible.length === 0 && (
           <div className="p-4 text-sm text-dim">
             {results.length === 0
-              ? (partial ? 'Waiting for the first processed leads…' : 'No businesses in this scan yet.')
+              ? (partial ? t("Waiting for the first processed leads…") : t("No businesses in this scan yet."))
               : (
                 <>
-                  No results match the current filters.
-                  <span className="text-mute"> Try lowering <span className="text-text">Min score</span>{leadsOnly && <> or turning off <span className="text-text">Leads only</span></>}{hasPhoneOnly && <> or <span className="text-text">Has phone only</span></>}{leadStatusFilter && <> or clearing <span className="text-text">Status</span></>}.</span>
+                  {t("No results match the current filters.")}<span className="text-mute"> {t(" Try lowering ")}<span className="text-text">{t("Min score")}</span>{leadsOnly && <> {t(" or turning off ")}<span className="text-text">{t("Leads only")}</span></>}{hasPhoneOnly && <> {t(" or ")}<span className="text-text">{t("Has phone only")}</span></>}{leadStatusFilter && <> {t(" or clearing ")}<span className="text-text">{t("Status")}</span></>}.</span>
                 </>
               )}
           </div>
@@ -486,8 +481,8 @@ export default function ResultsTable(
         {!loading && visible.length === 0 && (
           <div className="rounded-xl border border-dashed border-line p-4 text-sm text-dim">
             {results.length === 0
-              ? (partial ? 'Waiting for the first processed leads…' : 'No businesses in this scan yet.')
-              : 'No results match the current filters.'}
+              ? (partial ? t("Waiting for the first processed leads…") : t("No businesses in this scan yet."))
+              : t("No results match the current filters.")}
           </div>
         )}
         {sorted.map(r => {
@@ -501,7 +496,7 @@ export default function ResultsTable(
                     checked={selected.has(r.id)}
                     onChange={() => toggleSelected(r.id)}
                     className="mt-1 accent-lime"
-                    aria-label={`Select ${r.name}`}
+                    aria-label={t("Select {0}", { 0: r.name })}
                   />
                 )}
                 <div className="min-w-0 flex-1">
@@ -512,27 +507,27 @@ export default function ResultsTable(
                       className="flex items-center gap-2 text-left"
                     >
                       <ScoreCell score={r.score} />
-                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title="Separate AI estimate of website improvement potential">Audit {r.auditReport.opportunityScore}/100</span>}
+                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title={t("Separate AI estimate of website improvement potential")}>{t("Audit ")}{r.auditReport.opportunityScore}/100</span>}
                       <span className="font-medium text-text">{r.name}</span>
                     </button>
                     <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} />
                   </div>
                   <p className="mt-1 text-xs text-mute">
-                    {r.address} {r.rating != null && <>· ★{r.rating} ({r.reviewCount})</>}
+                    {r.address} {r.rating != null && <>· ★{number(r.rating)} ({r.reviewCount == null ? '—' : number(r.reviewCount)})</>}
                   </p>
                   {r.phone && <p className="mt-1 text-xs text-dim">{r.phone}</p>}
                   <div className="mt-2"><DomainChips domains={r.domains} /></div>
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     {readOnly
-                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{r.leadStatus}</span>
+                      ? <span className="font-mono text-xs uppercase tracking-[0.08em] text-text">{t(r.leadStatus)}</span>
                       : (
                         <select className={SELECT_CLS} value={r.leadStatus}
                           onChange={e => { void patch(r.id, { leadStatus: e.target.value }) }}>
-                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                          {LEAD_STATUSES.map(s => <option key={s} value={s}>{t(s)}</option>)}
                         </select>
                       )}
                     {!readOnly && (
-                      <input className={`${INPUT_CLS} w-full max-w-none flex-1`} defaultValue={r.note ?? ''} placeholder="Note"
+                      <input className={`${INPUT_CLS} w-full max-w-none flex-1`} defaultValue={r.note ?? ''} placeholder={t("Note")}
                         onBlur={e => { if (e.target.value !== (r.note ?? '')) void patch(r.id, { note: e.target.value }) }} />
                     )}
                   </div>
@@ -546,7 +541,7 @@ export default function ResultsTable(
                     onClick={() => setExpandedId(open ? null : r.id)}
                     className="mt-2 font-mono text-[10px] uppercase tracking-[0.12em] text-lime"
                   >
-                    {open ? 'Hide score & pitch' : 'Score & pitch'}
+                    {open ? t("Hide score & pitch") : t("Score & pitch")}
                   </button>
                 </div>
               </div>

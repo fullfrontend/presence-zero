@@ -1,9 +1,11 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useEffect, useRef, useState } from 'react'
 import { usePrefersReducedMotion } from '@/lib/motion'
 import { PresenceBadge } from '@/components/app/presence-badge'
 
 export function HeroPipeline() {
+  const { t, number } = useI18n()
   const reduced = usePrefersReducedMotion()
   const root = useRef<HTMLDivElement>(null)
   const [score, setScore] = useState(87) // final value; SSR + reduced-motion show 87
@@ -30,15 +32,15 @@ export function HeroPipeline() {
 
   return (
     <div ref={root} className="rounded-xl border border-line bg-surface p-5">
-      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{'// bakery in ottawa, on'}</p>
+      <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-mute">{t("// bakery in ottawa, on")}</p>
       <div data-row className="mt-4 flex items-center gap-4 rounded-lg border border-line bg-base/50 p-4">
         <div className="w-12">
           <div className="text-lg tabular-nums text-lime font-semibold">{score}</div>
           <div className="mt-1 h-0.5 w-full bg-line"><div data-bar className="h-full bg-lime" style={{ width: '87%' }} /></div>
         </div>
         <div className="flex-1">
-          <div className="text-text">Joe&apos;s Bakery</div>
-          <div className="text-xs text-mute">124 Bank St · ★4.7 (212)</div>
+          <div className="text-text">Joe’s Bakery</div>
+          <div className="text-xs text-mute">124 Bank St · ★{number(4.7)} ({number(212)})</div>
         </div>
         <span data-badge><PresenceBadge status="none" /></span>
         <span data-chip className="rounded border border-lime/30 bg-lime/[0.08] px-1.5 py-0.5 font-mono text-[10px] text-lime">joesbakery.com</span>

@@ -1,4 +1,5 @@
 'use client'
+import { useI18n } from '@/i18n/client'
 import { useState } from 'react'
 import { SectionTag } from '@/components/brand/section-tag'
 import { HeadlineRule } from '@/components/brand/headline-rule'
@@ -19,12 +20,13 @@ const QUICKSTART_TABS = [
 ]
 
 export function Quickstart() {
+  const { t } = useI18n()
   const [activeTab, setActiveTab] = useState(0)
 
   return (
     <section id="quickstart" className="mx-auto max-w-3xl px-6 py-20">
-      <SectionTag>{'// QUICK START'}</SectionTag>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight">Three ways to run</h2>
+      <SectionTag>{t("// QUICK START")}</SectionTag>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight">{t("Three ways to run")}</h2>
       <HeadlineRule />
 
       <div className="mt-8">
@@ -47,7 +49,7 @@ export function Quickstart() {
 
         <div className="mt-6 overflow-x-auto rounded border border-line bg-surface">
           <pre className="p-4 font-mono text-sm text-text">
-            <code>{QUICKSTART_TABS[activeTab].code}</code>
+            <code>{activeTab === 2 ? t(QUICKSTART_TABS[activeTab].code) : QUICKSTART_TABS[activeTab].code}</code>
           </pre>
         </div>
       </div>

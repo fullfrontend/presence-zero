@@ -1,3 +1,4 @@
+import { englishText, type TranslateText } from '@/core/text'
 import type { AuditReport } from '@/core/audit/types'
 import { explainScore, type ScoreExplanation } from '@/core/scoring'
 import { generatePitch, type Pitch } from '@/core/pitch'
@@ -52,7 +53,7 @@ export function explainResultRow(row: ExplainableRow): ScoreExplanation {
   )
 }
 
-export function pitchForRow(row: ExplainableRow, location?: string | null): Pitch {
+export function pitchForRow(row: ExplainableRow, location?: string | null, t: TranslateText = englishText): Pitch {
   return generatePitch({
     name: row.name,
     category: row.category ?? null,
@@ -61,13 +62,13 @@ export function pitchForRow(row: ExplainableRow, location?: string | null): Pitc
     rating: row.rating,
     reviewCount: row.reviewCount,
     availableDomain: bestAvailableDomain(row.domains),
-  })
+  }, t)
 }
 
 /** Flattens a pitch into plain text for the clipboard. */
-export function buildPitchText(pitch: Pitch): string {
+export function buildPitchText(pitch: Pitch, t: TranslateText = englishText): string {
   const lines = [pitch.headline, '', pitch.angle]
   if (pitch.talkingPoints.length) lines.push('', ...pitch.talkingPoints.map(t => `• ${t}`))
-  if (pitch.suggestedDomain) lines.push('', `Suggested domain: ${pitch.suggestedDomain}`)
+  if (pitch.suggestedDomain) lines.push('', t("Suggested domain: {0}", { 0: pitch.suggestedDomain }))
   return lines.join('\n')
 }
