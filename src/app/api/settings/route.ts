@@ -1,44 +1,59 @@
 import { loadPromptProfile } from '@/server/prompt-profile'
 import { readAuditConfig } from '@/server/audit-config'
+import { loadRuntimeSettings, resolveSettings, secretFields } from '@/server/runtime-settings'
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { settings } from '@/db/schema'
 import { putSettingsSchema } from '@/server/validation'
 
-const MASK = '***'
-
 export async function GET() {
-  const db = await getDb()
-  const rows = await db.select().from(settings)
-  const has = (key: string) => rows.some(r => r.key === key)
+  const { env, configuration, secrets } = await loadRuntimeSettings(await getDb())
   let aiAudit: { enabled: boolean; model?: string; lightModel?: string; profile?: string; language?: string; error?: string } = { enabled: false }
   try {
-    const config = readAuditConfig()
-    if (config) aiAudit = { enabled: true, profile: loadPromptProfile().profile.id, model: config.OLLAMA_MODEL, lightModel: config.OLLAMA_LIGHT_MODEL, language: config.AI_AUDIT_LANGUAGE }
+    const config = readAuditConfig(env)
+    if (config) aiAudit = { enabled: true, profile: loadPromptProfile(env).profile.id, model: config.OLLAMA_MODEL, lightModel: config.OLLAMA_LIGHT_MODEL, language: config.AI_AUDIT_LANGUAGE }
   } catch { aiAudit = { enabled: false, error: 'Invalid AI audit environment configuration.' } }
-  // Never return stored secret values — presence only.
+  // Explicit allowlist only: never serialize the resolved environment or private profiles.
   return Response.json({
-    aiAudit,
-    searxngEnabled: process.env.SEARXNG_ENABLED === 'true' && !!process.env.SEARXNG_URL?.trim(),
-    braveSearchEnabled: process.env.BRAVE_SEARCH_ENABLED === 'true' && !!(process.env.BRAVE_SEARCH_API_KEY?.trim() || rows.some(r => r.key === 'brave_search_api_key' && r.value.trim())),
-    googleApiKey: process.env.GOOGLE_PLACES_API_KEY?.trim() || rows.some(r => r.key === 'google_api_key' && r.value.trim()) ? MASK : null,
-    apifyToken: has('apify_token') ? MASK : null,
-    braveSearchApiKey: has('brave_search_api_key') || process.env.BRAVE_SEARCH_API_KEY ? MASK : null,
+    configuration, secrets, aiAudit,
+    searxngEnabled: env.SEARXNG_ENABLED === 'true' && !!env.SEARXNG_URL?.trim(),
+    braveSearchEnabled: env.BRAVE_SEARCH_ENABLED === 'true' && secrets.braveSearchApiKey.configured,
+    googleApiKey: secrets.googleApiKey.configured ? '***' : null,
+    apifyToken: secrets.apifyToken.configured ? '***' : null,
+    braveSearchApiKey: secrets.braveSearchApiKey.configured ? '***' : null,
   })
 }
 
 export async function PUT(req: Request) {
   const parsed = putSettingsSchema.safeParse(await req.json().catch(() => ({})))
-  if (!parsed.success) return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
-  const db = await getDb()
-  const updates: [string, string][] = []
-  if (parsed.data.googleApiKey) updates.push(['google_api_key', parsed.data.googleApiKey])
-  if (parsed.data.apifyToken) updates.push(['apify_token', parsed.data.apifyToken])
-  if (parsed.data.braveSearchApiKey === '') await db.delete(settings).where(eq(settings.key, 'brave_search_api_key'))
-  else if (parsed.data.braveSearchApiKey) updates.push(['brave_search_api_key', parsed.data.braveSearchApiKey])
-  for (const [key, value] of updates) {
-    await db.insert(settings).values({ key, value })
-      .onConflictDoUpdate({ target: settings.key, set: { value } })
+  if (!parsed.success) return Response.json({ error: 'Invalid settings.', fields: parsed.error.issues.map(issue => issue.path.join('.')) }, { status: 400 })
+  const updates: [string, string | null][] = Object.entries(parsed.data.configuration ?? {}).map(([key, value]) => [`config:${key}`, value])
+  for (const [name, field] of Object.entries(secretFields)) {
+    const value = parsed.data[name as keyof typeof secretFields]
+    if (value !== undefined) updates.push([field.key, value])
   }
+  const db = await getDb()
+  const rows = new Map((await db.select().from(settings)).map(row => [row.key, row.value]))
+  for (const [key, value] of updates) {
+    if (value === null) rows.delete(key)
+    else rows.set(key, value)
+  }
+  const { env } = resolveSettings(Array.from(rows, ([key, value]) => ({ key, value })))
+  // Unrelated settings remain editable even if deployment AI settings need repair.
+  const changesAi = Object.keys(parsed.data.configuration ?? {}).some(key => key.startsWith('AI_') || key.startsWith('OLLAMA_'))
+  if (changesAi) {
+    try {
+      if (readAuditConfig(env)) loadPromptProfile(env)
+    } catch {
+      return Response.json({ error: 'Check the AI models, limits and private profile before enabling AI.', fields: ['configuration.AI_AUDIT_ENABLED'] }, { status: 400 })
+    }
+  }
+  // A transactional batch keeps mixed credential/configuration updates atomic and
+  // works with both in-memory libSQL and persistent deployments.
+  const statements = updates.map(([key, value]) => value === null
+    ? db.delete(settings).where(eq(settings.key, key))
+    : db.insert(settings).values({ key, value }).onConflictDoUpdate({ target: settings.key, set: { value } }))
+  const [first, ...rest] = statements
+  if (first) await db.batch([first, ...rest])
   return Response.json({ ok: true })
 }

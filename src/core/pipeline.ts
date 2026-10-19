@@ -62,10 +62,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   const probe = deps.probe ?? createWebsiteProbe()
   const checkDomain = deps.checkDomain ?? createRdapChecker({ cache: createDrizzleRdapCache(db) })
   const getSecret = deps.getSecret ?? (async (name: SecretName) => {
-    const fromEnv = process.env[ENV_BY_SECRET[name]]
-    if (fromEnv) return fromEnv
     const rows = await db.select().from(settings).where(eq(settings.key, name))
-    return rows[0]?.value
+    return (rows[0]?.value ?? process.env[ENV_BY_SECRET[name]])?.trim() || undefined
   })
 
   const scan = (await db.select().from(scans).where(eq(scans.id, scanId)))[0]

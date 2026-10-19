@@ -7,7 +7,7 @@ const bool = (fallback: boolean) => z.preprocess(
   value => value === undefined || value === '' ? fallback : value === 'true' ? true : value === 'false' ? false : value,
   z.boolean(),
 )
-const schema = z.object({
+export const auditConfigSchema = z.object({
   OLLAMA_BASE_URL: z.url().default('http://127.0.0.1:11434').refine(value => {
     const url = new URL(value)
     return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash
@@ -42,7 +42,7 @@ const schema = z.object({
 
 export function readAuditConfig(env: Record<string, string | undefined> = process.env) {
   if (env.AI_AUDIT_ENABLED !== 'true') return null
-  const result = schema.safeParse(env)
+  const result = auditConfigSchema.safeParse(env)
   if (!result.success) throw new Error(`Invalid AI audit configuration: ${result.error.issues.map(i => i.path.join('.')).join(', ')}`)
   if (result.data.AI_AUDIT_MIN_REVIEWS > result.data.AI_AUDIT_MAX_REVIEWS) throw new Error('AI_AUDIT_MIN_REVIEWS exceeds AI_AUDIT_MAX_REVIEWS')
   return result.data

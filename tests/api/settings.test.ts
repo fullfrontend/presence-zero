@@ -25,7 +25,7 @@ describe('settings API', () => {
     const route = await import('@/app/api/settings/route')
     const res = await route.GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
+    expect(await res.json()).toMatchObject({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
   })
 
   it('GET masks a stored secret and never leaks the raw value in the response body', async () => {
@@ -42,7 +42,7 @@ describe('settings API', () => {
     expect(raw).not.toContain(SENTINEL)
 
     const body = JSON.parse(raw)
-    expect(body).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(body).toMatchObject({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only googleApiKey stores it (backward-compat shape from the settings form)', async () => {
@@ -55,7 +55,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(await getRes.json()).toMatchObject({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only apifyToken stores it', async () => {
@@ -68,7 +68,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
+    expect(await getRes.json()).toMatchObject({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
   })
 
   it('PUT with both stores each value under the exact settings table keys the pipeline reads', async () => {
@@ -188,4 +188,73 @@ it.each(['env', 'db'])('reports search readiness only after opt-in with %s crede
       expect(body.braveSearchApiKey).toBe('***')
     }
   } finally { vi.unstubAllEnvs() }
+})
+
+describe('settings overrides', () => {
+  beforeEach(async () => {
+    await (await getDb()).delete(settings)
+    vi.stubEnv('AI_AUDIT_ENABLED', 'false')
+    vi.stubEnv('AI_PROMPTS_DIR', '')
+    vi.stubEnv('AI_PROMPT_PROFILE', 'default')
+  })
+  afterEach(() => vi.unstubAllEnvs())
+  async function put(body: unknown) {
+    const route = await import('@/app/api/settings/route')
+    return route.PUT(new Request('http://t', { method: 'PUT', body: JSON.stringify(body) }))
+  }
+  async function read() { return (await (await import('@/app/api/settings/route')).GET()).json() }
+
+  it('overrides environment flags and restores inheritance with null', async () => {
+    vi.stubEnv('SEARXNG_ENABLED', 'true')
+    vi.stubEnv('SEARXNG_URL', 'http://search:8080')
+    expect((await put({ configuration: { SEARXNG_ENABLED: 'false', PRESENCEZERO_DEFAULT_LOCATION: 'Namur' } })).status).toBe(200)
+    expect((await read()).searxngEnabled).toBe(false)
+    expect((await read()).configuration.SEARXNG_ENABLED).toEqual({ value: 'false', inherited: 'true', source: 'settings' })
+    expect((await put({ configuration: { SEARXNG_ENABLED: null } })).status).toBe(200)
+    expect((await read()).searxngEnabled).toBe(true)
+    expect((await read()).configuration.PRESENCEZERO_DEFAULT_LOCATION.value).toBe('Namur')
+  })
+
+  it('can enable AI over false environment and disable it over true environment', async () => {
+    expect((await put({ configuration: { AI_AUDIT_ENABLED: 'true', OLLAMA_MODEL: 'custom-heavy', OLLAMA_LIGHT_MODEL: 'custom-light' } })).status).toBe(200)
+    expect((await read()).aiAudit).toMatchObject({ enabled: true, model: 'custom-heavy', lightModel: 'custom-light' })
+    vi.stubEnv('AI_AUDIT_ENABLED', 'true')
+    expect((await put({ configuration: { AI_AUDIT_ENABLED: 'false' } })).status).toBe(200)
+    expect((await read()).aiAudit.enabled).toBe(false)
+  })
+
+  it('masks overridden keys, allows explicit disabling and restores the environment key', async () => {
+    vi.stubEnv('BRAVE_SEARCH_API_KEY', 'ENV-SECRET-SENTINEL')
+    await put({ braveSearchApiKey: 'SAVED-SECRET-SENTINEL' })
+    let body = await read()
+    expect(body.secrets.braveSearchApiKey).toEqual({ configured: true, source: 'settings' })
+    expect(JSON.stringify(body)).not.toContain('SECRET-SENTINEL')
+    await put({ braveSearchApiKey: '' })
+    expect((await read()).braveSearchApiKey).toBeNull()
+    await put({ braveSearchApiKey: null })
+    body = await read()
+    expect(body.secrets.braveSearchApiKey).toEqual({ configured: true, source: 'environment' })
+    expect(JSON.stringify(body)).not.toContain('SECRET-SENTINEL')
+  })
+
+  it.each([
+    { DATABASE_URL: 'file:elsewhere.db' }, { AI_PROMPTS_DIR: '/tmp/private' },
+    { SEARXNG_ENABLED: 'yes' }, { SEARXNG_URL: 'file:///etc/passwd' },
+    { SEARXNG_URL: 'http://user:password@localhost:8080' }, { SEARXNG_MIN_INTERVAL_MS: '-1' },
+    { OLLAMA_MODEL: 'model:cloud' }, { AI_AUDIT_MAX_PAGES: '99' },
+    { PRESENCEZERO_DEFAULT_COUNTRY_CODE: 'Belgium' }, { PRESENCEZERO_DEFAULT_LOCALE: 'nl' },
+  ])('rejects invalid or deployment-only settings without partially saving keys: %j', async configuration => {
+    expect((await put({ configuration, googleApiKey: 'must-not-save' })).status).toBe(400)
+    expect(await (await getDb()).select().from(settings)).toEqual([])
+  })
+
+  it('rejects inconsistent AI limits atomically and allows disabling a broken deployment', async () => {
+    expect((await put({ configuration: { AI_AUDIT_ENABLED: 'true', OLLAMA_MODEL: 'local', AI_AUDIT_MIN_REVIEWS: '20', AI_AUDIT_MAX_REVIEWS: '10' }, googleApiKey: 'must-not-save' })).status).toBe(400)
+    expect(await (await getDb()).select().from(settings)).toEqual([])
+    vi.stubEnv('AI_AUDIT_ENABLED', 'true')
+    vi.stubEnv('OLLAMA_MODEL', '')
+    vi.stubEnv('AI_PROMPTS_DIR', '/nonexistent-private-directory')
+    expect((await put({ configuration: { AI_AUDIT_ENABLED: 'false' } })).status).toBe(200)
+    expect((await read()).aiAudit.enabled).toBe(false)
+  })
 })

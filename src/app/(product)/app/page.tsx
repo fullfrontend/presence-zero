@@ -1,7 +1,8 @@
+import { loadRuntimeSettings } from '@/server/runtime-settings'
 import { getI18n } from '@/i18n/server'
-import { desc, eq, inArray, sql } from 'drizzle-orm'
+import { desc, inArray, sql } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { businesses, scans, settings } from '@/db/schema'
+import { businesses, scans } from '@/db/schema'
 import NewScanForm from '@/components/app/new-scan-form'
 import PastScans from '@/components/app/past-scans'
 import { SectionTag } from '@/components/brand/section-tag'
@@ -11,13 +12,12 @@ export const dynamic = 'force-dynamic'
 
 export default async function AppHome() {
   const { t } = await getI18n()
-  const defaultLocation = process.env.PRESENCEZERO_DEFAULT_LOCATION?.trim() ?? t("Charleroi, Belgique")
-  const configuredCountry = process.env.PRESENCEZERO_DEFAULT_COUNTRY_CODE?.trim().toLowerCase()
-  const defaultCountryCode = configuredCountry && /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'be'
   const db = await getDb()
-  const storedGoogleKey = (await db.select({ value: settings.value }).from(settings)
-    .where(eq(settings.key, 'google_api_key')))[0]?.value
-  const hasGoogleKey = !!(process.env.GOOGLE_PLACES_API_KEY?.trim() || storedGoogleKey?.trim())
+  const { env } = await loadRuntimeSettings(db)
+  const defaultLocation = env.PRESENCEZERO_DEFAULT_LOCATION?.trim() ?? t("Charleroi, Belgique")
+  const configuredCountry = env.PRESENCEZERO_DEFAULT_COUNTRY_CODE?.trim().toLowerCase()
+  const defaultCountryCode = configuredCountry && /^[a-z]{2}$/.test(configuredCountry) ? configuredCountry : 'be'
+  const hasGoogleKey = !!env.GOOGLE_PLACES_API_KEY?.trim()
   const rows = await db.select().from(scans).orderBy(desc(scans.createdAt))
   const counts = await db.select({ scanId: businesses.scanId, leads: sql<number>`count(*)` })
     .from(businesses)

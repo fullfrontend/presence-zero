@@ -5,10 +5,10 @@ import { createLeadAuditor } from '@/core/audit/audit-lead'
 import { createOllamaAudit } from '@/core/audit/ollama'
 import { readAuditConfig } from './audit-config'
 
-export function buildAuditLead() {
-  const config = readAuditConfig()
+export function buildAuditLead(env: Record<string, string | undefined> = process.env) {
+  const config = readAuditConfig(env)
   if (!config) return undefined
-  const { profile, revision } = loadPromptProfile()
+  const { profile, revision } = loadPromptProfile(env)
   const light = {
     baseUrl: config.OLLAMA_BASE_URL, model: config.OLLAMA_LIGHT_MODEL,
     timeoutMs: config.OLLAMA_LIGHT_TIMEOUT_MS, numCtx: config.OLLAMA_LIGHT_NUM_CTX,

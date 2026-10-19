@@ -1,3 +1,4 @@
+import { configurationPatchSchema } from './settings-validation'
 import { z } from 'zod'
 
 const DEFAULT_APIFY_MAX_PLACES_CEILING = 100
@@ -48,10 +49,12 @@ export const patchScanSchema = z.object({
 }).refine(d => Object.values(d).some(v => v !== undefined), { message: 'nothing to update' })
 
 export const putSettingsSchema = z.object({
-  googleApiKey: z.string().min(1).optional(),
-  apifyToken: z.string().min(1).optional(),
-  braveSearchApiKey: z.string().trim().optional(),
-}).refine(d => d.googleApiKey !== undefined || d.apifyToken !== undefined || d.braveSearchApiKey !== undefined, { message: 'nothing to update' })
+  googleApiKey: z.string().trim().max(4096).nullable().optional(),
+  apifyToken: z.string().trim().max(4096).nullable().optional(),
+  braveSearchApiKey: z.string().trim().max(4096).nullable().optional(),
+  configuration: configurationPatchSchema.optional(),
+}).strict().refine(d => d.googleApiKey !== undefined || d.apifyToken !== undefined || d.braveSearchApiKey !== undefined
+  || Object.keys(d.configuration ?? {}).length > 0, { message: 'nothing to update' })
 
 export const resultsQuerySchema = z.object({
   minScore: z.coerce.number().int().min(0).max(100).optional(),
