@@ -1,8 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { migrate } from 'drizzle-orm/libsql/migrator'
 import { eq } from 'drizzle-orm'
 import { createDb, type Db } from '@/db/client'
-import { scans, businesses, domainCandidates } from '@/db/schema'
+import { scans, businesses, domainCandidates, settings } from '@/db/schema'
 import { advanceScan, type PipelineDeps, type SecretName } from '@/core/pipeline'
 import { ProviderError, type Provider } from '@/core/providers/provider'
 import type { ProviderConfig, ScanArea } from '@/core/types'
@@ -488,4 +488,29 @@ it('an optional auditor failure never turns a successful probe into a failure', 
   const alive = (await db.select().from(businesses)).find(r => r.name === 'Crusty Loaf')!
   expect(alive.presenceStatus).toBe('alive')
   expect(alive.score).toBe(0)
+})
+
+
+describe('Brave environment opt-in', () => {
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals() })
+
+  it.each([
+    ['env', undefined], ['db', undefined], ['env', 'false'], ['db', 'false'],
+    ['env', 'true'], ['db', 'true'],
+  ])('requires explicit activation with %s credentials and flag %s', async (source, flag) => {
+    vi.stubEnv('BRAVE_SEARCH_ENABLED', flag)
+    vi.stubEnv('BRAVE_SEARCH_API_KEY', source === 'env' ? 'test-key' : '')
+    const fetchFn = vi.fn<typeof fetch>().mockImplementation(async () => Response.json({ web: { results: [] } }))
+    vi.stubGlobal('fetch', fetchFn)
+    const db = await freshDb()
+    if (source === 'db') await db.insert(settings).values({ key: 'brave_search_api_key', value: 'test-key' })
+    await insertScan(db)
+    const provider: Provider = { id: 'mock', async fetchPage() {
+      return { businesses: [{ name: 'Bakery', address: '12 Main Street, Ottawa' }], nextCursor: null }
+    } }
+    const result = await runToCompletion(db, deps(db, { getSecret: undefined, getProviderById: () => provider }))
+    expect(result.status).toBe('done')
+    expect(fetchFn).toHaveBeenCalledTimes(flag === 'true' ? 1 : 0)
+    if (flag === 'true') expect(String(fetchFn.mock.calls[0][0])).toContain('api.search.brave.com')
+  })
 })

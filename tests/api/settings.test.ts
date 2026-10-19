@@ -25,7 +25,7 @@ describe('settings API', () => {
     const route = await import('@/app/api/settings/route')
     const res = await route.GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
+    expect(await res.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
   })
 
   it('GET masks a stored secret and never leaks the raw value in the response body', async () => {
@@ -42,7 +42,7 @@ describe('settings API', () => {
     expect(raw).not.toContain(SENTINEL)
 
     const body = JSON.parse(raw)
-    expect(body).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(body).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only googleApiKey stores it (backward-compat shape from the settings form)', async () => {
@@ -55,7 +55,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only apifyToken stores it', async () => {
@@ -68,7 +68,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
+    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, braveSearchEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
   })
 
   it('PUT with both stores each value under the exact settings table keys the pipeline reads', async () => {
@@ -168,4 +168,24 @@ describe('settings API', () => {
     } finally { rmSync(directory, { recursive: true, force: true }) }
   })
 
+})
+
+
+it.each(['env', 'db'])('reports search readiness only after opt-in with %s credentials', async source => {
+  const db = await getDb()
+  await db.delete(settings)
+  vi.stubEnv('BRAVE_SEARCH_API_KEY', source === 'env' ? 'test-key' : '')
+  vi.stubEnv('SEARXNG_URL', 'http://searxng:8080')
+  if (source === 'db') await db.insert(settings).values({ key: 'brave_search_api_key', value: 'test-key' })
+  const route = await import('@/app/api/settings/route')
+  try {
+    for (const flag of [undefined, 'true', 'false']) {
+      vi.stubEnv('SEARXNG_ENABLED', flag)
+      vi.stubEnv('BRAVE_SEARCH_ENABLED', flag)
+      const body = await (await route.GET()).json()
+      expect(body.searxngEnabled).toBe(flag === 'true')
+      expect(body.braveSearchEnabled).toBe(flag === 'true')
+      expect(body.braveSearchApiKey).toBe('***')
+    }
+  } finally { vi.unstubAllEnvs() }
 })

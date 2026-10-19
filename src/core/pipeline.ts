@@ -31,6 +31,7 @@ export interface PipelineDeps {
   getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
   discoverWebsite?: (input: WebsiteSearchInput) => Promise<WebsiteSearchResult>
+  braveSearchEnabled?: boolean
   auditLead?: AuditLead
   batchSize?: number
 }
@@ -76,7 +77,8 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
   }
   const apiKey = await readSecret('google_api_key')
   const apifyToken = await readSecret('apify_token')
-  const braveKey = await readSecret('brave_search_api_key')
+  const braveEnabled = deps.braveSearchEnabled ?? (process.env.BRAVE_SEARCH_ENABLED === 'true')
+  const braveKey = braveEnabled && !deps.discoverWebsite ? await readSecret('brave_search_api_key') : undefined
   const discoverWebsite = deps.discoverWebsite ?? (braveKey ? createWebsiteSearch(braveKey) : undefined)
   const enrichPhone = deps.enrichPhone ?? (apiKey ? createGooglePhoneLookup(apiKey) : async () => null)
 

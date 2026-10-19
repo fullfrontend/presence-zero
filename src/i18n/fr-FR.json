@@ -319,12 +319,9 @@
   "SearXNG enabled": "SearXNG activé",
   "SearXNG not configured": "SearXNG non configuré",
   "Uses your SearXNG instance without an API key. SearXNG takes priority over Brave, with no automatic paid fallback. Re-run completed scans to search for missing websites.": "Utilise votre instance SearXNG sans clé API. SearXNG est prioritaire sur Brave, sans basculement automatique payant. Relancez les analyses terminées pour rechercher les sites manquants.",
-  "For free self-hosted search, start the Docker setup and configure SEARXNG_URL. No search API key is needed.": "Pour une recherche auto-hébergée gratuite, lancez le setup Docker et configurez SEARXNG_URL. Aucune clé API de recherche n'est requise.",
   "Brave Search API key": "Clé API Brave Search",
   "(a key is configured)": "(une clé est configurée)",
-  "Optional alternative when SearXNG is not configured — saving a key enables automatic website discovery for businesses without a listed website, across all sources. One search per business with an address, using its name and address. Matches require name and address evidence; uncertain results remain unverified. Existing completed scans must be rerun. BRAVE_SEARCH_API_KEY takes precedence.": "Alternative optionnelle lorsque SearXNG n'est pas configuré — la sauvegarde d'une clé permet la découverte automatique de sites internet pour les entreprises sans site internet listé, sur toutes les sources. Une recherche par entreprise avec une adresse, utilisant son nom et son adresse. Les correspondances nécessitent des preuves de nom et d'adresse ; les résultats incertains restent non vérifiés. Les scans terminés existants doivent être relancés. BRAVE_SEARCH_API_KEY prend la priorité.",
   "Remove saved search key": "Supprimer la clé de recherche sauvegardée",
-  "To disable Brave discovery, remove the saved key and unset BRAVE_SEARCH_API_KEY if configured.": "Pour désactiver la recherche Brave, supprimez la clé enregistrée et la variable BRAVE_SEARCH_API_KEY si elle est définie.",
   "Powered by": "Propulsé par",
   "Brave Search API": "API Brave Search",
   "Uses your own account and quota. Set your spending limit in Brave to stay within your free credits.": "Utilise votre propre compte et votre quota. Définissez votre limite de dépenses dans Brave pour rester dans vos crédits gratuits.",
@@ -559,5 +556,10 @@
   "// OWNERSHIP": "// AUTONOMIE",
   "// FREELANCERS": "// INDÉPENDANTS",
   "// AGENCIES": "// AGENCES",
-  "// INVESTORS": "// INVESTISSEURS"
+  "// INVESTORS": "// INVESTISSEURS",
+  "Search is disabled by default. Set SEARXNG_ENABLED=true with SEARXNG_URL, or BRAVE_SEARCH_ENABLED=true with a Brave key in .env. Restart the app after changes.": "La recherche est désactivée par défaut. Dans .env, définissez SEARXNG_ENABLED=true avec SEARXNG_URL, ou BRAVE_SEARCH_ENABLED=true avec une clé Brave. Redémarrez l’application après modification.",
+  "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.": "Enregistrer une clé n’active pas la recherche. Brave nécessite BRAVE_SEARCH_ENABLED=true dans .env et s’utilise uniquement si SearXNG est inactif. Une recherche par commerce disposant d’une adresse ; les correspondances incertaines restent non vérifiées. Relancez les scans terminés. BRAVE_SEARCH_API_KEY est prioritaire sur la clé enregistrée.",
+  "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.": "Pour désactiver la recherche Brave, définissez BRAVE_SEARCH_ENABLED=false dans .env et redémarrez l’application. Vous pouvez conserver la clé.",
+  "Brave Search enabled": "Brave Search activé",
+  "Search disabled": "Recherche désactivée"
 }

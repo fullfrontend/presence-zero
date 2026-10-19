@@ -319,12 +319,9 @@
   "SearXNG enabled": "SearXNG enabled",
   "SearXNG not configured": "SearXNG not configured",
   "Uses your SearXNG instance without an API key. SearXNG takes priority over Brave, with no automatic paid fallback. Re-run completed scans to search for missing websites.": "Uses your SearXNG instance without an API key. SearXNG takes priority over Brave, with no automatic paid fallback. Re-run completed scans to search for missing websites.",
-  "For free self-hosted search, start the Docker setup and configure SEARXNG_URL. No search API key is needed.": "For free self-hosted search, start the Docker setup and configure SEARXNG_URL. No search API key is needed.",
   "Brave Search API key": "Brave Search API key",
   "(a key is configured)": "(a key is configured)",
-  "Optional alternative when SearXNG is not configured — saving a key enables automatic website discovery for businesses without a listed website, across all sources. One search per business with an address, using its name and address. Matches require name and address evidence; uncertain results remain unverified. Existing completed scans must be rerun. BRAVE_SEARCH_API_KEY takes precedence.": "Optional alternative when SearXNG is not configured — saving a key enables automatic website discovery for businesses without a listed website, across all sources. One search per business with an address, using its name and address. Matches require name and address evidence; uncertain results remain unverified. Existing completed scans must be rerun. BRAVE_SEARCH_API_KEY takes precedence.",
   "Remove saved search key": "Remove saved search key",
-  "To disable Brave discovery, remove the saved key and unset BRAVE_SEARCH_API_KEY if configured.": "To disable Brave discovery, remove the saved key and unset BRAVE_SEARCH_API_KEY if configured.",
   "Powered by": "Powered by",
   "Brave Search API": "Brave Search API",
   "Uses your own account and quota. Set your spending limit in Brave to stay within your free credits.": "Uses your own account and quota. Set your spending limit in Brave to stay within your free credits.",
@@ -559,5 +556,10 @@
   "// OWNERSHIP": "// OWNERSHIP",
   "// FREELANCERS": "// FREELANCERS",
   "// AGENCIES": "// AGENCIES",
-  "// INVESTORS": "// INVESTORS"
+  "// INVESTORS": "// INVESTORS",
+  "Search is disabled by default. Set SEARXNG_ENABLED=true with SEARXNG_URL, or BRAVE_SEARCH_ENABLED=true with a Brave key in .env. Restart the app after changes.": "Search is disabled by default. Set SEARXNG_ENABLED=true with SEARXNG_URL, or BRAVE_SEARCH_ENABLED=true with a Brave key in .env. Restart the app after changes.",
+  "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.": "Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.",
+  "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.": "To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.",
+  "Brave Search enabled": "Brave Search enabled",
+  "Search disabled": "Search disabled"
 }

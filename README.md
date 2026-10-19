@@ -150,7 +150,8 @@ to change the initial form values. Restart the app after changing the environmen
 A missing website in OSM or
 Google Places means **unverified**, not confirmed absence of a website.
 
-Add a **Brave Search API** key in Settings or set `BRAVE_SEARCH_API_KEY` to enable
+Search is disabled by default. Set `BRAVE_SEARCH_ENABLED=true` in `.env` and
+add a **Brave Search API** key in Settings or set `BRAVE_SEARCH_API_KEY` to enable
 complementary searches for businesses with no listed website. Powered by
 [Brave Search API](https://brave.com/search/api/), using your own account. Set your
 Brave spending limit to stay within your free credits. Each eligible business
@@ -173,7 +174,12 @@ fresh scan. Automated tests use synthetic search fixtures and never the network.
 SearXNG provides complementary website search without a paid search API key.
 It uses upstream search engines, which may rate-limit requests or return incomplete
 results. Missing or ambiguous matches remain **UNVERIFIED**. SearXNG takes priority
-when `SEARXNG_URL` is set; failures never trigger an automatic fallback to Brave.
+when `SEARXNG_ENABLED=true` and `SEARXNG_URL` is set; failures never trigger an automatic fallback to Brave.
+
+Enable search with `SEARXNG_ENABLED=true` in `.env`, including for Docker.
+Keys and URLs alone never enable searches. Set the corresponding enabled flag to
+`false` to disable a provider while keeping its credentials. Restart the app
+(or recreate its container) after changes.
 
 **Run everything in Docker** (Docker Desktop / Docker Engine must be running):
 
@@ -204,6 +210,7 @@ Add this to your existing `.env` (adjust the port if you changed it), then resta
 `npm run dev`:
 
 ```dotenv
+SEARXNG_ENABLED=true
 SEARXNG_URL=http://127.0.0.1:8080
 ```
 

@@ -36,10 +36,11 @@ export function buildPipelineDeps(db: Db): PipelineDeps {
   }
   const envBatch = Number(process.env.PRESENCEZERO_BATCH_SIZE)
   const batchSize = Number.isFinite(envBatch) && envBatch > 0 ? envBatch : undefined
-  const searxngUrl = process.env.SEARXNG_URL?.trim()
+  const searxngUrl = process.env.SEARXNG_ENABLED === 'true' ? process.env.SEARXNG_URL?.trim() : undefined
   const auditLead = buildAuditLead()
   return {
     db,
+    braveSearchEnabled: !searxngUrl && process.env.BRAVE_SEARCH_ENABLED === 'true',
     ...(auditLead ? { auditLead, batchSize: batchSize ?? 1 } : {}),
     ...(batchSize ? { batchSize } : {}),
     ...(searxngUrl ? { discoverWebsite: searxngSearch(db, searxngUrl) } : {}),

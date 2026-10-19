@@ -7,6 +7,7 @@ export default function SettingsForm() {
   const { t, system } = useI18n()
   const [aiAudit, setAiAudit] = useState<{ enabled: boolean; model?: string; lightModel?: string; profile?: string; language?: string; error?: string }>({ enabled: false })
   const [searxngEnabled, setSearxngEnabled] = useState(false)
+  const [braveSearchEnabled, setBraveSearchEnabled] = useState(false)
   const [hasKey, setHasKey] = useState(false)
   const [hasToken, setHasToken] = useState(false)
   const [key, setKey] = useState('')
@@ -19,6 +20,7 @@ export default function SettingsForm() {
     void fetch('/api/settings').then(r => r.json()).then(d => {
       setAiAudit(d.aiAudit ?? { enabled: false })
       setSearxngEnabled(!!d.searxngEnabled)
+      setBraveSearchEnabled(!!d.braveSearchEnabled)
       setHasKey(!!d.googleApiKey)
       setHasToken(!!d.apifyToken)
       setHasBraveKey(!!d.braveSearchApiKey)
@@ -35,7 +37,12 @@ export default function SettingsForm() {
     const res = await fetch('/api/settings', { method: 'PUT', body: JSON.stringify(payload) })
     if (!res.ok) return
     setSaved(true)
-    if (braveKey) { setHasBraveKey(true); setBraveKey('') }
+    if (braveKey) {
+      const current = await fetch('/api/settings').then(r => r.json())
+      setHasBraveKey(!!current.braveSearchApiKey)
+      setBraveSearchEnabled(!!current.braveSearchEnabled)
+      setBraveKey('')
+    }
     if (key) { setHasKey(true); setKey('') }
     if (token) { setHasToken(true); setToken('') }
   }
@@ -45,6 +52,7 @@ export default function SettingsForm() {
     if (!res.ok) return
     const current = await fetch('/api/settings').then(r => r.json())
     setHasBraveKey(!!current.braveSearchApiKey)
+    setBraveSearchEnabled(!!current.braveSearchEnabled)
     setBraveKey('')
   }
 
@@ -78,11 +86,11 @@ export default function SettingsForm() {
           : t("Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key."))}</p>
       </div>
       <div className="rounded-md border border-line p-4 text-sm">
-        <p className="font-medium">{t("Website discovery · ")}{searxngEnabled ? t("SearXNG enabled") : t("SearXNG not configured")}</p>
+        <p className="font-medium">{t("Website discovery · ")}{searxngEnabled ? t("SearXNG enabled") : braveSearchEnabled ? t("Brave Search enabled") : t("Search disabled")}</p>
         <p className="mt-2 text-xs text-mute">
           {searxngEnabled
             ? t("Uses your SearXNG instance without an API key. SearXNG takes priority over Brave, with no automatic paid fallback. Re-run completed scans to search for missing websites.")
-            : t("For free self-hosted search, start the Docker setup and configure SEARXNG_URL. No search API key is needed.")}
+            : t("Search is disabled by default. Set SEARXNG_ENABLED=true with SEARXNG_URL, or BRAVE_SEARCH_ENABLED=true with a Brave key in .env. Restart the app after changes.")}
         </p>
       </div>
       <div>
@@ -92,9 +100,9 @@ export default function SettingsForm() {
         <input id="brave-search-key" type="password" className={input} value={braveKey}
           autoComplete="off" onChange={e => { setBraveKey(e.target.value); setSaved(false) }} />
         <p className="mt-2 text-mute text-xs">
-          {t("Optional alternative when SearXNG is not configured — saving a key enables automatic website discovery for businesses without a listed website, across all sources. One search per business with an address, using its name and address. Matches require name and address evidence; uncertain results remain unverified. Existing completed scans must be rerun. BRAVE_SEARCH_API_KEY takes precedence.")}</p>
+          {t("Saving a key does not enable searches. Brave requires BRAVE_SEARCH_ENABLED=true in .env and is used only when SearXNG is inactive. One search per business with an address; uncertain matches remain unverified. Re-run completed scans. BRAVE_SEARCH_API_KEY takes precedence over the saved key.")}</p>
         {hasBraveKey && <button type="button" onClick={removeBraveKey} className="mt-2 text-xs text-lime underline">{t("Remove saved search key")}</button>}
-        <p className="mt-2 text-mute text-xs">{t("To disable Brave discovery, remove the saved key and unset BRAVE_SEARCH_API_KEY if configured.")}</p>
+        <p className="mt-2 text-mute text-xs">{t("To disable Brave discovery, set BRAVE_SEARCH_ENABLED=false in .env and restart the app. You can keep the key.")}</p>
         <p className="mt-2 text-mute text-xs">
           {t("Powered by ")}<a href="https://brave.com/search/api/" target="_blank" rel="noreferrer" className="text-lime underline">{t("Brave Search API")}</a>.
           {' '}{t("Uses your own account and quota. Set your spending limit in Brave to stay within your free credits.")}</p>
