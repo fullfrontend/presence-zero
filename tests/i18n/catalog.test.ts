@@ -1,3 +1,4 @@
+import { settingFields } from '@/config/settings'
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import ts from 'typescript'
@@ -24,4 +25,8 @@ it('includes every explicit UI message in both catalogs', () => {
   }
   walk('src')
   expect(missing).toEqual([])
+})
+
+it('translates every dynamically rendered settings label', () => {
+  expect(settingFields.filter(field => !(field.label in messages)).map(field => field.label)).toEqual([])
 })

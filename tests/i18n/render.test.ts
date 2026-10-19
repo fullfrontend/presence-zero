@@ -1,6 +1,7 @@
 import { createElement as h } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { expect, it } from 'vitest'
+import { expect, it, vi } from 'vitest'
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 import { LocaleProvider } from '@/i18n/client'
 import { PresenceBadge } from '@/components/app/presence-badge'
 import { AuditDetail } from '@/components/app/audit-detail'

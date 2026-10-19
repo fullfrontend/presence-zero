@@ -145,12 +145,13 @@ MIT — see [LICENSE](LICENSE).
 
 New scans default to **Charleroi, Belgique** (`be`). Set
 `PRESENCEZERO_DEFAULT_LOCATION` and `PRESENCEZERO_DEFAULT_COUNTRY_CODE` in `.env`
-to change the initial form values. Restart the app after changing the environment
+to change the initial form values, or override them in Settings. Restart the app after changing the environment
 (or recreate the app container); no image rebuild is needed for these settings.
 A missing website in OSM or
 Google Places means **unverified**, not confirmed absence of a website.
 
-Search is disabled by default. Set `BRAVE_SEARCH_ENABLED=true` in `.env` and
+Search is disabled by default. Enable Brave Search in Settings or set
+`BRAVE_SEARCH_ENABLED=true` in `.env` and
 add a **Brave Search API** key in Settings or set `BRAVE_SEARCH_API_KEY` to enable
 complementary searches for businesses with no listed website. Powered by
 [Brave Search API](https://brave.com/search/api/), using your own account. Set your
@@ -176,7 +177,7 @@ It uses upstream search engines, which may rate-limit requests or return incompl
 results. Missing or ambiguous matches remain **UNVERIFIED**. SearXNG takes priority
 when `SEARXNG_ENABLED=true` and `SEARXNG_URL` is set; failures never trigger an automatic fallback to Brave.
 
-Enable search with `SEARXNG_ENABLED=true` in `.env`, including for Docker.
+Enable SearXNG in Settings or with `SEARXNG_ENABLED=true` in `.env`, including for Docker.
 Keys and URLs alone never enable searches. Set the corresponding enabled flag to
 `false` to disable a provider while keeping its credentials. Restart the app
 (or recreate its container) after changes.
@@ -277,10 +278,31 @@ errors or unavailable search engines remain `none` (the legacy code for
 **UNVERIFIED**). Dead and parked sites retain their separate diagnoses and weights.
 Re-run historical scans to refresh stored scores after changing these weights.
 
+### Settings and environment defaults
+
+The **Settings** page groups General, Data sources, Website discovery and Local AI.
+Saved settings take priority over `.env`; this includes API keys, search/AI enable
+switches, model roles, scan defaults, throttling, audit limits and qualification.
+Each field shows its source. Choose **Customize in Settings** to override it, or
+**Use environment / default** to restore inheritance. Advanced options are folded.
+
+Changes persist in the local database and apply at the next scan step without a
+restart. A running step finishes using the settings it started with. Completed
+reports are preserved. Existing saved API keys now take priority over environment
+keys; choose **Use environment key** to restore the environment credential.
+**Disable this key** explicitly suppresses even an environment key. API responses
+only expose whether credentials exist, never their values or private prompt contents.
+
+The database connection, Docker ports, `APIFY_MAX_PLACES` deployment spending
+ceiling and `AI_PROMPTS_DIR` private directory remain environment-only. Restart or
+recreate the app after changing environment defaults. Settings does not edit `.env`.
+The private profile ID is editable; profile files stay outside the repository.
+The interface language selected in a browser still takes priority over its default.
+
 ### Local AI audits with Ollama
 
 `AI_AUDIT_ENABLED` is the global switch for **all AI features**. Only `true`
-in `.env` enables the light and heavy models, evidence preparation, lead summaries
+in the effective configuration (Settings first, then `.env`) enables the light and heavy models, evidence preparation, lead summaries
 and website audits. With `false` or an unset flag, no Ollama requests, AI-specific
 crawling or private prompt-profile loading occur, even if models and
 `AI_AUDIT_PREPARE_EVIDENCE=true` are configured. Restart the app (or recreate its
@@ -311,7 +333,7 @@ cloud features ([official instructions](https://docs.ollama.com/faq#how-do-i-dis
 PresenceZero refuses the official cloud endpoint and cloud-named models, follows
 no inference redirects, sends no API key, and calls only your configured server.
 A custom server or model alias remains under your control. The app does not download
-models automatically. Settings shows the configuration, not a health assertion.
+models automatically. Settings shows and overrides the configuration; it does not assert that Ollama is healthy.
 
 For the full PresenceZero Docker stack with Ollama running natively on the host,
 set `OLLAMA_BASE_URL=http://host.docker.internal:11434` in `.env`. Compose includes
