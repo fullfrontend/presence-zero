@@ -1,0 +1,57 @@
+'use client'
+import type { AuditReport } from '@/core/audit/types'
+
+export function AuditDetail({ report }: { report: AuditReport }) {
+  function download() {
+    const url = URL.createObjectURL(new Blob([JSON.stringify(report, null, 2)], { type: 'application/json' }))
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = 'presencezero-audit.json'
+    anchor.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+  return (
+    <section aria-label="Local AI audit" className="border-t border-line pt-4 md:col-span-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="font-mono text-[11px] uppercase tracking-wide text-dim">Local AI audit · {report.status}</h3>
+        <button type="button" onClick={download} className="text-xs text-lime underline">Download report &amp; evidence</button>
+      </div>
+      <p className="mt-2 text-xs text-mute">{report.model} · {report.language} · {report.createdAt}</p>
+      {report.promptProfile && <p className="mt-1 text-xs text-mute">Prompt profile: {report.promptProfile.id} · revision {report.promptProfile.revision.slice(0, 12)}</p>}
+      {report.preparation && <p className="mt-1 text-xs text-mute">Evidence preparation: {report.preparation.model} · {report.preparation.status === 'complete' ? 'verified excerpts selected' : 'original evidence used after preparation failure'}</p>}
+      <p className="mt-2 text-xs text-dim">{report.verification.detail}</p>
+      {report.reason && <p className="mt-2 text-sm text-amber-400">{report.reason}</p>}
+      {report.status === 'complete' && <>
+        {report.websiteQuality !== null && <dl className="mt-4 flex flex-wrap gap-8">
+          <div><dt className="text-xs text-mute">Website quality · higher is better</dt><dd className="text-lg text-text">{report.websiteQuality}/100</dd></div>
+          <div><dt className="text-xs text-mute">Improvement opportunity · higher is stronger</dt><dd className="text-lg text-lime">{report.opportunityScore}/100</dd></div>
+        </dl>}
+        <p className="mt-3 text-sm text-text">{report.summary}</p>
+        <ul className="mt-4 space-y-4">
+          {report.findings.map((finding, index) => <li key={index} className="border-l border-line pl-3">
+            <p className="text-sm text-text">{finding.observation}</p>
+            <p className="mt-1 text-sm text-dim">{finding.recommendation}</p>
+            <blockquote className="mt-2 text-xs text-mute">“{finding.quote}” — {finding.evidenceId}</blockquote>
+          </li>)}
+        </ul>
+        <h4 className="mt-4 text-xs font-medium text-text">Suggested project brief</h4>
+        <p className="mt-1 whitespace-pre-wrap text-sm text-dim">{report.brief}</p>
+        {report.qualificationReasons.map(reason => <p key={reason} className="mt-2 text-xs text-mute">{reason}</p>)}
+        <p className="mt-3 text-xs text-mute">AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the evidence; the original lead score is unchanged.</p>
+      </>}
+      {report.evidence.length > 0 && <details className="mt-4 text-xs">
+        <summary className="cursor-pointer text-dim">Collected evidence ({report.evidence.length})</summary>
+        <ul className="mt-3 space-y-4">
+          {report.evidence.map(page => <li key={page.id} className="min-w-0">
+            <p className="text-text">{page.id} · {page.error ?? 'collected'}{page.truncated ? ' · partial content' : ''}</p>
+            {/^https?:\/\//i.test(page.url) && <a href={page.url} target="_blank" rel="noopener noreferrer" className="break-all text-lime underline">{page.url}</a>}
+            <p className="mt-1 text-mute">{page.retrievedAt} · HTTP {page.statusCode ?? '—'} · {page.contentType}</p>
+            <p className="break-all text-mute">SHA-256: {page.sha256 ?? '—'}</p>
+            {page.facts.map(fact => <p key={fact} className="mt-1 text-dim">{fact}</p>)}
+            <p className="mt-2 max-h-40 overflow-y-auto whitespace-pre-wrap break-words text-mute">{page.text}</p>
+          </li>)}
+        </ul>
+      </details>}
+    </section>
+  )
+}

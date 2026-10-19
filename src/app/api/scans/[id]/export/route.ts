@@ -17,12 +17,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const url = new URL(req.url)
   const parsed = exportQuerySchema.safeParse(Object.fromEntries(url.searchParams))
   if (!parsed.success) return Response.json({ error: parsed.error.issues[0].message }, { status: 400 })
-  const { minScore, leadsOnly, hasPhone, leadStatus } = parsed.data
+  const { minScore, leadsOnly, auditOnly, hasPhone, leadStatus } = parsed.data
 
   const db = await getDb()
   const rows = await db.select().from(businesses).where(eq(businesses.scanId, id)).orderBy(desc(businesses.score))
   const filtered = rows.filter(r => matchesResultFilters(r, {
     minScore,
+    auditOnly,
     leadsOnly: leadsOnly || false,
     hasPhoneOnly: hasPhone || false,
     leadStatus: leadStatus ?? '',
@@ -35,10 +36,16 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   for (const c of candidates) {
     if (c.available === true) available.set(c.businessId, [...(available.get(c.businessId) ?? []), c.domain])
   }
-  const header = 'name,address,phone,category,rating,review_count,website,presence,probe_detail,score,lead_status,note,available_domains'
+  const header = 'name,address,phone,category,rating,review_count,website,presence,probe_detail,score,lead_status,note,available_domains,facebook_url,source_url,audit_status,audit_model,audit_language,website_quality,audit_opportunity_score,audit_qualified,audit_summary,audit_brief,audit_findings,audit_evidence,audit_reason,audit_preparation_model,audit_preparation_status,audit_prompt_profile,audit_prompt_revision'
   const lines = filtered.map(r => [
     r.name, r.address, r.phone, r.category, r.rating, r.reviewCount, r.listedWebsite,
     r.presenceStatus, r.probeDetail, r.score, r.leadStatus, r.note, (available.get(r.id) ?? []).join(' '),
+    r.facebookUrl, r.sourceUrl, r.auditReport?.status, r.auditReport?.model, r.auditReport?.language,
+    r.auditReport?.websiteQuality, r.auditReport?.opportunityScore, r.auditReport?.qualified,
+    r.auditReport?.summary, r.auditReport?.brief,
+    r.auditReport ? JSON.stringify(r.auditReport.findings) : null,
+    r.auditReport ? JSON.stringify(r.auditReport.evidence) : null,
+    r.auditReport?.reason, r.auditReport?.preparation?.model, r.auditReport?.preparation?.status, r.auditReport?.promptProfile?.id, r.auditReport?.promptProfile?.revision,
   ].map(csvCell).join(','))
   const safeId = id.replace(/[^a-zA-Z0-9_-]/g, '')
   return new Response([header, ...lines].join('\n'), {

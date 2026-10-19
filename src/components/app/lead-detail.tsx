@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { AuditDetail } from './audit-detail'
 import { explainResultRow, pitchForRow, buildPitchText, type ExplainableRow } from '@/lib/score-explain'
 import { businessLinks } from '@/lib/business-links'
 import { presenceMeta } from '@/lib/presence'
@@ -107,9 +108,10 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
         </section>
       ) : (
         <section className="md:border-l md:border-line md:pl-6">
-          <p className="text-xs text-mute">This isn’t a lead ({presenceMeta(row.presenceStatus).label.toLowerCase()}), so there’s no outreach angle to draft.</p>
+          <p className="text-xs text-mute">Presence check: {presenceMeta(row.presenceStatus).label.toLowerCase()}. A local audit, when available, can identify website improvement opportunities.</p>
         </section>
       )}
+      {row.auditReport && <AuditDetail report={row.auditReport} />}
     </div>
   )
 }

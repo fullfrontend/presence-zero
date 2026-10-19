@@ -1,6 +1,9 @@
+import type { AuditReport } from '@/core/audit/types'
+import { isQualifiedLead } from '@/lib/result-filters'
 import { presenceMeta } from '@/lib/presence'
 
 interface SummaryRow {
+  auditReport?: AuditReport | null
   presenceStatus: string | null
   score: number | null
   domains: { domain: string; available: boolean | null }[]
@@ -26,7 +29,7 @@ const PRESENCE_ORDER = ['not_found', 'facebook', 'none', 'alive', 'dead', 'parke
 export function ScanSummary({ results }: { results: SummaryRow[] }) {
   if (results.length < 2) return null
 
-  const leads = results.filter(r => presenceMeta(r.presenceStatus).isLead)
+  const leads = results.filter(isQualifiedLead)
   const leadScores = leads.map(r => r.score ?? 0)
   const avgScore = leadScores.length ? Math.round(leadScores.reduce((a, b) => a + b, 0) / leadScores.length) : 0
   const withDomain = leads.filter(r => r.domains.some(d => d.available === true)).length

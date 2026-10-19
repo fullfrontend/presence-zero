@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { Button } from '@/components/brand/button'
 
 export default function SettingsForm() {
+  const [aiAudit, setAiAudit] = useState<{ enabled: boolean; model?: string; lightModel?: string; profile?: string; language?: string; error?: string }>({ enabled: false })
   const [searxngEnabled, setSearxngEnabled] = useState(false)
   const [hasKey, setHasKey] = useState(false)
   const [hasToken, setHasToken] = useState(false)
@@ -14,6 +15,7 @@ export default function SettingsForm() {
 
   useEffect(() => {
     void fetch('/api/settings').then(r => r.json()).then(d => {
+      setAiAudit(d.aiAudit ?? { enabled: false })
       setSearxngEnabled(!!d.searxngEnabled)
       setHasKey(!!d.googleApiKey)
       setHasToken(!!d.apifyToken)
@@ -70,6 +72,12 @@ export default function SettingsForm() {
         <p className="mt-2 text-mute text-xs">
           Optional — only for the Apify data source. Stored in your own database and sent only to Apify. If APIFY_TOKEN is set in the environment, it takes precedence. Apify&rsquo;s free plan renews $5 of credit each month (~1,250 places); scans stop when it runs out.
         </p>
+      </div>
+      <div className="rounded-md border border-line p-4 text-sm">
+        <p className="font-medium">Local AI audit · {aiAudit.enabled ? 'Configured' : 'Disabled'}</p>
+        <p className="mt-2 text-xs text-mute">{aiAudit.error ?? (aiAudit.enabled
+          ? `Profile: ${aiAudit.profile}. Preparation / profiles: ${aiAudit.lightModel}. Website audits: ${aiAudit.model} · ${aiAudit.language}. New scans collect evidence and request an audit from your Ollama server. Availability is checked when a scan runs. Re-run completed scans to add audits.`
+          : 'Enable AI_AUDIT_ENABLED and select OLLAMA_MODEL in your environment. Ollama provides local website audits and lead summaries without a cloud API key.')}</p>
       </div>
       <div className="rounded-md border border-line p-4 text-sm">
         <p className="font-medium">Website discovery · {searxngEnabled ? 'SearXNG enabled' : 'SearXNG not configured'}</p>

@@ -1,4 +1,5 @@
 'use client'
+import type { AuditReport } from '@/core/audit/types'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/brand/button'
 import { ScoreCell } from './score-cell'
@@ -9,8 +10,7 @@ import { Skeleton } from './skeleton'
 import { Tour, type TourStep } from './tour'
 import { LeadDetail } from './lead-detail'
 import { ScanSummary } from './scan-summary'
-import { presenceMeta } from '@/lib/presence'
-import { buildExportQuery, type LeadStatus } from '@/lib/result-filters'
+import { buildExportQuery, isQualifiedLead, type LeadStatus } from '@/lib/result-filters'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
@@ -19,6 +19,7 @@ interface Result {
   presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
   facebookUrl?: string | null; sourceUrl?: string | null
   category?: string | null; seenBefore?: boolean
+  auditReport?: AuditReport | null
   domains: DomainInfo[]
 }
 
@@ -61,7 +62,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     selector: '[data-tour="presence"]',
     title: 'Web presence',
-    body: 'How reachable the business’s site is. The dot encodes lead quality: NO SITE FOUND = no results after search, FACEBOOK = social presence, UNVERIFIED = incomplete or inconclusive verification. DEAD and PARKED remain separate website problems. A muted dot means ALIVE (not a lead) or PROBE-FAILED.',
+    body: 'How reachable the business’s site is. The dot encodes lead quality: NO SITE FOUND = no results after search, FACEBOOK = social presence, UNVERIFIED = incomplete or inconclusive verification. DEAD and PARKED remain separate website problems. A muted dot means ALIVE (check the local audit for website opportunities) or PROBE-FAILED.',
   },
   {
     selector: '[data-tour="domains"]',
@@ -112,6 +113,7 @@ export default function ResultsTable(
 ) {
   const [results, setResults] = useState<Result[]>(initialResults ?? [])
   const [minScore, setMinScore] = useState(0)
+  const [auditOnly, setAuditOnly] = useState(false)
   const [leadsOnly, setLeadsOnly] = useState(true)
   const [hasPhoneOnly, setHasPhoneOnly] = useState(false)
   const [leadStatusFilter, setLeadStatusFilter] = useState<LeadStatus | ''>('')
@@ -210,13 +212,15 @@ export default function ResultsTable(
   }
 
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
-  const byLeads = leadsOnly ? byMinScore.filter(r => presenceMeta(r.presenceStatus).isLead) : byMinScore
+  const byAudit = auditOnly ? byMinScore.filter(r => r.auditReport?.status === 'complete' && r.auditReport.mode === 'website') : byMinScore
+  const byLeads = leadsOnly ? byAudit.filter(isQualifiedLead) : byAudit
   const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
   const visible = leadStatusFilter ? byPhone.filter(r => r.leadStatus === leadStatusFilter) : byPhone
   const activeColumn = COLUMNS.find(c => c.key === sortKey) ?? COLUMNS[0]
   const sorted = [...visible].sort((a, b) => compareValues(activeColumn.value(a), activeColumn.value(b), sortDir))
   const exportHref = `/api/scans/${scanId}/export${buildExportQuery({
     minScore,
+    auditOnly,
     leadsOnly,
     hasPhoneOnly,
     leadStatus: leadStatusFilter,
@@ -258,6 +262,10 @@ export default function ResultsTable(
           <input type="checkbox" checked={leadsOnly} onChange={e => setLeadsOnly(e.target.checked)} className="accent-lime" />
           Leads only
         </label>
+        {results.some(r => r.auditReport) && <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
+          <input type="checkbox" checked={auditOnly} onChange={e => { setAuditOnly(e.target.checked); setMinScore(0) }} className="accent-lime" />
+          Audited websites only
+        </label>}
         <label className="flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
           <input type="checkbox" checked={hasPhoneOnly} onChange={e => setHasPhoneOnly(e.target.checked)} className="accent-lime" />
           Has phone only
@@ -403,6 +411,7 @@ export default function ResultsTable(
                       className="flex items-start gap-1 rounded text-left hover:opacity-90 focus-visible:outline focus-visible:outline-lime/60"
                     >
                       <ScoreCell score={r.score} />
+                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title="Separate AI estimate of website improvement potential">Audit {r.auditReport.opportunityScore}/100</span>}
                       <span aria-hidden="true" className={`mt-0.5 text-[10px] text-mute transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                     </button>
                   </td>
@@ -503,6 +512,7 @@ export default function ResultsTable(
                       className="flex items-center gap-2 text-left"
                     >
                       <ScoreCell score={r.score} />
+                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title="Separate AI estimate of website improvement potential">Audit {r.auditReport.opportunityScore}/100</span>}
                       <span className="font-medium text-text">{r.name}</span>
                     </button>
                     <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} />

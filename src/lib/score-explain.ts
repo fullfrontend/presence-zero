@@ -1,3 +1,4 @@
+import type { AuditReport } from '@/core/audit/types'
 import { explainScore, type ScoreExplanation } from '@/core/scoring'
 import { generatePitch, type Pitch } from '@/core/pitch'
 import type { PresenceStatus } from '@/core/types'
@@ -9,6 +10,7 @@ export interface DomainInfo {
 
 /** The subset of a results-table row the explainer/pitch need. */
 export interface ExplainableRow {
+  auditReport?: AuditReport | null
   listedWebsite?: string | null
   facebookUrl?: string | null
   sourceUrl?: string | null

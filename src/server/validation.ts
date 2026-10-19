@@ -68,6 +68,7 @@ const truthyFlag = z
 export const exportQuerySchema = z.object({
   minScore: z.coerce.number().int().min(0).max(100).optional(),
   leadsOnly: truthyFlag,
+  auditOnly: truthyFlag,
   hasPhone: truthyFlag,
   leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']).optional(),
 })

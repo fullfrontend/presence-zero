@@ -4,6 +4,10 @@ process.env.DATABASE_URL = ':memory:'
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { eq } from 'drizzle-orm'
+import { mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import example from '../../examples/ai-prompts/default.json'
 import { getDb } from '@/db/client'
 import { settings } from '@/db/schema'
 
@@ -21,7 +25,7 @@ describe('settings API', () => {
     const route = await import('@/app/api/settings/route')
     const res = await route.GET()
     expect(res.status).toBe(200)
-    expect(await res.json()).toEqual({ searxngEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
+    expect(await res.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: null, apifyToken: null, braveSearchApiKey: null })
   })
 
   it('GET masks a stored secret and never leaks the raw value in the response body', async () => {
@@ -38,7 +42,7 @@ describe('settings API', () => {
     expect(raw).not.toContain(SENTINEL)
 
     const body = JSON.parse(raw)
-    expect(body).toEqual({ searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(body).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only googleApiKey stores it (backward-compat shape from the settings form)', async () => {
@@ -51,7 +55,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
+    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: '***', apifyToken: null, braveSearchApiKey: null })
   })
 
   it('PUT with only apifyToken stores it', async () => {
@@ -64,7 +68,7 @@ describe('settings API', () => {
     expect(await putRes.json()).toEqual({ ok: true })
 
     const getRes = await route.GET()
-    expect(await getRes.json()).toEqual({ searxngEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
+    expect(await getRes.json()).toEqual({ aiAudit: { enabled: false }, searxngEnabled: false, googleApiKey: null, apifyToken: '***', braveSearchApiKey: null })
   })
 
   it('PUT with both stores each value under the exact settings table keys the pipeline reads', async () => {
@@ -143,6 +147,25 @@ describe('settings API', () => {
     await db.insert(settings).values({ key: 'google_api_key', value: '   ' })
     const route = await import('@/app/api/settings/route')
     expect((await (await route.GET()).json()).googleApiKey).toBeNull()
+  })
+
+  it('exposes model roles and profile ID without exposing private prompt contents or paths', async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'pz-settings-profile-'))
+    try {
+      writeFileSync(path.join(directory, 'default.json'), JSON.stringify({ ...example,
+        context: { ...example.context, businessName: 'PRIVATE-CONTEXT-SENTINEL' } }))
+      vi.stubEnv('AI_AUDIT_ENABLED', 'true')
+      vi.stubEnv('OLLAMA_MODEL', 'heavy-local')
+      vi.stubEnv('OLLAMA_LIGHT_MODEL', 'light-local')
+      vi.stubEnv('AI_PROMPTS_DIR', directory)
+      vi.stubEnv('AI_PROMPT_PROFILE', 'default')
+      const route = await import('@/app/api/settings/route')
+      const raw = await (await route.GET()).text()
+      expect(JSON.parse(raw).aiAudit).toEqual({ enabled: true, model: 'heavy-local', lightModel: 'light-local', profile: 'default', language: 'fr' })
+      expect(raw).not.toContain('PRIVATE-CONTEXT-SENTINEL')
+      expect(raw).not.toContain(directory)
+      expect(raw).not.toContain(example.prompts.websiteAudit)
+    } finally { rmSync(directory, { recursive: true, force: true }) }
   })
 
 })

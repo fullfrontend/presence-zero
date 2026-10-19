@@ -1,3 +1,5 @@
+import { loadPromptProfile } from '@/server/prompt-profile'
+import { readAuditConfig } from '@/server/audit-config'
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { settings } from '@/db/schema'
@@ -9,8 +11,14 @@ export async function GET() {
   const db = await getDb()
   const rows = await db.select().from(settings)
   const has = (key: string) => rows.some(r => r.key === key)
+  let aiAudit: { enabled: boolean; model?: string; lightModel?: string; profile?: string; language?: string; error?: string } = { enabled: false }
+  try {
+    const config = readAuditConfig()
+    if (config) aiAudit = { enabled: true, profile: loadPromptProfile().profile.id, model: config.OLLAMA_MODEL, lightModel: config.OLLAMA_LIGHT_MODEL, language: config.AI_AUDIT_LANGUAGE }
+  } catch { aiAudit = { enabled: false, error: 'Invalid AI audit environment configuration.' } }
   // Never return stored secret values — presence only.
   return Response.json({
+    aiAudit,
     searxngEnabled: !!process.env.SEARXNG_URL?.trim(),
     googleApiKey: process.env.GOOGLE_PLACES_API_KEY?.trim() || rows.some(r => r.key === 'google_api_key' && r.value.trim()) ? MASK : null,
     apifyToken: has('apify_token') ? MASK : null,
