@@ -96,7 +96,7 @@ export function createLeadAuditor(options: LeadAuditOptions): AuditLead {
         }
       }
       const infer = mode === 'profile' ? options.profileInfer ?? options.infer : options.infer
-      const result = await infer({ mode, business: input, verification: report.verification,
+      const result = await infer({ mode, assessedAt: report.createdAt, business: input, verification: report.verification,
         evidence: prepared.map(({ id, text, excerpts, facts, truncated }) => ({ id, ...(excerpts ? { excerpts } : { text }), facts, truncated })) })
       if (mode === 'website' && result.websiteQuality === null) throw new Error('missing_quality')
       if (mode === 'profile' && result.websiteQuality !== null) throw new Error('unsupported_quality')

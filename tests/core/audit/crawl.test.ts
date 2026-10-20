@@ -84,3 +84,14 @@ it('does not turn copyright dates into business age, but records explicit establ
   expect(page.facts).toContain('Claimed establishment year: 2012 (website claim, not independently verified)')
   expect(page.facts.join(' ')).not.toContain('1999')
 })
+
+it('records explicit freshness and functional signals without claiming a redesign date', async () => {
+  const content = html.replace('</head>', '<meta property="article:modified_time" content="2026-10-01"></head>')
+    .replace('</body>', '<object type="application/x-shockwave-flash"></object><a href="tel:+32123456789">Call</a><a href="mailto:test@example.test">Email</a></body>')
+  const pages = await createEvidenceCrawler({ ...options, maxPages: 1, fetchFn: (async url => String(url).endsWith('/robots.txt')
+    ? new Response('', { status: 404 }) : new Response(content, { headers: { 'Content-Type': 'text/html' } })) as typeof fetch })('https://restaurant.example')
+  expect(pages[0].facts).toContain('Declared page article:modified_time: 2026-10-01 (not a website creation or redesign date)')
+  expect(pages[0].facts).toContain('Flash embed declared in retrieved HTML (execution not tested)')
+  expect(pages[0].facts).toContain('Telephone link present in retrieved HTML (interaction not tested)')
+  expect(pages[0].facts).toContain('Email link present in retrieved HTML (interaction not tested)')
+})

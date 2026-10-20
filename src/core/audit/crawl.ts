@@ -77,6 +77,13 @@ export function createEvidenceCrawler(options: CrawlOptions) {
         if (generator) facts.push(`Declared generator: ${generator}`)
         if ($('meta[name="viewport"]').length) facts.push('Viewport meta present (not a mobile usability test)')
         else if (!body.truncated) facts.push('No viewport meta found in retrieved document')
+        for (const property of ['article:published_time', 'article:modified_time']) {
+          const declared = cleanText($(`meta[property="${property}"]`).attr('content') ?? '').slice(0, 120)
+          if (declared) facts.push(`Declared page ${property}: ${declared} (not a website creation or redesign date)`)
+        }
+        if ($('object[type="application/x-shockwave-flash"], embed[type="application/x-shockwave-flash"]').length) facts.push('Flash embed declared in retrieved HTML (execution not tested)')
+        if ($('a[href^="tel:"]').length) facts.push('Telephone link present in retrieved HTML (interaction not tested)')
+        if ($('a[href^="mailto:"]').length) facts.push('Email link present in retrieved HTML (interaction not tested)')
         const shopLinks = $('a[href]').toArray().map(a => $(a).attr('href') ?? '')
         if (shopLinks.some(href => /\/(cart|panier)(?:[/?#]|$)/i.test(href)) && shopLinks.some(href => /\/(checkout|commande)(?:[/?#]|$)/i.test(href))) facts.push('Cart and checkout links observed')
         $('script, style, noscript, svg, template, [hidden], [aria-hidden="true"]').remove()
