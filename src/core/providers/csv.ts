@@ -1,3 +1,4 @@
+import { coordinates } from '../coordinates'
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
 
@@ -38,6 +39,7 @@ export function parseCsv(content: string): RawBusiness[] {
     return {
       name: get(cells, 'name') ?? '',
       address: get(cells, 'address'),
+      ...coordinates(num(get(cells, 'latitude')), num(get(cells, 'longitude'))),
       phone: get(cells, 'phone'),
       category: get(cells, 'category'),
       rating: num(get(cells, 'rating')),

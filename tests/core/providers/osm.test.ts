@@ -24,6 +24,8 @@ describe('osm provider', () => {
     expect(res.businesses).toHaveLength(3)
     expect(res.businesses[0].sourceUrl).toBe('https://www.openstreetmap.org/node/1')
     expect(res.businesses[0]).toMatchObject({ name: "Joe's Bakery", phone: '+1-613-555-0101', address: '12 Main St' })
+    expect(res.businesses[0]).toMatchObject({ latitude: 45.42, longitude: -75.69 })
+    expect(res.businesses[1]).toMatchObject({ latitude: 45.43, longitude: -75.7 })
     expect(res.businesses[1].website).toBe('https://crustyloaf.example.com')
     expect(res.nextCursor).toBeNull()
   })
@@ -59,6 +61,7 @@ describe('osm provider', () => {
   it('sends a User-Agent header on both requests', async () => {
     const seen: string[] = []
     const spy = (async (url: RequestInfo | URL, init?: RequestInit) => {
+      if (String(url).includes('overpass')) expect(decodeURIComponent(String(init?.body))).toContain('out body center;')
       const ua = new Headers(init?.headers).get('User-Agent')
       seen.push(ua ?? '')
       return new Response(String(url).includes('nominatim') ? nominatim : overpass, { status: 200 })

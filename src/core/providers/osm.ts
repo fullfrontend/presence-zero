@@ -1,3 +1,4 @@
+import { coordinates } from '../coordinates'
 import { isFacebookUrl } from '../probes/facebook'
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
@@ -5,7 +6,7 @@ import { CATEGORY_TAGS, SUPPORTED_OSM_CATEGORIES, resolveOsmCategory } from './o
 
 const USER_AGENT = 'PresenceZero/0.1 (open-source lead finder)'
 
-interface OverpassElement { type?: string; id?: number; tags?: Record<string, string> }
+interface OverpassElement { lat?: number; lon?: number; center?: { lat?: number; lon?: number }; type?: string; id?: number; tags?: Record<string, string> }
 
 function toBusiness(el: OverpassElement): RawBusiness | null {
   const t = el.tags ?? {}
@@ -18,6 +19,7 @@ function toBusiness(el: OverpassElement): RawBusiness | null {
     : /^[a-zA-Z0-9._-]+$/.test(facebook) ? `https://www.facebook.com/${facebook}` : undefined)
   return {
     name: t.name,
+    ...coordinates(el.lat ?? el.center?.lat, el.lon ?? el.center?.lon),
     address,
     phone: t.phone ?? t['contact:phone'] ?? t['contact:mobile'],
     website: t.website?.trim() || t['contact:website']?.trim() || facebookUrl,
@@ -48,7 +50,7 @@ export function createOsmProvider(fetchFn: typeof fetch = fetch): Provider {
       if (!geo.length) throw new ProviderError(`Could not find location "${area.location}" — try "City, Region".`)
       const [s, n, w, e] = geo[0].boundingbox
       const [k, v] = tag.split('=')
-      const query = `[out:json][timeout:60];(nwr["${k}"="${v}"](${s},${w},${n},${e}););out center tags;`
+      const query = `[out:json][timeout:60];(nwr["${k}"="${v}"](${s},${w},${n},${e}););out body center;`
       const opRes = await fetchFn('https://overpass-api.de/api/interpreter', {
         method: 'POST',
         headers: { 'User-Agent': USER_AGENT, 'Content-Type': 'application/x-www-form-urlencoded' },

@@ -12,11 +12,12 @@ describe('google places provider', () => {
       new Response(fixture, { status: 200 })) as unknown as typeof fetch
     const res = await createGooglePlacesProvider(fetchFn).fetchPage(area, 'tok-1', { apiKey: 'k' })
     expect(res.businesses[0]).toMatchObject({
-      name: "Joe's Bakery", phone: '(613) 555-0101', rating: 4.6, reviewCount: 80, category: 'Bakery',
+      latitude: 45.42, longitude: -75.69, name: "Joe's Bakery", phone: '(613) 555-0101', rating: 4.6, reviewCount: 80, category: 'Bakery',
     })
     expect(res.businesses[0].website).toBeUndefined()
     expect(res.businesses[0].sourceUrl).toBe('https://maps.google.com/?cid=123')
     expect((fetchFn as any).mock.calls[0][1].headers['X-Goog-FieldMask']).toContain('places.googleMapsUri')
+    expect((fetchFn as any).mock.calls[0][1].headers['X-Goog-FieldMask']).toContain('places.location')
     expect(res.nextCursor).toBe('page-2-token')
     const body = JSON.parse((fetchFn as any).mock.calls[0][1].body)
     expect(body.pageToken).toBe('tok-1')

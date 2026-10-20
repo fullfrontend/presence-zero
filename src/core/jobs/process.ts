@@ -36,6 +36,7 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
       page.businesses.forEach((raw, index) => {
         const id = collectedBusinessId(scan.id, scan.providerCursor, index)
         writes.push(writer.insert('businesses', { id, scan_id: scan.id, name: raw.name, address: raw.address ?? null,
+          latitude: raw.latitude ?? null, longitude: raw.longitude ?? null,
           phone: raw.phone ?? null, category: raw.category ?? null, rating: raw.rating ?? null, review_count: raw.reviewCount ?? null,
           listed_website: raw.website ?? null, facebook_url: raw.facebookUrl ?? (isFacebookUrl(raw.website) ? raw.website! : null),
           source_url: raw.sourceUrl ?? null, lead_status: raw.closed ? 'skipped' : 'new' }))

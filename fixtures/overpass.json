@@ -1,8 +1,47 @@
 {
   "elements": [
-    { "type": "node", "id": 1, "tags": { "name": "Joe's Bakery", "shop": "bakery", "phone": "+1-613-555-0101", "addr:housenumber": "12", "addr:street": "Main St" } },
-    { "type": "node", "id": 2, "tags": { "name": "Crusty Loaf", "shop": "bakery", "website": "https://crustyloaf.example.com", "contact:phone": "+1-613-555-0102" } },
-    { "type": "node", "id": 3, "tags": { "shop": "bakery" } },
-    { "type": "node", "id": 4, "tags": { "name": "Mobile Only Shop", "shop": "bakery", "contact:mobile": "+1-613-555-0199" } }
+    {
+      "type": "node",
+      "id": 1,
+      "tags": {
+        "name": "Joe's Bakery",
+        "shop": "bakery",
+        "phone": "+1-613-555-0101",
+        "addr:housenumber": "12",
+        "addr:street": "Main St"
+      },
+      "lat": 45.42,
+      "lon": -75.69
+    },
+    {
+      "type": "node",
+      "id": 2,
+      "tags": {
+        "name": "Crusty Loaf",
+        "shop": "bakery",
+        "website": "https://crustyloaf.example.com",
+        "contact:phone": "+1-613-555-0102"
+      },
+      "center": {
+        "lat": 45.43,
+        "lon": -75.7
+      }
+    },
+    {
+      "type": "node",
+      "id": 3,
+      "tags": {
+        "shop": "bakery"
+      }
+    },
+    {
+      "type": "node",
+      "id": 4,
+      "tags": {
+        "name": "Mobile Only Shop",
+        "shop": "bakery",
+        "contact:mobile": "+1-613-555-0199"
+      }
+    }
   ]
 }

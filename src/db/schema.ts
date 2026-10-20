@@ -26,6 +26,8 @@ export const businesses = sqliteTable('businesses', {
   scanId: text('scan_id').notNull().references(() => scans.id),
   name: text('name').notNull(),
   address: text('address'),
+  latitude: real('latitude'),
+  longitude: real('longitude'),
   phone: text('phone'),
   category: text('category'),
   rating: real('rating'),

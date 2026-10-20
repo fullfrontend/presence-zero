@@ -72,7 +72,7 @@ describe('scan API flow', () => {
 it('returns collected prospects with null scores before enrichment completes', async () => {
   const scansRoute = await import('@/app/api/scans/route')
   const response = await scansRoute.POST(new Request('http://t', { method: 'POST', body: JSON.stringify({
-    location: 'Charleroi', category: 'bakery', provider: 'csv', csvContent: 'name,address\nPending Bakery,Charleroi',
+    location: 'Charleroi', category: 'bakery', provider: 'csv', csvContent: 'name,address,latitude,longitude\nPending Bakery,Charleroi,50.4108,4.4446',
   }) }))
   const { id } = await response.json()
   const { getDb } = await import('@/db/client')
@@ -86,7 +86,7 @@ it('returns collected prospects with null scores before enrichment completes', a
   const resultsRoute = await import('@/app/api/scans/[id]/results/route')
   const { results } = await (await resultsRoute.GET(new Request('http://t/results?minScore=0'), { params: Promise.resolve({ id }) })).json()
   expect(results).toHaveLength(1)
-  expect(results[0]).toMatchObject({ name: 'Pending Bakery', score: null, presenceStatus: null })
+  expect(results[0]).toMatchObject({ name: 'Pending Bakery', latitude: 50.4108, longitude: 4.4446, score: null, presenceStatus: null })
   expect(results[0].enrichment).toHaveLength(5)
   await claimJob(db, 'search', 1)
   await claimJob(db, 'phone', 1)

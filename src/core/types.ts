@@ -1,5 +1,6 @@
 export interface ScanArea { location: string; category: string; countryCode: string }
 export interface RawBusiness {
+  latitude?: number; longitude?: number
   name: string; address?: string; phone?: string; category?: string
   rating?: number; reviewCount?: number; website?: string; facebookUrl?: string; sourceUrl?: string; closed?: boolean
 }

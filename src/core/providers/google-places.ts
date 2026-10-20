@@ -1,13 +1,15 @@
+import { coordinates } from '../coordinates'
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
 
 const FIELD_MASK = [
   'places.displayName', 'places.formattedAddress', 'places.nationalPhoneNumber',
   'places.websiteUri', 'places.rating', 'places.userRatingCount', 'places.primaryTypeDisplayName',
-  'places.googleMapsUri', 'nextPageToken',
+  'places.location', 'places.googleMapsUri', 'nextPageToken',
 ].join(',')
 
 interface GooglePlace {
+  location?: { latitude?: number; longitude?: number }
   displayName?: { text?: string }; formattedAddress?: string; nationalPhoneNumber?: string
   googleMapsUri?: string; websiteUri?: string; rating?: number; userRatingCount?: number; primaryTypeDisplayName?: { text?: string }
 }
@@ -35,6 +37,7 @@ export function createGooglePlacesProvider(fetchFn: typeof fetch = fetch): Provi
         .map(p => ({
           name: p.displayName!.text!,
           address: p.formattedAddress,
+          ...coordinates(p.location?.latitude, p.location?.longitude),
           phone: p.nationalPhoneNumber,
           website: p.websiteUri,
           sourceUrl: p.googleMapsUri,

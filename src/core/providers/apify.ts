@@ -1,3 +1,4 @@
+import { coordinates } from '../coordinates'
 import type { ProviderConfig, RawBusiness, ScanArea } from '../types'
 import { Provider, ProviderError } from './provider'
 
@@ -45,9 +46,11 @@ export function mapApifyPlace(raw: unknown): RawBusiness | null {
   const p = raw as Record<string, unknown>
   const name = str(p.title)
   if (!name) return null
+  const point = p.location && typeof p.location === 'object' ? p.location as Record<string, unknown> : {}
   const composed = [str(p.street), str(p.city)].filter(Boolean).join(', ')
   return {
     name,
+    ...coordinates(point.lat, point.lng),
     address: str(p.address) ?? (composed || undefined),
     phone: str(p.phone) ?? str(p.phoneUnformatted),
     category: str(p.categoryName),
