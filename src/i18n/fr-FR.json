@@ -682,5 +682,8 @@
   "Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.": "Certains résultats n’ont pas de coordonnées. Relancez les anciens scans pour récupérer les positions ; les imports CSV peuvent inclure latitude et longitude.",
   "Selected business": "Établissement sélectionné",
   "Businesses at this location": "Établissements à cette adresse",
-  "Close": "Fermer"
+  "Close": "Fermer",
+  "Lead score /100": "Score de lead /100",
+  "Search and AI add evidence, not bonus points. The lead score always uses the same scale out of 100.": "La recherche et l’IA apportent des informations, pas des points bonus. Le score de lead utilise toujours le même barème sur 100.",
+  "AI findings support your research. They do not add a second lead score or bonus points.": "Les constats de l’IA vous aident dans vos recherches. Ils n’ajoutent ni deuxième score de lead ni points bonus."
 }

@@ -368,7 +368,13 @@ content type, collection time and SHA-256 of the stored text/facts payload. The
 hash identifies the captured excerpt, not the entire original page. Partial reads
 are marked. No raw HTML, cookies, screenshots or scraped email lists are stored.
 
-**Scores and reports.** Website quality (0–100, higher is better) is an AI estimate
+**Scores and reports.** The interface displays one **lead score /100**, using the same
+weights whether search and AI are enabled or disabled. Enabling a tool adds no
+points or new scoring category. Newly discovered facts can change the score
+through the existing factors (for example, finding a live site). AI findings and
+recommendations support manual research without adding a second visible score.
+
+For compatibility, downloaded reports and CSV retain technical audit metrics. Website quality (0–100, higher is better) is an AI estimate
 from text and HTML signals, not a visual, Lighthouse, speed or accessibility test.
 Improvement opportunity is `100 - website quality`. A verified audit above the
 configured opportunity threshold appears in **Leads only**, including a live site.

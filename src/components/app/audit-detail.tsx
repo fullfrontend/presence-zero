@@ -24,10 +24,6 @@ export function AuditDetail({ report }: { report: AuditReport }) {
       <p className="mt-2 text-xs text-dim">{system(report.verification.detail)}</p>
       {report.reason && <p className="mt-2 text-sm text-amber-400">{system(report.reason)}</p>}
       {report.status === "complete" && <>
-        {report.websiteQuality !== null && <dl className="mt-4 flex flex-wrap gap-8">
-          <div><dt className="text-xs text-mute">{t("Website quality · higher is better")}</dt><dd className="text-lg text-text">{report.websiteQuality}/100</dd></div>
-          <div><dt className="text-xs text-mute">{t("Improvement opportunity · higher is stronger")}</dt><dd className="text-lg text-lime">{report.opportunityScore}/100</dd></div>
-        </dl>}
         <p className="mt-3 text-sm text-text">{report.summary}</p>
         <ul className="mt-4 space-y-4">
           {report.findings.map((finding, index) => <li key={index} className="border-l border-line pl-3">
@@ -38,7 +34,7 @@ export function AuditDetail({ report }: { report: AuditReport }) {
         </ul>
         <h4 className="mt-4 text-xs font-medium text-text">{t("Suggested project brief")}</h4>
         <p className="mt-1 whitespace-pre-wrap text-sm text-dim">{report.brief}</p>
-        {report.qualificationReasons.map(reason => <p key={reason} className="mt-2 text-xs text-mute">{system(reason)}</p>)}
+        <p className="mt-2 text-xs text-mute">{t("AI findings support your research. They do not add a second lead score or bonus points.")}</p>
         <p className="mt-3 text-xs text-mute">{t("AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the evidence; the original lead score is unchanged.")}</p>
       </>}
       {report.evidence.length > 0 && <details className="mt-4 text-xs">

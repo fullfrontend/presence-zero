@@ -131,3 +131,51 @@ it.each([false, true])('ignores Facebook redirects only when the website came fr
   for (const kind of ['collect', 'search', 'probe'] as const) await processJob((await claimJob(db, kind, 1))!, deps)
   expect((await db.select().from(businesses))[0].presenceStatus).toBe(discovered ? 'not_found' : 'facebook')
 })
+
+it.each([[false, false], [true, false], [false, true], [true, true]])(
+  'keeps the same lead score for unchanged evidence (search=%s, AI=%s)', async (searchEnabled, aiEnabled) => {
+    const auditLead = vi.fn<NonNullable<PipelineDeps['auditLead']>>(async () => ({
+      version: 1, status: 'complete', mode: 'profile', model: 'fixture', language: 'fr', createdAt: '2026-10-20T00:00:00Z',
+      reason: null, verification: { status: 'not_applicable', detail: 'Profile only' }, summary: 'Research assistance',
+      websiteQuality: null, opportunityScore: null, qualified: false, qualificationReasons: [], findings: [], brief: '', evidence: [],
+    }))
+    const discoverWebsite = vi.fn<NonNullable<PipelineDeps['discoverWebsite']>>(async () => ({ website: null, detail: 'Inconclusive' }))
+    const { db, deps } = await setup({ discoverWebsite: searchEnabled ? discoverWebsite : undefined, auditLead: aiEnabled ? auditLead : undefined })
+    for (let tick = 0; tick < 12; tick++) {
+      for (const kind of JOB_KINDS) {
+        const job = await claimJob(db, kind, 2)
+        if (job) await processJob(job, deps)
+      }
+      await refreshScanProgress(db, 'scan')
+    }
+    const rows = await db.select().from(businesses)
+    // Unverified presence (15) + exact .com available (15), regardless of enabled helpers.
+    expect(rows.map(row => row.score)).toEqual([30, 30])
+    expect(rows.every(row => row.presenceStatus === 'none')).toBe(true)
+    expect(discoverWebsite).toHaveBeenCalledTimes(searchEnabled ? 2 : 0)
+    expect(auditLead).toHaveBeenCalledTimes(aiEnabled ? 2 : 0)
+    db.$client.close()
+  },
+)
+
+it('never adds the AI opportunity estimate to a live website lead score', async () => {
+  const { db, deps } = await setup({
+    getProviderById: () => ({ id: 'test', async fetchPage() {
+      return { businesses: [{ name: 'Website business', website: 'https://example.test' }], nextCursor: null }
+    } }),
+    auditLead: async () => ({
+      version: 1, status: 'complete', mode: 'website', model: 'fixture', language: 'fr', createdAt: '2026-10-20T00:00:00Z',
+      reason: null, verification: { status: 'matched', detail: 'Matching business' }, summary: 'Improvements suggested',
+      websiteQuality: 1, opportunityScore: 99, qualified: true, qualificationReasons: [], findings: [], brief: '', evidence: [],
+    }),
+  })
+  for (const kind of JOB_KINDS) {
+    const job = await claimJob(db, kind, 1)
+    if (job) await processJob(job, deps)
+  }
+  await refreshScanProgress(db, 'scan')
+  expect((await db.select().from(businesses))[0]).toMatchObject({
+    presenceStatus: 'alive', score: 0, auditReport: { opportunityScore: 99 },
+  })
+  db.$client.close()
+})

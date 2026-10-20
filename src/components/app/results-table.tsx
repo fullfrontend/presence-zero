@@ -49,7 +49,7 @@ interface Column {
 }
 
 const COLUMNS: Column[] = [
-  { key: 'score', label: 'Score', defaultDir: 'desc', value: r => r.score, tour: 'score' },
+  { key: 'score', label: 'Lead score /100', defaultDir: 'desc', value: r => r.score, tour: 'score' },
   { key: 'name', label: 'Business', defaultDir: 'asc', value: r => r.name, tour: 'business' },
   { key: 'presence', label: 'Presence', defaultDir: 'asc', value: r => PRESENCE_RANK[r.presenceStatus ?? 'none'] ?? 0, tour: 'presence' },
   { key: 'domains', label: 'Available domains', defaultDir: 'desc', value: r => r.domains.filter(d => d.available === true).length, tour: 'domains' },
@@ -412,7 +412,6 @@ export default function ResultsTable(
                       className="flex items-start gap-1 rounded text-left hover:opacity-90 focus-visible:outline focus-visible:outline-lime/60"
                     >
                       <ScoreCell score={r.score} />
-                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title={t("Separate AI estimate of website improvement potential")}>{t("Audit ")}{r.auditReport.opportunityScore}/100</span>}
                       <span aria-hidden="true" className={`mt-0.5 text-[10px] text-mute transition-transform ${open ? 'rotate-90' : ''}`}>▸</span>
                     </button>
                   </td>
@@ -513,7 +512,6 @@ export default function ResultsTable(
                       className="flex items-center gap-2 text-left"
                     >
                       <ScoreCell score={r.score} />
-                      {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title={t("Separate AI estimate of website improvement potential")}>{t("Audit ")}{r.auditReport.opportunityScore}/100</span>}
                       <span className="font-medium text-text">{r.name}</span>
                     </button>
                     <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /><EnrichmentStatus tasks={r.enrichment} compact />
