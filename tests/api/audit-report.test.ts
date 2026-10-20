@@ -19,13 +19,16 @@ it('returns persisted audit evidence and exports qualified live sites with formu
   const db = await getDb()
   await db.insert(scans).values({ id: 'audit-export', createdAt: new Date(), location: 'Charleroi', category: 'restaurant', provider: 'csv' })
   await db.insert(businesses).values([
-    { id: 'audited', scanId: 'audit-export', name: 'Qualified website', presenceStatus: 'alive', score: 0, auditReport: report },
+    { id: 'audited', scanId: 'audit-export', name: 'Qualified website', phone: '123', reviewCount: 100, rating: 4.5, presenceStatus: 'alive', score: 0, auditReport: report },
     { id: 'plain', scanId: 'audit-export', name: 'Plain website', presenceStatus: 'alive', score: 0 },
   ])
   const results = await import('@/app/api/scans/[id]/results/route')
   const rows = await (await results.GET(new Request('http://test'), { params: Promise.resolve({ id: 'audit-export' }) })).json()
   expect(rows.results.find((r: { id: string }) => r.id === 'audited').auditReport).toEqual(report)
   expect(rows.results.find((r: { id: string }) => r.id === 'audited').score).toBe(70)
+  expect(rows.results.find((r: { id: string }) => r.id === 'plain').score).toBeNull()
+  const explained = rows.results.find((r: { id: string }) => r.id === 'audited').scoreExplanation
+  expect(explained.factors.reduce((sum: number, f: { points: number }) => sum + f.points, 0)).toBe(70)
   const filtered = await (await results.GET(new Request('http://test?minScore=60'), { params: Promise.resolve({ id: 'audit-export' }) })).json()
   expect(filtered.results.map((r: { id: string }) => r.id)).toEqual(['audited'])
   const exp = await import('@/app/api/scans/[id]/export/route')

@@ -33,7 +33,7 @@ export function ScanSummary({ results }: { results: SummaryRow[] }) {
   if (results.length < 2) return null
 
   const leads = results.filter(isQualifiedLead)
-  const leadScores = leads.map(r => r.score ?? 0)
+  const leadScores = leads.map(r => r.score).filter((s): s is number => s !== null)
   const avgScore = leadScores.length ? Math.round(leadScores.reduce((a, b) => a + b, 0) / leadScores.length) : 0
   const withDomain = leads.filter(r => r.domains.some(d => d.available === true)).length
 
@@ -47,7 +47,7 @@ export function ScanSummary({ results }: { results: SummaryRow[] }) {
   return (
     <section aria-label={t("Scan summary")} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
       <Stat value={number(leads.length)} label={t("Leads")} hint={t("of {0} found", { 0: results.length })} />
-      <Stat value={number(avgScore)} label={t("Avg lead score")} hint="0–100" />
+      <Stat value={leadScores.length ? number(avgScore) : '—'} label={t("Avg lead score")} hint="0–100" />
       <Stat value={number(withDomain)} label={t("Domains free")} hint={t("matching .com/ccTLD")} />
       <div className="col-span-2 rounded-lg border border-line bg-surface px-4 py-3 sm:col-span-1">
         <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Presence")}</div>

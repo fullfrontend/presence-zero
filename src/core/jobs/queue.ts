@@ -3,8 +3,7 @@ import { and, eq, sql } from 'drizzle-orm'
 import type { InStatement, InValue } from '@libsql/client'
 import type { Db } from '@/db/client'
 import { businesses, domainCandidates, scanJobs, scans } from '@/db/schema'
-import { computeScore } from '../scoring'
-import { generateDomainCandidates } from '../probes/domains'
+import { explainBusinessScore } from '../business-score'
 
 export const JOB_KINDS = ['collect', 'search', 'probe', 'domains', 'phone', 'audit'] as const
 export type JobKind = typeof JOB_KINDS[number]
@@ -91,10 +90,7 @@ export async function refreshScanProgress(db: Db, scanId: string) {
   for (const b of rows) {
     const pending = jobs.some(job => job.businessId === b.id && (job.status === 'pending' || job.status === 'running'))
     if (!pending) completed++
-    if (!b.presenceStatus) continue
-    const exact = generateDomainCandidates(b.name, scan.countryCode)[0]
-    const score = computeScore({ presence: b.presenceStatus, auditReport: b.auditReport, reviewCount: b.reviewCount, rating: b.rating, hasPhone: !!b.phone,
-      exactComAvailable: !!exact?.endsWith('.com') && domains.some(d => d.businessId === b.id && d.domain === exact && d.available === true) })
+    const score = explainBusinessScore(b, domains.filter(d => d.businessId === b.id), scan.countryCode).total
     if (b.score !== score) await db.update(businesses).set({ score }).where(eq(businesses.id, b.id))
   }
   const collecting = jobs.find(job => job.kind === 'collect')

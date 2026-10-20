@@ -5,83 +5,61 @@ import type { PresenceStatus } from './types'
 
 export interface ScoreInput {
   auditReport?: AuditReport | null
-  presence: PresenceStatus
+  presence: PresenceStatus | null
   reviewCount?: number | null
   rating?: number | null
   exactComAvailable: boolean
   hasPhone: boolean
+  leadStatus?: string
 }
-
-export type ScoreFactorKey = 'website' | 'presence' | 'reviews' | 'rating' | 'exactDomain' | 'phone'
-
-export interface ScoreFactor {
-  key: ScoreFactorKey
-  label: string
-  points: number
-  max: number
-  hit: boolean
-}
-
+export type ScoreFactorKey = 'presence' | 'reviews' | 'rating' | 'exactDomain' | 'phone'
+export interface ScoreFactor { key: ScoreFactorKey; label: string; points: number; max: number; hit: boolean }
 export interface ScoreExplanation {
-  total: number
+  total: number | null
   factors: ScoreFactor[]
+  confidence: 'low' | 'medium' | 'high'
+  reason: string
+  need: number | null
 }
-
-const PRESENCE_LABEL: Record<PresenceStatus, string> = {
-  not_found: 'No website found after search',
-  none: 'Website unverified',
-  facebook: 'Facebook page, no independent site verified',
-  dead: 'Dead website',
-  parked: 'Parked domain',
-  alive: 'Site is live',
-  probe_failed: 'Probe failed',
+const LABELS: Record<PresenceStatus, string> = {
+  not_found: 'No website found after search', none: 'Website unverified', facebook: 'Facebook page, no independent site verified',
+  dead: 'Dead website', parked: 'Parked domain', alive: 'Website improvement potential', probe_failed: 'Probe failed',
 }
+const clamp = (value: number, max = 1) => Math.max(0, Math.min(max, value))
+const finite = (value: number | null | undefined) => typeof value === 'number' && Number.isFinite(value)
 
-function clamp(n: number, lo: number, hi: number): number {
-  return Math.max(lo, Math.min(hi, n))
-}
-
-/**
- * Breaks a score into its weighted factors. `sum(factors.points) === total`.
- *
- * When `opts.total` is supplied (the authoritative DB-stored score), the `exactDomain`
- * factor absorbs any residual so the breakdown always reconciles to the score the user
- * sees — the client cannot perfectly reconstruct the exact-match `.com` bonus from the
- * returned domains list, but the other four factors are unambiguous from row signals.
- */
-export function explainScore(i: ScoreInput, opts?: { total?: number }): ScoreExplanation {
-  const opportunity = i.presence === 'alive' ? websiteOpportunity(i.auditReport) : null
-  if (opportunity !== null) return { total: opportunity, factors: [
-    { key: 'website', label: 'Website improvement potential', points: opportunity, max: 100, hit: opportunity > 0 },
-  ] }
-  const isLead = i.presence !== 'alive' && i.presence !== 'probe_failed'
-
-  const presencePts = isLead ? W.presence[i.presence as keyof typeof W.presence] : 0
-  const reviewPts = isLead
-    ? Math.round(Math.min(i.reviewCount ?? 0, W.reviewsCap) / W.reviewsCap * W.reviewsMax)
-    : 0
-  const ratingHit = isLead && (i.rating ?? 0) >= W.goodRatingThreshold
-  const ratingPts = ratingHit ? W.goodRating : 0
-  let domainPts = isLead && i.exactComAvailable ? W.exactDomainAvailable : 0
-  const phonePts = isLead && i.hasPhone ? W.hasPhone : 0
-
-  if (opts?.total != null && isLead) {
-    const others = presencePts + reviewPts + ratingPts + phonePts
-    domainPts = clamp(opts.total - others, 0, W.exactDomainAvailable)
+/** Every factor is modulated by need. Rounded factors sum exactly to the total. */
+export function explainScore(i: ScoreInput): ScoreExplanation {
+  if (['lost', 'won', 'skipped'].includes(i.leadStatus ?? '')) return {
+    total: 0, factors: [], confidence: 'high', need: 0, reason: 'Excluded from new prospecting by its lead status.',
   }
-
-  const factors: ScoreFactor[] = [
-    { key: 'presence', label: PRESENCE_LABEL[i.presence], points: presencePts, max: W.presence.not_found, hit: presencePts > 0 },
-    { key: 'reviews', label: i.reviewCount ? `${i.reviewCount} reviews` : 'Few/no reviews', points: reviewPts, max: W.reviewsMax, hit: reviewPts > 0 },
-    { key: 'rating', label: i.rating != null ? `Rating ${i.rating}` : 'No rating', points: ratingPts, max: W.goodRating, hit: ratingPts > 0 },
-    { key: 'exactDomain', label: 'Exact-match .com free', points: domainPts, max: W.exactDomainAvailable, hit: domainPts > 0 },
-    { key: 'phone', label: 'Has phone', points: phonePts, max: W.hasPhone, hit: phonePts > 0 },
+  const opportunity = websiteOpportunity(i.auditReport)
+  if (!i.presence || i.presence === 'probe_failed' || (i.presence === 'alive' && opportunity === null)) return {
+    total: null, factors: [], confidence: 'low', need: null,
+    reason: 'Insufficient evidence to assess the website need. This is not a rejected lead.',
+  }
+  const need = i.presence === 'alive' ? opportunity! / 100 : W.need[i.presence]
+  const reviews = finite(i.reviewCount) ? Math.max(0, i.reviewCount!) : 0
+  const activity = W.activityTiers.find(([minimum]) => reviews >= minimum)?.[1] ?? 0
+  const reputation = finite(i.rating) ? clamp((i.rating! - W.reputationMin) / (W.reputationFull - W.reputationMin)) * clamp(reviews / W.reputationMinReviews) : 0
+  const values: [ScoreFactorKey, string, number, number][] = [
+    ['presence', LABELS[i.presence], W.needMax, W.needMax],
+    ['reviews', 'Observed business activity (reviews)', W.activityMax * activity, W.activityMax],
+    ['phone', 'Direct contact available (phone)', i.hasPhone ? W.contactMax : 0, W.contactMax],
+    ['rating', 'Reputation supported by reviews', W.reputationMax * reputation, W.reputationMax],
+    ['exactDomain', 'Domain ready for the website project', i.presence === 'alive' || i.exactComAvailable ? W.domainMax : 0, W.domainMax],
   ]
-
-  const total = opts?.total != null && isLead ? opts.total : factors.reduce((s, f) => s + f.points, 0)
-  return { total, factors }
+  // Cumulative rounding keeps monotonic totals and an exact, honest breakdown.
+  let sum = 0, rounded = 0
+  const factors = values.map(([key, label, raw, max]) => {
+    sum += raw * need
+    const next = Math.round(sum)
+    const points = next - rounded
+    rounded = next
+    return { key, label, points, max, hit: points > 0 }
+  })
+  const confidence = i.presence === 'none' ? 'low' : finite(i.reviewCount) && finite(i.rating) && i.hasPhone ? 'high' : 'medium'
+  return { total: clamp(rounded, 100), factors, confidence, need,
+    reason: 'Prospecting priority based on observed need, activity, contactability and reputation; not a sales probability.' }
 }
-
-export function computeScore(i: ScoreInput): number {
-  return explainScore(i).total
-}
+export function computeScore(i: ScoreInput): number | null { return explainScore(i).total }

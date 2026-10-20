@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { DEMO_SCAN } from '@/lib/demo-data'
 import { presenceMeta } from '@/lib/presence'
 import { computeScore } from '@/core/scoring'
+import { generateDomainCandidates } from '@/core/probes/domains'
 
 describe('DEMO_SCAN', () => {
   it('has enough rows to show range', () => {
@@ -19,10 +20,11 @@ describe('DEMO_SCAN', () => {
     for (const r of DEMO_SCAN.results) {
       const input = {
         presence: r.presenceStatus,
+        leadStatus: r.leadStatus,
         reviewCount: r.reviewCount,
         rating: r.rating,
         // Exact-match .com bonus: the first .com candidate is available.
-        exactComAvailable: r.domains.some(d => d.domain.endsWith('.com') && d.available === true),
+        exactComAvailable: r.domains.some(d => d.domain === generateDomainCandidates(r.name, 'ca')[0] && d.available === true),
         hasPhone: !!r.phone,
       }
       const expected = computeScore(input)

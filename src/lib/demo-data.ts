@@ -1,3 +1,4 @@
+import { explainBusinessScore } from '@/core/business-score'
 export interface DemoResult {
   id: string
   name: string
@@ -15,8 +16,6 @@ export interface DemoResult {
   seenBefore?: boolean
 }
 
-// Scores below are self-consistent with src/core/scoring.ts (a test enforces it):
-// presence(unverified 15/dead 35/parked 30) + reviews(≤25) + rating(+10 if ≥4.0) + exactCom(+15) + phone(+10).
 export const DEMO_SCAN: { location: string; category: string; results: DemoResult[] } = {
   location: 'Ottawa, ON',
   category: 'bakery',
@@ -265,3 +264,5 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
     },
   ],
 }
+
+for (const row of DEMO_SCAN.results) row.score = explainBusinessScore(row, row.domains, 'ca').total

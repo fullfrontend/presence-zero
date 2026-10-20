@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { AuditDetail } from './audit-detail'
 import { explainResultRow, pitchForRow, buildPitchText, type ExplainableRow } from '@/lib/score-explain'
 import { businessLinks } from '@/lib/business-links'
+import { scoreLevel } from '@/lib/score-display'
 import { presenceMeta } from '@/lib/presence'
 
 function FactorBar({ label, points, max, hit }: { label: string; points: number; max: number; hit: boolean }) {
@@ -75,9 +76,12 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
           ))}
         </dl>
       </section>
-      {row.score === null ? <p className="text-sm text-mute">{t("Score pending — enrichment is still in progress.")}</p> : <section aria-label={t("Score breakdown")}>
+      {explanation.total === null ? <p className="text-sm text-mute">{t("Not assessed — insufficient evidence about the website.")}</p> : <section aria-label={t("Score breakdown")}>
         <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Why this scores ")}{explanation.total}/100</h3>
-        <p className="mt-2 text-xs text-mute">{t("The lead score stays out of 100. For a verified live website, documented improvement potential replaces the presence score; it is never added on top.")}</p>
+        <p className="mt-2 text-xs text-mute">{t("Need 45%, activity 20%, contactability 20%, reputation 10%, domain readiness 5%. All contributions decrease when the website need is low.")}</p>
+        <p className="mt-2 text-sm">{t(scoreLevel(explanation.total))} · {t("Observed need: {0}%", { 0: Math.round((explanation.need ?? 0) * 100) })}</p>
+        <p className="mt-2 text-xs text-mute">{t("80–100 priority · 60–79 promising · 40–59 research · 20–39 low priority · 0–19 not a priority")}</p>
+        <p className="mt-2 text-xs text-mute">{system(explanation.reason)}</p>
         <div className="mt-3 space-y-2">
           {explanation.factors.map(f => <FactorBar key={f.key} label={system(f.label)} points={f.points} max={f.max} hit={f.hit} />)}
         </div>

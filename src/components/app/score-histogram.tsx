@@ -3,7 +3,7 @@ import { useI18n } from '@/i18n/client'
 // Buckets of 20; lime bars for lead buckets, violet for the 0-19 (alive/none-lead) bucket.
 export function ScoreHistogram({ scores }: { scores: (number | null)[] }) {
   const { t } = useI18n()
-  const vals = scores.map(s => s ?? 0)
+  const vals = scores.filter((s): s is number => s !== null)
   if (vals.length < 2) return null
   const buckets = [0, 0, 0, 0, 0]
   for (const v of vals) buckets[Math.min(4, Math.floor(v / 20))]++

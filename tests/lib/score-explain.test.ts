@@ -5,7 +5,7 @@ import { DEMO_SCAN } from '@/lib/demo-data'
 const cornerCrumb = DEMO_SCAN.results.find(r => r.id === 'd1')!
 
 describe('explainResultRow', () => {
-  it('reconciles factors to the stored score', () => {
+  it('explains current evidence consistently', () => {
     const ex = explainResultRow(cornerCrumb)
     expect(ex.total).toBe(cornerCrumb.score)
     expect(ex.factors.reduce((s, f) => s + f.points, 0)).toBe(cornerCrumb.score)
@@ -13,7 +13,7 @@ describe('explainResultRow', () => {
   })
   it('handles a null-score probe_failed row without throwing', () => {
     const failed = DEMO_SCAN.results.find(r => r.presenceStatus === 'probe_failed')!
-    expect(explainResultRow(failed).total).toBe(0)
+    expect(explainResultRow(failed).total).toBeNull()
   })
 })
 

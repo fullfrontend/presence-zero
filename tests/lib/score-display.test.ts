@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { scoreBand, scoreBarWidth } from '@/lib/score-display'
+import { scoreBand, scoreBarWidth, scoreLevel } from '@/lib/score-display'
 
 describe('score-display', () => {
   it('bands scores', () => {
@@ -14,4 +14,11 @@ describe('score-display', () => {
     expect(scoreBarWidth(140)).toBe('100%')
     expect(scoreBarWidth(null)).toBe('0%')
   })
+})
+
+it('distinguishes prospecting levels and unknown evidence', () => {
+  expect([null, 0, 19, 20, 39, 40, 59, 60, 79, 80, 100].map(scoreLevel)).toEqual([
+    'Not assessed', 'Not a priority', 'Not a priority', 'Low priority', 'Low priority',
+    'Research first', 'Research first', 'Promising prospect', 'Promising prospect', 'Priority prospect', 'Priority prospect',
+  ])
 })

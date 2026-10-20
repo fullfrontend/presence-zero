@@ -93,19 +93,29 @@ Only `name` is required; every other column is optional and left blank if unknow
 
 ## Scoring
 
-Every lead gets a score out of 100, built from weighted signals. Defaults live in [`scoring.config.ts`](scoring.config.ts):
+The score is prospecting priority, not a probability of closing a sale. All weights and levels live in [`scoring.config.ts`](scoring.config.ts).
 
-| Signal | Weight |
+| Signal | Maximum contribution |
 |---|---|
-| No website (`none`) | 40 |
-| Dead website | 35 |
-| Parked website | 30 |
-| Review count (scaled, capped at 50 reviews) | up to 25 |
-| Good rating (≥ 4.0) | 10 |
-| Exact-match domain available | 15 |
-| Has a phone number on file | 10 |
+| Website need | 45 |
+| Activity (review volume, capped at 100) | 20 |
+| Direct contact (phone) | 20 |
+| Reputation (rating, supported by at least 10 reviews) | 10 |
+| Domain readiness (existing live site or exact .com available) | 5 |
 
-Edit `scoring.config.ts` directly to retune weights for your market — there's no UI for it by design, since it's a one-line config file meant to be forked.
+**Formula:** need × (45 + activity + contact + reputation + domain readiness).
+Need is 100% for no site found after search, 95% for a dead site, 90% for a parked site,
+75% for source-listed Facebook, and 40% for unverified absence. For a live site with a
+completed, identity-matched audit it is `(100 − website quality) / 100`.
+Thus popularity cannot compensate for a good website with little improvement need.
+Missing commercial evidence earns no points; missing website assessment remains unscored,
+not zero. Won, lost and skipped prospects score zero for new prospecting.
+
+80–100: priority; 60–79: promising; 40–59: research first; 20–39: low priority;
+0–19: not a priority. 100 requires all favorable observable signals, without claiming
+knowledge of budget or buying intent. These weights target website creation/redesign;
+they do not infer an IT maintenance need from unavailable evidence.
+Historical results and exports are recalculated from stored evidence on read.
 
 Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
 
@@ -156,7 +166,7 @@ matching hostnames, missing evidence, directories, and search failures remain
 unverified. This heuristic can miss legitimate sites; it is not proof of ownership
 or of absence. A selected site passes through the existing SSRF-protected probe
 and scoring pipeline. Its discovery source is recorded in the presence tooltip.
-Live sites without a verified website audit score zero; qualified audited opportunities can appear in the leads-only view.
+Live sites without a verified website audit remain unscored; qualified audited opportunities can appear in the leads-only view.
 
 Completed scans are snapshots: use **Rerun** after enabling discovery to create a
 fresh scan. Automated tests use synthetic search fixtures and never the network.
@@ -251,23 +261,20 @@ run `docker compose --env-file .env.docker pull searxng`, then `npm run docker:u
 
 A Facebook URL (including mobile links and redirects to Facebook) is classified
 as **FACEBOOK**, rather than a live independent website. These businesses remain
-in lead results and exports. The presence factor contributes **25 points**, versus
-40 when no site was found after search, 15 for unverified presence, and 0 for a live independent site; other score factors
-are unchanged (Facebook maximum: 85/100). Tune this in `scoring.config.ts`.
+in lead results and exports. Facebook gives a 75% need multiplier (maximum 75/100).
 When search is configured, a listed Facebook page also triggers a search for an
 independent website. An inconclusive search preserves the Facebook URL and status.
 Re-run existing scans to apply the new classification and scoring.
 
 
 Presence priority (with other scoring factors equal): **no site found → Facebook
-→ unverified website → live independent website**. Presence points are 40, 25,
-15 and 0 respectively. `not_found` means a completed search found no matching independent website,
+→ unverified website → live independent website**. Live websites require an assessment before a score can be assigned. `not_found` means a completed search found no matching independent website,
 even if it returned directories, social profiles or unrelated results. It is not
 proof of absence. Facebook presence is taken from source listings (including OSM
 `contact:facebook` / `facebook` tags), never from search results. No search, missing data, ambiguous matches,
 errors or unavailable search engines remain `none` (the legacy code for
 **UNVERIFIED**). Dead and parked sites retain their separate diagnoses and weights.
-Re-run historical scans to refresh stored scores after changing these weights.
+Existing evidence is rescored automatically.
 
 ### Settings and environment defaults
 
@@ -370,10 +377,10 @@ are marked. No raw HTML, cookies, screenshots or scraped email lists are stored.
 
 **Scores and reports.** The interface displays one **lead score /100**, using the same
 0–100 scale whether search and AI are enabled or disabled. Enabling a tool adds no
-bonus points. A completed, identity-matched website audit supplies the score of a
-live site as **100 − website quality**: weaker sites are stronger redesign leads.
-This replaces the presence score rather than adding to it. Dead, parked, absent
-and unverified sites retain the presence-based scoring rules. Failed, skipped,
+bonus points. A completed, identity-matched website audit supplies the need multiplier
+for a live site as **(100 − website quality) / 100**. Commercial factors still apply.
+Dead, parked, absent and unverified sites use their presence-based need multipliers.
+Failed, skipped,
 profile-only and identity-unverified audits cannot supply a quality score.
 Historical completed scans with a valid audit use this rule in results and CSV,
 including sorting and minimum-score filters, without rerunning inference.

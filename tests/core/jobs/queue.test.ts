@@ -149,8 +149,8 @@ it.each([[false, false], [true, false], [false, true], [true, true]])(
       await refreshScanProgress(db, 'scan')
     }
     const rows = await db.select().from(businesses)
-    // Unverified presence (15) + exact .com available (15), regardless of enabled helpers.
-    expect(rows.map(row => row.score)).toEqual([30, 30])
+    // Unverified need (40%) × (45 + domain readiness 5), regardless of enabled helpers.
+    expect(rows.map(row => row.score)).toEqual([20, 20])
     expect(rows.every(row => row.presenceStatus === 'none')).toBe(true)
     expect(discoverWebsite).toHaveBeenCalledTimes(searchEnabled ? 2 : 0)
     expect(auditLead).toHaveBeenCalledTimes(aiEnabled ? 2 : 0)
@@ -158,7 +158,7 @@ it.each([[false, false], [true, false], [false, true], [true, true]])(
   },
 )
 
-it('uses verified website improvement potential as the lead score without adding other points', async () => {
+it('uses verified website improvement potential weighted by commercial signals', async () => {
   const { db, deps } = await setup({
     getProviderById: () => ({ id: 'test', async fetchPage() {
       return { businesses: [{ name: 'Website business', website: 'https://example.test' }], nextCursor: null }
@@ -175,13 +175,13 @@ it('uses verified website improvement potential as the lead score without adding
   }
   await refreshScanProgress(db, 'scan')
   expect((await db.select().from(businesses))[0]).toMatchObject({
-    presenceStatus: 'alive', score: 99, auditReport: { opportunityScore: 99 },
+    presenceStatus: 'alive', score: 50, auditReport: { opportunityScore: 99 },
   })
   db.$client.close()
 })
 
 it.each([
-  ['alive', 0], ['dead', 95], ['parked', 90],
+  ['alive', null], ['dead', 92], ['parked', 87],
 ] as const)('scores a search-discovered %s website exactly like a source-listed website', async (presence, expectedScore) => {
   const scores: number[] = []
   for (const discovered of [false, true]) {

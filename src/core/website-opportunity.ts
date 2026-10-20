@@ -6,8 +6,3 @@ export function websiteOpportunity(report?: AuditReport | null): number | null {
     typeof report.websiteQuality !== 'number' || !Number.isFinite(report.websiteQuality) || report.websiteQuality < 0 || report.websiteQuality > 100) return null
   return Math.round(100 - report.websiteQuality)
 }
-
-/** Also applies the current scoring rule to historical, already-completed scans. */
-export function effectiveLeadScore(row: { presenceStatus: string | null; score: number | null; auditReport?: AuditReport | null }): number | null {
-  return row.presenceStatus === 'alive' ? websiteOpportunity(row.auditReport) ?? row.score : row.score
-}

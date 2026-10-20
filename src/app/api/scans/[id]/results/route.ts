@@ -1,4 +1,4 @@
-import { effectiveLeadScore } from '@/core/website-opportunity'
+import { explainBusinessScore } from '@/core/business-score'
 import { and, desc, eq, inArray, lt } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { businesses, domainCandidates, scans, scanJobs } from '@/db/schema'
@@ -19,11 +19,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   if (leadStatus) conditions.push(eq(businesses.leadStatus, leadStatus))
 
   const storedRows = await db.select().from(businesses).where(and(...conditions)).orderBy(desc(businesses.score))
-  const rows = storedRows.map(row => ({ ...row, score: effectiveLeadScore(row) }))
-    .filter(row => minScore === undefined || minScore === 0 || (row.score ?? 0) >= minScore)
-    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
   const jobs = await db.select({ businessId: scanJobs.businessId, kind: scanJobs.kind, status: scanJobs.status, error: scanJobs.error, availableAt: scanJobs.availableAt }).from(scanJobs).where(eq(scanJobs.scanId, id))
-  const ids = rows.map(r => r.id)
+  const ids = storedRows.map(r => r.id)
   const candidates = ids.length
     ? await db.select().from(domainCandidates).where(inArray(domainCandidates.businessId, ids))
     : []
@@ -37,6 +34,11 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   // Flag businesses already seen in an earlier scan of the same location, so the
   // operator doesn't re-pitch a lead they've worked before.
   const scan = (await db.select().from(scans).where(eq(scans.id, id)))[0]
+  const rows = storedRows.map(row => {
+    const scoreExplanation = explainBusinessScore(row, byBusiness.get(row.id) ?? [], scan?.countryCode)
+    return { ...row, score: scoreExplanation.total, scoreExplanation }
+  }).filter(row => !minScore || (row.score ?? 0) >= minScore)
+    .sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
   let seenKeys = new Set<string>()
   if (scan) {
     const earlier = await db

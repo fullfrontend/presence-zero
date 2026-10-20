@@ -64,8 +64,8 @@ describe('pipeline', () => {
     const biz = await db.select().from(businesses).where(eq(businesses.scanId, 'scan1'))
     const joe = biz.find(b => b.name === "Joe's Bakery")!
     expect(joe.presenceStatus).toBe('none')
-    // unverified 15 + reviews 25 + rating 10 + exact domain 15 + phone 10 = 75
-    expect(joe.score).toBe(75)
+    // Unverified need moderates all commercial signals.
+    expect(joe.score).toBe(39)
     expect(biz.find(b => b.name === 'Crusty Loaf')!.presenceStatus).toBe('alive')
     expect(biz.find(b => b.name === 'Dead Site Bikes')!.presenceStatus).toBe('dead')
 
@@ -151,7 +151,7 @@ describe('pipeline', () => {
     const crusty = (await db.select().from(businesses)).find(b => b.name === 'Crusty Loaf')!
     expect(crusty.presenceStatus).toBe('probe_failed')
     expect(crusty.retried).toBe(true)
-    expect(crusty.score).toBe(0)
+    expect(crusty.score).toBeNull()
     expect(attempts).toBe(2) // initial + one retry
   })
 
@@ -310,7 +310,7 @@ describe('website discovery in the pipeline', () => {
     const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
     expect(joe.listedWebsite).toBe('https://joes.example')
     expect(joe.presenceStatus).toBe('alive')
-    expect(joe.score).toBe(0)
+    expect(joe.score).toBeNull()
     expect(joe.probeDetail).toContain('Discovered via search')
     expect(await db.select().from(domainCandidates).where(eq(domainCandidates.businessId, joe.id))).toHaveLength(0)
   })
@@ -355,12 +355,12 @@ it('treats Facebook as a separate lead and still searches for an independent sit
     expect(searched).toBe(discoveryOutcome === 'disabled' ? 0 : 1)
     if (discoveryOutcome === 'found') {
       expect(row.presenceStatus).toBe('alive')
-      expect(row.score).toBe(0)
+      expect(row.score).toBeNull()
       expect(row.listedWebsite).toBe('https://restaurant.example')
       expect(probed).toEqual(['https://restaurant.example'])
     } else {
       expect(row.presenceStatus).toBe('facebook')
-      expect(row.score).toBe(35) // 25 presence + 10 phone
+      expect(row.score).toBe(49) // 75% need × (45 need + 20 phone)
       expect(row.listedWebsite).toBe(facebook)
       expect(row.probeDetail).toContain('Facebook')
       expect(probed).toEqual([])
@@ -378,7 +378,7 @@ it('distinguishes a completed search finding nothing from an inconclusive search
     }))
     const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
     expect(joe.presenceStatus).toBe(outcome === 'not_found' ? 'not_found' : 'none')
-    expect(joe.score).toBe(outcome === 'not_found' ? 100 : 75)
+    expect(joe.score).toBe(outcome === 'not_found' ? 97 : 39)
   }
 })
 
@@ -395,7 +395,7 @@ it('ranks no listed site or Facebook above source Facebook with identical lead s
     }))
     const row = (await db.select().from(businesses))[0]
     expect(row.presenceStatus).toBe(!website ? 'not_found' : website.includes('facebook') ? 'facebook' : 'alive')
-    expect(row.score).toBe(!website ? 40 : website.includes('facebook') ? 25 : 0)
+    expect(row.score).toBe(!website ? 45 : website.includes('facebook') ? 34 : null)
   }
 })
 
@@ -411,7 +411,7 @@ it('does not lower lead potential for a search-discovered URL redirecting to Fac
   const row = (await db.select().from(businesses))[0]
   expect(row.presenceStatus).toBe('not_found')
   expect(row.listedWebsite).toBeNull()
-  expect(row.score).toBe(40)
+  expect(row.score).toBe(45)
 })
 
 it('preserves Facebook and source links when an independent website is discovered', async () => {
@@ -476,7 +476,7 @@ it('persists an optional audit without changing presence, score or progress', as
   expect(rows.find(r => r.name === "Joe's Bakery")?.auditReport?.status).toBe('complete')
   const alive = rows.find(r => r.name === 'Crusty Loaf')!
   expect(alive.presenceStatus).toBe('alive')
-  expect(alive.score).toBe(0)
+  expect(alive.score).toBeNull()
   expect(alive.auditReport?.status).toBe('unverified')
 })
 
@@ -487,7 +487,7 @@ it('an optional auditor failure never turns a successful probe into a failure', 
   expect(result.status).toBe('done')
   const alive = (await db.select().from(businesses)).find(r => r.name === 'Crusty Loaf')!
   expect(alive.presenceStatus).toBe('alive')
-  expect(alive.score).toBe(0)
+  expect(alive.score).toBeNull()
 })
 
 

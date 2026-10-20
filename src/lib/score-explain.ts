@@ -1,6 +1,7 @@
+import { explainBusinessScore } from '@/core/business-score'
 import { englishText, type TranslateText } from '@/core/text'
 import type { AuditReport } from '@/core/audit/types'
-import { explainScore, type ScoreExplanation } from '@/core/scoring'
+import { type ScoreExplanation } from '@/core/scoring'
 import { generatePitch, type Pitch } from '@/core/pitch'
 import type { PresenceStatus } from '@/core/types'
 
@@ -11,6 +12,8 @@ export interface DomainInfo {
 
 /** The subset of a results-table row the explainer/pitch need. */
 export interface ExplainableRow {
+  scoreExplanation?: ScoreExplanation
+  leadStatus?: string
   auditReport?: AuditReport | null
   listedWebsite?: string | null
   facebookUrl?: string | null
@@ -35,23 +38,8 @@ export function bestAvailableDomain(domains: DomainInfo[]): string | null {
   return available.find(d => d.domain.endsWith('.com'))?.domain ?? available[0]?.domain ?? null
 }
 
-/**
- * Explains a row's stored score, reconciled so the breakdown always sums to the
- * number the user sees (see `explainScore` in core for why the domain factor absorbs
- * the residual).
- */
 export function explainResultRow(row: ExplainableRow): ScoreExplanation {
-  return explainScore(
-    {
-      presence: toPresence(row.presenceStatus),
-      auditReport: row.auditReport,
-      reviewCount: row.reviewCount,
-      rating: row.rating,
-      exactComAvailable: row.domains.some(d => d.domain.endsWith('.com') && d.available === true),
-      hasPhone: !!row.phone,
-    },
-    { total: row.score ?? undefined },
-  )
+  return row.scoreExplanation ?? explainBusinessScore(row, row.domains)
 }
 
 export function pitchForRow(row: ExplainableRow, location?: string | null, t: TranslateText = englishText): Pitch {
