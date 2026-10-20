@@ -88,3 +88,18 @@ select option { background-color: #0A0A0B; color: #FAFAFA; }
 /* Smooth in-page scrolling for nav anchors (respects reduced-motion), with offset for the sticky nav */
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 [id] { scroll-margin-top: 5.5rem; }
+
+.scan-map-pin span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 2px solid #0a0a0b;
+  border-radius: 50% 50% 50% 0;
+  background: #c6f24e;
+  color: #0a0a0b;
+  font: bold 16px sans-serif;
+  box-shadow: 0 2px 8px #0005;
+}
+.scan-map-pin:focus-visible { outline: 3px solid #4f46e5; outline-offset: 3px; }

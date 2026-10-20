@@ -497,3 +497,20 @@ cursor and queue. Provider pauses still let previously collected prospects finis
 The scan completes when collection and all its enrichment tasks have settled.
 `PRESENCEZERO_WORKER_ENABLED=false` disables the worker on this server (restart
 required); use it only if another persistent server processes the same database.
+
+### Scan map
+
+Each scan includes an interactive OpenStreetMap map, without a map API key.
+Click a marker to open the business details, links, score and audit. Businesses
+sharing coordinates are grouped under one numbered marker and can be selected
+individually. The map covers all collected results, independently of table filters;
+new positions appear during collection without resetting your zoom.
+
+Coordinates are retained from OSM nodes/centres, Google Places locations and Apify
+locations. CSV imports accept optional `latitude` and `longitude` columns. Missing
+or invalid positions are counted but never guessed. Older scans need to be rerun
+to collect coordinates; no bulk address geocoding is performed.
+
+Map tiles load directly from OpenStreetMap with visible attribution and normal
+browser caching; internet access is required. Follow the
+[OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/) when hosting.

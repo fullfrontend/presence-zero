@@ -672,5 +672,15 @@
   "Concurrent domain checks": "Vérifications de domaines simultanées",
   "Concurrent phone lookups": "Recherches de téléphone simultanées",
   "Concurrent AI qualifications": "Qualifications IA simultanées",
-  "Enriching…": "Enrichissement…"
+  "Enriching…": "Enrichissement…",
+  "Business map": "Carte des établissements",
+  "{0} of {1} businesses located": "{0} établissements localisés sur {1}",
+  "Select a pin to view business details.": "Cliquez sur un repère pour consulter la fiche.",
+  "Show all pins": "Voir tous les repères",
+  "OpenStreetMap business locations": "Localisation des établissements sur OpenStreetMap",
+  "The map could not load. Business details remain available in the list.": "La carte n’a pas pu se charger. Les fiches restent disponibles dans la liste.",
+  "Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.": "Certains résultats n’ont pas de coordonnées. Relancez les anciens scans pour récupérer les positions ; les imports CSV peuvent inclure latitude et longitude.",
+  "Selected business": "Établissement sélectionné",
+  "Businesses at this location": "Établissements à cette adresse",
+  "Close": "Fermer"
 }

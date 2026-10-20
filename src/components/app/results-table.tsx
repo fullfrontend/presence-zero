@@ -1,4 +1,5 @@
 'use client'
+import ScanMap from './scan-map'
 import { useI18n } from '@/i18n/client'
 import type { AuditReport } from '@/core/audit/types'
 import { useEffect, useState } from 'react'
@@ -16,6 +17,7 @@ import { buildExportQuery, isQualifiedLead, isPendingResult, type LeadStatus } f
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
+  latitude?: number | null; longitude?: number | null
   id: string; name: string; address: string | null; phone: string | null
   rating: number | null; reviewCount: number | null; listedWebsite: string | null
   presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
@@ -152,7 +154,7 @@ export default function ResultsTable(
     const load = async (soft: boolean) => {
       if (!soft) setLoading(true)
       const params = new URLSearchParams()
-      if (minScore > 0) params.set('minScore', String(minScore))
+
       const res = await fetch(`/api/scans/${scanId}/results?${params}`)
       const data = await res.json()
       if (mounted) {
@@ -165,11 +167,11 @@ export default function ResultsTable(
 
     return () => { mounted = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- soft reload when refreshKey ticks; avoid resetting selection thrash
-  }, [scanId, minScore, readOnly, refreshKey])
+  }, [scanId, readOnly, refreshKey])
 
   async function reload() {
     const params = new URLSearchParams()
-    if (minScore > 0) params.set('minScore', String(minScore))
+
     const res = await fetch(`/api/scans/${scanId}/results?${params}`)
     const data = await res.json()
     setResults(data.results)
@@ -215,7 +217,7 @@ export default function ResultsTable(
     })
   }
 
-  const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
+  const byMinScore = results.filter(r => (r.score ?? 0) >= minScore)
   const byAudit = auditOnly ? byMinScore.filter(r => r.auditReport?.status === "complete" && r.auditReport.mode === 'website') : byMinScore
   const byLeads = leadsOnly ? byAudit.filter(row => isPendingResult(row) || isQualifiedLead(row)) : byAudit
   const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
@@ -251,6 +253,7 @@ export default function ResultsTable(
 
   return (
     <div className="space-y-3">
+      {!readOnly && <ScanMap results={results} location={location} />}
       {partial && (
         <p className="text-xs text-dim">{t("Some rows may still be processing — scores and domains fill in as the scan advances.")}</p>
       )}

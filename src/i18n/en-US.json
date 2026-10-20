@@ -672,5 +672,15 @@
   "Concurrent domain checks": "Concurrent domain checks",
   "Concurrent phone lookups": "Concurrent phone lookups",
   "Concurrent AI qualifications": "Concurrent AI qualifications",
-  "Enriching…": "Enriching…"
+  "Enriching…": "Enriching…",
+  "Business map": "Business map",
+  "{0} of {1} businesses located": "{0} of {1} businesses located",
+  "Select a pin to view business details.": "Select a pin to view business details.",
+  "Show all pins": "Show all pins",
+  "OpenStreetMap business locations": "OpenStreetMap business locations",
+  "The map could not load. Business details remain available in the list.": "The map could not load. Business details remain available in the list.",
+  "Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.": "Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.",
+  "Selected business": "Selected business",
+  "Businesses at this location": "Businesses at this location",
+  "Close": "Close"
 }
