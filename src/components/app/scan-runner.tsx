@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '@/i18n/client'
+import { STAGE_LABELS } from './enrichment-status'
 import ResultsTable from './results-table'
 import { Button } from '@/components/brand/button'
 import { Skeleton } from './skeleton'
@@ -15,6 +16,7 @@ interface ScanState {
   category?: string
   provider?: string
   title?: string | null
+  stages?: { kind: string; running: number; pending: number }[]
   enrichment?: { pending: number; running: number; done: number; failed: number }
 }
 
@@ -74,6 +76,10 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
   const pct = scan.totalFound > 0 ? Math.min(100, Math.round(scan.totalProcessed / scan.totalFound * 100)) : 0
   const complete = scan.status === 'done'
   const enrichment = scan.enrichment
+  const runningStages = scan.stages?.filter(stage => stage.running > 0) ?? []
+  const waitingStages = scan.stages?.filter(stage => stage.pending > 0) ?? []
+  const activeStages = runningStages.length ? runningStages : scan.status === 'running' ? waitingStages : []
+  const stageDetail = activeStages.map(stage => t(STAGE_LABELS[stage.kind] ?? stage.kind)).join(' · ')
   return <div className="space-y-6">
     <div>
       <h1 className="text-2xl font-semibold tracking-tight">{scan.title?.trim() || t('{0} in {1}', { 0: scan.category ?? '', 1: scan.location ?? '' })}</h1>
@@ -88,7 +94,9 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
         <div className="h-full bg-lime transition-all" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-mute" role="status">
-        <span>{scan.status === 'running' ? scan.phase === 'fetch' ? t('Collecting prospects…') : t('Collection complete · enriching prospects…') : t(scan.status)}</span>
+        <span className="text-dim">{t(scan.status)}{stageDetail && <> — {runningStages.length === 0 && <>{t('Waiting')} : </>}{stageDetail}</>}
+          {!stageDetail && scan.status === 'running' && <> — {t(scan.phase === 'fetch' ? 'Collecting prospects…' : 'Collection complete · enriching prospects…')}</>}
+        </span>
         {enrichment && <><span>{t('{0} tasks waiting', { 0: number(enrichment.pending) })}</span><span>{t('{0} tasks running', { 0: number(enrichment.running) })}</span>
           {enrichment.failed > 0 && <span className="text-amber-400">{t('{0} tasks failed', { 0: number(enrichment.failed) })}</span>}</>}
       </div>

@@ -1,3 +1,4 @@
+import { JOB_KINDS } from '@/core/jobs/queue'
 import { eq } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { scans, scanJobs } from '@/db/schema'
@@ -11,7 +12,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   const jobs = await db.select().from(scanJobs).where(eq(scanJobs.scanId, id))
   const enrichment = { pending: 0, running: 0, failed: 0, done: 0 }
   for (const job of jobs) if (job.kind !== 'collect') enrichment[job.status]++
-  return Response.json({ ...row, enrichment })
+  const stages = JOB_KINDS.map(kind => ({
+    kind,
+    running: jobs.filter(job => job.kind === kind && job.status === 'running').length,
+    pending: jobs.filter(job => job.kind === kind && job.status === 'pending').length,
+  }))
+  return Response.json({ ...row, enrichment, stages })
 }
 
 export async function PATCH(req: Request, ctx: { params: Promise<{ id: string }> }) {
