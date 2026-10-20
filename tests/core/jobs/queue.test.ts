@@ -179,3 +179,31 @@ it('never adds the AI opportunity estimate to a live website lead score', async 
   })
   db.$client.close()
 })
+
+it.each([
+  ['alive', 0], ['dead', 95], ['parked', 90],
+] as const)('scores a search-discovered %s website exactly like a source-listed website', async (presence, expectedScore) => {
+  const scores: number[] = []
+  for (const discovered of [false, true]) {
+    const probe = vi.fn<NonNullable<PipelineDeps['probe']>>(async () => ({ status: presence, detail: 'Website checked' }))
+    const { db, deps } = await setup({
+      getProviderById: () => ({ id: 'test', async fetchPage() {
+        return { businesses: [{ name: 'Business', phone: '+32 12345678', rating: 5, reviewCount: 50,
+          website: discovered ? undefined : 'https://business.example' }], nextCursor: null }
+      } }),
+      discoverWebsite: async () => ({ website: 'https://business.example', outcome: 'matched', detail: 'Matching website found' }),
+      probe,
+    })
+    for (const kind of JOB_KINDS) {
+      const job = await claimJob(db, kind, 1)
+      if (job) await processJob(job, deps)
+    }
+    await refreshScanProgress(db, 'scan')
+    const row = (await db.select().from(businesses))[0]
+    expect(probe).toHaveBeenCalledWith('https://business.example')
+    expect(row).toMatchObject({ listedWebsite: 'https://business.example', presenceStatus: presence, score: expectedScore })
+    scores.push(row.score!)
+    db.$client.close()
+  }
+  expect(scores[0]).toBe(scores[1])
+})
