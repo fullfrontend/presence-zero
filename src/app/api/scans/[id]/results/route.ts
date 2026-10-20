@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, inArray, lt } from 'drizzle-orm'
+import { and, desc, eq, gte, inArray, isNull, or, lt } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { businesses, domainCandidates, scans } from '@/db/schema'
+import { businesses, domainCandidates, scans, scanJobs } from '@/db/schema'
 import { normalizeBusinessKey } from '@/core/dedupe'
 import { resultsQuerySchema } from '@/server/validation'
 
@@ -13,11 +13,12 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const db = await getDb()
   const conditions = [eq(businesses.scanId, id)]
-  if (minScore !== undefined) conditions.push(gte(businesses.score, minScore))
+  if (minScore !== undefined) conditions.push(minScore === 0 ? or(gte(businesses.score, 0), isNull(businesses.score))! : gte(businesses.score, minScore))
   if (presence) conditions.push(eq(businesses.presenceStatus, presence))
   if (leadStatus) conditions.push(eq(businesses.leadStatus, leadStatus))
 
   const rows = await db.select().from(businesses).where(and(...conditions)).orderBy(desc(businesses.score))
+  const jobs = await db.select({ businessId: scanJobs.businessId, kind: scanJobs.kind, status: scanJobs.status, error: scanJobs.error, availableAt: scanJobs.availableAt }).from(scanJobs).where(eq(scanJobs.scanId, id))
   const ids = rows.map(r => r.id)
   const candidates = ids.length
     ? await db.select().from(domainCandidates).where(inArray(domainCandidates.businessId, ids))
@@ -45,6 +46,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   return Response.json({
     results: rows.map(r => ({
       ...r,
+      enrichment: jobs.filter(job => job.businessId === r.id),
       domains: byBusiness.get(r.id) ?? [],
       seenBefore: seenKeys.has(normalizeBusinessKey(r.name)),
     })),

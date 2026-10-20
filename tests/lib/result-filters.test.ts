@@ -41,3 +41,9 @@ it('includes Facebook in leads-only results and exports', () => {
 it('includes no-site-found leads in results and exports', () => {
   expect(matchesResultFilters(row({ presenceStatus: 'not_found' }), { leadsOnly: true })).toBe(true)
 })
+
+it('keeps pending prospects visible in the table and matching exports', () => {
+  expect(matchesResultFilters(row({ presenceStatus: null, score: null }), { leadsOnly: true })).toBe(true)
+  expect(matchesResultFilters({ ...row({ presenceStatus: 'alive' }), enrichment: [{ status: 'running' }] }, { leadsOnly: true })).toBe(true)
+  expect(matchesResultFilters({ ...row({ presenceStatus: 'alive' }), enrichment: [{ status: 'done' }] }, { leadsOnly: true })).toBe(false)
+})

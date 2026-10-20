@@ -4,6 +4,7 @@ import { presenceMeta } from '@/lib/presence'
 export type LeadStatus = 'new' | 'contacted' | 'replied' | 'won' | 'lost' | 'skipped'
 
 export interface FilterableRow {
+  enrichment?: { status: string }[]
   auditReport?: AuditReport | null
   presenceStatus: string | null
   score: number | null
@@ -22,7 +23,7 @@ export interface ResultFilterOpts {
 export function matchesResultFilters(r: FilterableRow, opts: ResultFilterOpts): boolean {
   if (opts.minScore != null && opts.minScore > 0 && (r.score ?? 0) < opts.minScore) return false
   if (opts.auditOnly && !(r.auditReport?.status === 'complete' && r.auditReport.mode === 'website')) return false
-  if (opts.leadsOnly && !isQualifiedLead(r)) return false
+  if (opts.leadsOnly && !isPendingResult(r) && !isQualifiedLead(r)) return false
   if (opts.hasPhoneOnly && !r.phone) return false
   if (opts.leadStatus && r.leadStatus !== opts.leadStatus) return false
   return true
@@ -43,4 +44,10 @@ export function buildExportQuery(opts: ResultFilterOpts): string {
 /** Existing presence leads plus independently audited website opportunities. */
 export function isQualifiedLead(row: { presenceStatus: string | null; auditReport?: AuditReport | null }): boolean {
   return presenceMeta(row.presenceStatus).isLead || (row.presenceStatus === 'alive' && row.auditReport?.status === 'complete' && row.auditReport.verification.status === 'matched' && row.auditReport.qualified === true)
+}
+
+
+/** Keep newly collected prospects visible until their independent checks settle. */
+export function isPendingResult(row: { presenceStatus: string | null; enrichment?: { status: string }[] }): boolean {
+  return row.presenceStatus === null || !!row.enrichment?.some(task => task.status === 'pending' || task.status === 'running')
 }

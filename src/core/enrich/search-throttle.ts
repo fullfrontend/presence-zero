@@ -10,6 +10,7 @@ type Search = (input: WebsiteSearchInput) => Promise<WebsiteSearchResult>
 export function createSearchThrottle(db: Db, key: string, options: {
   intervalMs: number
   cooldownMs: number
+  nonBlocking?: boolean
   maxRetries?: number
   now?: () => number
   sleep?: (ms: number) => Promise<void>
@@ -33,6 +34,9 @@ export function createSearchThrottle(db: Db, key: string, options: {
         if (acquired.length) break
         const state = (await db.select().from(searchThrottle).where(eq(searchThrottle.key, key)))[0]
         const wait = Math.max(state.nextAllowedAt, state.blockedUntil) - now()
+        if (options.nonBlocking) return { website: null, deferred: true,
+          retryAfterMs: Math.max(100, wait, state.leaseUntil - now()),
+          detail: 'Waiting for the shared search throttle.' }
         // Poll active leases briefly; sleep cooldowns in bounded chunks.
         await sleep(Math.min(30000, Math.max(100, wait > 0 ? wait : 1000)))
       }

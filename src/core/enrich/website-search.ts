@@ -6,6 +6,8 @@ export interface WebsiteSearchInput {
 }
 
 export interface WebsiteSearchResult {
+  // A shared throttle deferral did not spend a search request.
+  deferred?: boolean
   retryAfterMs?: number
   // Omission by an injected/legacy search is treated as inconclusive.
   outcome?: 'matched' | 'not_found' | 'inconclusive'

@@ -1,3 +1,5 @@
+import { ensureScanJobs } from '@/core/jobs/queue'
+import { startBackgroundWorker } from '@/server/background-worker'
 import { randomUUID } from 'node:crypto'
 import { desc } from 'drizzle-orm'
 import { getDb } from '@/db/client'
@@ -20,6 +22,8 @@ export async function POST(req: Request) {
     id, createdAt: new Date(), location, category, countryCode, provider,
     providerConfig: Object.keys(providerConfig).length > 0 ? JSON.stringify(providerConfig) : null,
   })
+  await ensureScanJobs(db, id)
+  startBackgroundWorker()
   return Response.json({ id }, { status: 201 })
 }
 

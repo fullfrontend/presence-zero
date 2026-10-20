@@ -43,6 +43,13 @@
       "when": 1792361698703,
       "tag": "0005_local_ai_audits",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1792451883172,
+      "tag": "0006_asynchronous_enrichment",
+      "breakpoints": true
     }
   ]
 }

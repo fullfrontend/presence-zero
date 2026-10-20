@@ -25,10 +25,17 @@ describe('scan API flow', () => {
     const { id } = await createRes.json()
 
     const advanceRoute = await import('@/app/api/scans/[id]/advance/route')
+    const { dispatchWorkerJobs } = await import('@/server/background-worker')
+    const { getDb } = await import('@/db/client')
+    const { refreshScanProgress } = await import('@/core/jobs/queue')
+    const statusRoute = await import('@/app/api/scans/[id]/route')
     let status = 'running'
     for (let i = 0; i < 20 && status === 'running'; i++) {
       const r = await advanceRoute.POST(new Request('http://t', { method: 'POST' }), { params: Promise.resolve({ id }) })
-      status = (await r.json()).status
+      expect(r.status).toBe(202)
+      await Promise.all(await dispatchWorkerJobs(await getDb()))
+      await refreshScanProgress(await getDb(), id)
+      status = (await (await statusRoute.GET(new Request('http://t'), { params: Promise.resolve({ id }) })).json()).status
     }
     expect(status).toBe('done')
 
@@ -60,4 +67,25 @@ describe('scan API flow', () => {
     const res = await scansRoute.POST(new Request('http://t', { method: 'POST', body: JSON.stringify({ provider: 'csv' }) }))
     expect(res.status).toBe(400)
   })
+})
+
+it('returns collected prospects with null scores before enrichment completes', async () => {
+  const scansRoute = await import('@/app/api/scans/route')
+  const response = await scansRoute.POST(new Request('http://t', { method: 'POST', body: JSON.stringify({
+    location: 'Charleroi', category: 'bakery', provider: 'csv', csvContent: 'name,address\nPending Bakery,Charleroi',
+  }) }))
+  const { id } = await response.json()
+  const { getDb } = await import('@/db/client')
+  const { claimJob } = await import('@/core/jobs/queue')
+  const { processJob } = await import('@/core/jobs/process')
+  const { loadPipelineDeps } = await import('@/server/pipeline-deps')
+  const db = await getDb()
+  const job = await claimJob(db, 'collect', 1)
+  expect(job?.scanId).toBe(id)
+  await processJob(job!, await loadPipelineDeps(db, { audit: false, search: false, queued: true }))
+  const resultsRoute = await import('@/app/api/scans/[id]/results/route')
+  const { results } = await (await resultsRoute.GET(new Request('http://t/results?minScore=0'), { params: Promise.resolve({ id }) })).json()
+  expect(results).toHaveLength(1)
+  expect(results[0]).toMatchObject({ name: 'Pending Bakery', score: null, presenceStatus: null })
+  expect(results[0].enrichment).toHaveLength(5)
 })

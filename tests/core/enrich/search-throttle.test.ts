@@ -99,3 +99,13 @@ it('prevents overlapping requests from two workers sharing a database', async ()
   })(input)
   expect(sleep).toHaveBeenCalledTimes(1)
 })
+
+it('returns a durable deferral instead of sleeping in background-worker mode', async () => {
+  const { db, options, sleep } = await setup()
+  const call = vi.fn(async () => empty)
+  const search = createSearchThrottle(db, 'service', { ...options, nonBlocking: true, maxRetries: 0 })(call)
+  await search(input)
+  expect(await search(input)).toMatchObject({ deferred: true, retryAfterMs: 5000, website: null })
+  expect(call).toHaveBeenCalledTimes(1)
+  expect(sleep).not.toHaveBeenCalled()
+})

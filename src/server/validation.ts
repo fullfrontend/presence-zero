@@ -42,6 +42,7 @@ export const bulkPatchBusinessesSchema = z.object({
 })
 
 export const patchScanSchema = z.object({
+  paused: z.boolean().optional(),
   pinned: z.boolean().optional(),
   archived: z.boolean().optional(),
   label: z.string().max(100).nullable().optional(),

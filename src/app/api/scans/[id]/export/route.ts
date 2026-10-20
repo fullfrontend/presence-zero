@@ -1,6 +1,6 @@
 import { desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db/client'
-import { businesses, domainCandidates } from '@/db/schema'
+import { businesses, domainCandidates, scanJobs } from '@/db/schema'
 import { matchesResultFilters } from '@/lib/result-filters'
 import { exportQuerySchema } from '@/server/validation'
 
@@ -21,7 +21,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
 
   const db = await getDb()
   const rows = await db.select().from(businesses).where(eq(businesses.scanId, id)).orderBy(desc(businesses.score))
-  const filtered = rows.filter(r => matchesResultFilters(r, {
+  const jobs = await db.select({ businessId: scanJobs.businessId, status: scanJobs.status }).from(scanJobs).where(eq(scanJobs.scanId, id))
+  const filtered = rows.map(row => ({ ...row, enrichment: jobs.filter(job => job.businessId === row.id) })).filter(r => matchesResultFilters(r, {
     minScore,
     auditOnly,
     leadsOnly: leadsOnly || false,

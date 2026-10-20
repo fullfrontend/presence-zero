@@ -1,5 +1,5 @@
 import type { AuditReport } from '@/core/audit/types'
-import { sqliteTable, text, integer, real } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core'
 
 export const scans = sqliteTable('scans', {
   id: text('id').primaryKey(),
@@ -70,3 +70,18 @@ export const searchThrottle = sqliteTable('search_throttle', {
   leaseUntil: integer('lease_until').notNull().default(0),
   owner: text('owner'),
 })
+
+
+export const scanJobs = sqliteTable('scan_jobs', {
+  id: text('id').primaryKey(),
+  scanId: text('scan_id').notNull().references(() => scans.id),
+  businessId: text('business_id').references(() => businesses.id),
+  kind: text('kind', { enum: ['collect', 'search', 'probe', 'domains', 'phone', 'audit'] }).notNull(),
+  status: text('status', { enum: ['pending', 'running', 'done', 'failed'] }).notNull().default('pending'),
+  attempts: integer('attempts').notNull().default(0),
+  availableAt: integer('available_at').notNull().default(0),
+  leaseUntil: integer('lease_until').notNull().default(0),
+  owner: text('owner'),
+  error: text('error'),
+  result: text('result'),
+}, table => [index('scan_jobs_ready').on(table.kind, table.status, table.availableAt), index('scan_jobs_scan').on(table.scanId)])
