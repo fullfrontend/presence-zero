@@ -1,6 +1,7 @@
 import { createClient } from '@libsql/client'
 import { drizzle } from 'drizzle-orm/libsql'
 import { migrate } from 'drizzle-orm/libsql/migrator'
+import { ensureScanJobResultColumn } from './compatibility'
 import * as schema from './schema'
 
 export function createDb(url: string, authToken?: string) {
@@ -18,6 +19,7 @@ export function getDb(): Promise<Db> {
       const db = createDb(url, process.env.DATABASE_AUTH_TOKEN)
       try {
         await migrate(db, { migrationsFolder: 'drizzle' })
+        await ensureScanJobResultColumn(db.$client)
       } catch (err) {
         // Don't poison the singleton — let the next request retry (e.g. a cold-start race).
         _dbPromise = null
