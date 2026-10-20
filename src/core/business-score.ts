@@ -1,5 +1,5 @@
 import { explainScore } from './scoring'
-import { generateDomainCandidates } from './probes/domains'
+import { exactDomainCandidates } from './probes/domains'
 import type { AuditReport } from './audit/types'
 import type { PresenceStatus } from './types'
 
@@ -9,8 +9,8 @@ export interface ScorableBusiness {
   auditReport?: AuditReport | null
 }
 export function explainBusinessScore(row: ScorableBusiness, domains: { domain: string; available: boolean | null }[], countryCode = 'us') {
-  const exact = generateDomainCandidates(row.name, countryCode)[0]
+  const exact = exactDomainCandidates(row.name, countryCode)
   return explainScore({ presence: row.presenceStatus as PresenceStatus | null, auditReport: row.auditReport,
     leadStatus: row.leadStatus, rating: row.rating, reviewCount: row.reviewCount, hasPhone: !!row.phone?.trim(),
-    exactComAvailable: !!exact?.endsWith('.com') && domains.some(domain => domain.domain === exact && domain.available === true) })
+    exactDomainAvailable: domains.some(domain => exact.includes(domain.domain) && domain.available === true) })
 }

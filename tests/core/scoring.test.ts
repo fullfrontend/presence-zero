@@ -1,9 +1,9 @@
 import { it, expect } from 'vitest'
 import { computeScore, explainScore } from '@/core/scoring'
-const full = { reviewCount: 100, rating: 4.5, exactComAvailable: true, hasPhone: true }
+const full = { reviewCount: 100, rating: 4.5, exactDomainAvailable: true, hasPhone: true }
 it('requires all commercial signals for maximum priority', () => {
   expect(computeScore({ ...full, presence: 'not_found' })).toBe(100)
-  expect(computeScore({ presence: 'not_found', exactComAvailable: false, hasPhone: false })).toBe(45)
+  expect(computeScore({ presence: 'not_found', exactDomainAvailable: false, hasPhone: false })).toBe(45)
   expect(computeScore({ ...full, presence: 'not_found', hasPhone: false })).toBe(80)
 })
 it('orders proven absence, broken sites, Facebook and unverified absence', () => {
@@ -30,7 +30,7 @@ it('keeps rounded factors bounded and equal to the displayed total', () => {
 })
 it('missing and invalid activity evidence never earns points', () => {
   for (const value of [null, NaN, Infinity, -1]) {
-    const ex = explainScore({ presence: 'not_found', reviewCount: value, rating: value, exactComAvailable: false, hasPhone: false })
+    const ex = explainScore({ presence: 'not_found', reviewCount: value, rating: value, exactDomainAvailable: false, hasPhone: false })
     expect(ex.total).toBe(45)
   }
 })

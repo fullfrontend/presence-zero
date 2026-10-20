@@ -6,10 +6,12 @@ import type { RdapCacheStore } from './rdap'
 export function createDrizzleRdapCache(db: Db): RdapCacheStore {
   return {
     async get(domain) {
+      domain = `v2:${domain}`
       const rows = await db.select().from(rdapCache).where(eq(rdapCache.domain, domain))
       return rows[0] ? { available: rows[0].available, checkedAt: rows[0].checkedAt } : null
     },
     async set(domain, available, checkedAt) {
+      domain = `v2:${domain}`
       await db.insert(rdapCache).values({ domain, available, checkedAt })
         .onConflictDoUpdate({ target: rdapCache.domain, set: { available, checkedAt } })
     },

@@ -9,7 +9,7 @@ const report: AuditReport = {
   reason: null, verification: { status: 'matched', detail: 'Matching business' }, summary: 'Observed evidence',
   websiteQuality: 20, opportunityScore: 80, qualified: true, qualificationReasons: [], findings: [], brief: '', evidence: [],
 }
-const input = { presence: 'alive' as const, reviewCount: 100, rating: 5, exactComAvailable: true, hasPhone: true }
+const input = { presence: 'alive' as const, reviewCount: 100, rating: 5, exactDomainAvailable: true, hasPhone: true }
 
 it('makes weaker sites stronger leads on one bounded scale, with all other commercial signals present', () => {
   for (const [quality, expected] of [[0, 100], [20, 80], [90, 10], [100, 0]]) {

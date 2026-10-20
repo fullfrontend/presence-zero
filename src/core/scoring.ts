@@ -8,7 +8,7 @@ export interface ScoreInput {
   presence: PresenceStatus | null
   reviewCount?: number | null
   rating?: number | null
-  exactComAvailable: boolean
+  exactDomainAvailable: boolean
   hasPhone: boolean
   leadStatus?: string
 }
@@ -47,7 +47,7 @@ export function explainScore(i: ScoreInput): ScoreExplanation {
     ['reviews', 'Observed business activity (reviews)', W.activityMax * activity, W.activityMax],
     ['phone', 'Direct contact available (phone)', i.hasPhone ? W.contactMax : 0, W.contactMax],
     ['rating', 'Reputation supported by reviews', W.reputationMax * reputation, W.reputationMax],
-    ['exactDomain', 'Domain ready for the website project', i.presence === 'alive' || i.exactComAvailable ? W.domainMax : 0, W.domainMax],
+    ['exactDomain', 'Domain ready for the website project', i.presence === 'alive' || i.exactDomainAvailable ? W.domainMax : 0, W.domainMax],
   ]
   // Cumulative rounding keeps monotonic totals and an exact, honest breakdown.
   let sum = 0, rounded = 0

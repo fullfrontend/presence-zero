@@ -66,7 +66,7 @@ describe('translation and regional formats', () => {
     expect(pitch.talkingPoints[0]).toContain('4,5★')
     expect(buildPitchText(pitch, t)).toContain('Domaine suggéré : settings.example')
     expect(generatePitch({ name: 'Settings', presence: 'none' }).headline).toBe('Website presence needs verification.')
-    expect(computeScore({ presence: 'not_found', rating: 4.5, reviewCount: 12, exactComAvailable: true, hasPhone: true })).toBeGreaterThan(0)
+    expect(computeScore({ presence: 'not_found', rating: 4.5, reviewCount: 12, exactDomainAvailable: true, hasPhone: true })).toBeGreaterThan(0)
     expect(row.presenceStatus).toBe('none')
   })
 })

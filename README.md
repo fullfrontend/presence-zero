@@ -23,7 +23,7 @@ If this helps you find leads, a star helps others find the project.
 
 1. **Find** — pick a location + category and a data source (Google Places, Apify (Google Maps), OpenStreetMap, or a CSV you already have). PresenceZero pulls the matching businesses.
 2. **Probe** — it visits each listed website and labels it `none`, `dead`, `parked`, or `alive`. The first three are your leads.
-3. **Check domains** — for each lead it derives likely domain names from the business name and checks availability via [RDAP](https://about.rdap.org/) (no key needed), surfacing the exact-match `.com`/ccTLD if it's free.
+3. **Check domains** — for each lead it derives likely domain names from the business name and checks availability via public RDAP or DNS Belgium DAS (no key needed), preferring the national extension and also checking `.com`.
 4. **Score** — each lead gets a 0–100 opportunity score (no website + real customers + an available domain = a hot lead). The table sorts hottest-first.
 5. **Work the list** — filter, sort, and set a lead status or note. Expand any row for a plain-language **score breakdown** (why it scored what it did) and a **ready-to-personalize outreach angle** you can copy — then export to CSV to take into your own workflow.
 
@@ -101,7 +101,7 @@ The score is prospecting priority, not a probability of closing a sale. All weig
 | Activity (review volume, capped at 100) | 20 |
 | Direct contact (phone) | 20 |
 | Reputation (rating, supported by at least 10 reviews) | 10 |
-| Domain readiness (existing live site or exact .com available) | 5 |
+| Domain readiness (existing live site or exact national domain or .com available) | 5 |
 
 **Formula:** need × (45 + activity + contact + reputation + domain readiness).
 Need is 100% for no site found after search, 95% for a dead site, 90% for a parked site,
@@ -118,6 +118,23 @@ they do not infer an IT maintenance need from unavailable evidence.
 Historical results and exports are recalculated from stored evidence on read.
 
 Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
+
+### Free domain availability checks
+
+Candidates use the scan country code first (`be` → `.be`, `fr` → `.fr`, `us` → `.us`,
+`gb` → `.uk`), with `.com` as an additional option. The exact national name and exact
+`.com` earn the same domain-readiness contribution, capped at 5 points together.
+Suggested domains also prefer the national extension when available.
+
+No paid API or API key is required. Checks use public [RDAP](https://about.rdap.org/)
+registries and, for `.be`, the [DNS Belgium DAS service](https://docs.dnsbelgium.be/be/general/whoisanddas.html)
+on TCP port 4343. Belgium requests are spaced by at least 1.5 seconds per application
+process; confirmed results are cached. Unsupported extensions, blocked connections,
+rate limits and inconclusive responses remain unknown, never “available”. A missing
+DNS record alone is not proof that a domain can be registered.
+The old availability cache is bypassed after this update; rerun old scans to refresh
+previously recorded domain checks. Multiple application processes share the registry's
+IP-based limits, so rate limiting can still produce unknown results.
 
 ## Tech stack
 

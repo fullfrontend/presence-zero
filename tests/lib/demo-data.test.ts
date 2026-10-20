@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { DEMO_SCAN } from '@/lib/demo-data'
 import { presenceMeta } from '@/lib/presence'
 import { computeScore } from '@/core/scoring'
-import { generateDomainCandidates } from '@/core/probes/domains'
+import { exactDomainCandidates } from '@/core/probes/domains'
 
 describe('DEMO_SCAN', () => {
   it('has enough rows to show range', () => {
@@ -23,8 +23,8 @@ describe('DEMO_SCAN', () => {
         leadStatus: r.leadStatus,
         reviewCount: r.reviewCount,
         rating: r.rating,
-        // Exact-match .com bonus: the first .com candidate is available.
-        exactComAvailable: r.domains.some(d => d.domain === generateDomainCandidates(r.name, 'ca')[0] && d.available === true),
+        // Exact business name in the scan country or .com.
+        exactDomainAvailable: r.domains.some(d => exactDomainCandidates(r.name, 'ca').includes(d.domain) && d.available === true),
         hasPhone: !!r.phone,
       }
       const expected = computeScore(input)

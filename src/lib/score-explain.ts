@@ -32,10 +32,10 @@ function toPresence(status: string | null): PresenceStatus {
   return (status ?? 'probe_failed') as PresenceStatus
 }
 
-/** The best domain worth pitching: an available `.com` first, else any available candidate. */
+/** The best domain worth pitching: an available national extension first, else any available candidate. */
 export function bestAvailableDomain(domains: DomainInfo[]): string | null {
   const available = domains.filter(d => d.available === true)
-  return available.find(d => d.domain.endsWith('.com'))?.domain ?? available[0]?.domain ?? null
+  return available.find(d => !d.domain.endsWith('.com'))?.domain ?? available[0]?.domain ?? null
 }
 
 export function explainResultRow(row: ExplainableRow): ScoreExplanation {

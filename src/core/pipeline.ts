@@ -7,7 +7,7 @@ import type { Db } from '@/db/client'
 import { businesses, domainCandidates, scans, settings } from '@/db/schema'
 import { getProvider, ProviderError, type Provider } from './providers/provider'
 import { createWebsiteProbe, type ProbeResult } from './probes/website-probe'
-import { generateDomainCandidates } from './probes/domains'
+import { generateDomainCandidates, exactDomainCandidates } from './probes/domains'
 import { createRdapChecker } from './probes/rdap'
 import { createDrizzleRdapCache } from './probes/rdap-cache-store'
 import { createGooglePhoneLookup } from './enrich/google-phone'
@@ -129,7 +129,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       }
       if (discoveryDetail) outcome.detail = `${discoveryDetail} ${outcome.detail}`
       const presence = outcome.status
-      let exactComAvailable = false
+      let exactDomainAvailable = false
       if (presence !== 'alive') {
         const candidates = generateDomainCandidates(b.name, scan.countryCode)
         for (const domain of candidates) {
@@ -137,14 +137,14 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           await db.insert(domainCandidates).values({
             id: randomUUID(), businessId: b.id, domain, available, checkedAt: new Date(),
           })
-          if (domain === candidates[0] && domain.endsWith('.com') && available === true) exactComAvailable = true
+          if (exactDomainCandidates(b.name, scan.countryCode).includes(domain) && available === true) exactDomainAvailable = true
         }
       }
       let found: string | null = null
       if (!b.phone) { try { found = await enrichPhone(b.name, b.address) } catch { found = null } }
       const score = computeScore({
         presence, leadStatus: b.leadStatus, auditReport: b.auditReport, reviewCount: b.reviewCount, rating: b.rating,
-        exactComAvailable, hasPhone: !!(b.phone || found),
+        exactDomainAvailable, hasPhone: !!(b.phone || found),
       })
       await db.update(businesses)
         .set({ presenceStatus: presence, probeDetail: outcome.detail, score, ...(found ? { phone: found } : {}) })
@@ -155,7 +155,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           const auditReport = await deps.auditLead({ name: b.name, address: b.address, phone: b.phone || found,
             category: b.category ?? scan.category, rating: b.rating, reviewCount: b.reviewCount,
             website, presence })
-          await db.update(businesses).set({ auditReport, score: computeScore({ presence, leadStatus: b.leadStatus, auditReport, reviewCount: b.reviewCount, rating: b.rating, exactComAvailable, hasPhone: !!(b.phone || found) }) }).where(eq(businesses.id, b.id))
+          await db.update(businesses).set({ auditReport, score: computeScore({ presence, leadStatus: b.leadStatus, auditReport, reviewCount: b.reviewCount, rating: b.rating, exactDomainAvailable, hasPhone: !!(b.phone || found) }) }).where(eq(businesses.id, b.id))
         } catch { /* Injected audit failures leave the completed business check intact. */ }
       }
     } catch (err) {

@@ -12,12 +12,17 @@ function memCache(): RdapCacheStore & { store: Map<string, { available: boolean;
     async set(d, available, checkedAt) { store.set(d, { available, checkedAt }) },
   }
 }
+function registryResponse(body: string, init: ResponseInit) {
+  const response = new Response(body, init)
+  Object.defineProperties(response, { url: { value: 'https://registry.example/domain/test' }, redirected: { value: true } })
+  return response
+}
 const noSleep = async () => {}
 
 describe('rdap checker', () => {
   it('404 means available and is cached', async () => {
     const cache = memCache()
-    const fetchFn = vi.fn(async () => new Response('', { status: 404 })) as unknown as typeof fetch
+    const fetchFn = vi.fn(async () => registryResponse('', { status: 404 })) as unknown as typeof fetch
     const check = createRdapChecker({ cache, fetchFn, sleep: noSleep })
     expect(await check('free.com')).toBe(true)
     expect(cache.store.get('free.com')!.available).toBe(true)
@@ -64,7 +69,7 @@ describe('rdap checker', () => {
 
   it('backs off on 429 then succeeds', async () => {
     let calls = 0
-    const fetchFn = (async () => new Response('', { status: ++calls < 3 ? 429 : 404 })) as typeof fetch
+    const fetchFn = (async () => registryResponse('', { status: ++calls < 3 ? 429 : 404 })) as typeof fetch
     const check = createRdapChecker({ cache: memCache(), fetchFn, sleep: noSleep })
     expect(await check('busy.com')).toBe(true)
   })
@@ -88,4 +93,32 @@ describe('drizzle rdap cache store', () => {
     await store.set('a.com', false, t) // upsert
     expect((await store.get('a.com'))!.available).toBe(false)
   })
+})
+
+it('never treats an unsupported RDAP extension as an available domain', async () => {
+  const cache = memCache()
+  const check = createRdapChecker({ cache, sleep: noSleep, fetchFn: async () => new Response('', { status: 404 }) })
+  expect(await check('bakery.zz')).toBeNull()
+  expect(cache.store.size).toBe(0)
+})
+it('uses the free Belgium availability service without RDAP and caches confirmed answers', async () => {
+  const cache = memCache()
+  const fetchFn = vi.fn()
+  const queryBelgium = vi.fn(async () => '%% RC=0\nDomain: bakery.be\nStatus: AVAILABLE\n')
+  const check = createRdapChecker({ cache, queryBelgium, fetchFn })
+  expect(await check('bakery.be')).toBe(true)
+  expect(await check('bakery.be')).toBe(true)
+  expect(queryBelgium).toHaveBeenCalledTimes(1)
+  expect(fetchFn).not.toHaveBeenCalled()
+})
+it.each(['%% RC=-2\nDomain: bakery.be', '%% RC=0\nDomain: other.be\nStatus: AVAILABLE', 'garbage'])(
+  'leaves inconclusive Belgium responses unknown: %s', async reply => {
+    const cache = memCache()
+    const check = createRdapChecker({ cache, queryBelgium: async () => reply })
+    expect(await check('bakery.be')).toBeNull()
+    expect(cache.store.size).toBe(0)
+  })
+it.each(['REGISTERED', 'NOT AVAILABLE'])('recognizes occupied Belgium domains (%s)', async status => {
+  const check = createRdapChecker({ cache: memCache(), queryBelgium: async () => `%% RC=0\nDomain: bakery.be\nStatus: ${status}\n` })
+  expect(await check('bakery.be')).toBe(false)
 })

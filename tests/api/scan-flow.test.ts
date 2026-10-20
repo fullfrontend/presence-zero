@@ -10,7 +10,11 @@ Nameless Wonder Co,,,,
 describe('scan API flow', () => {
   beforeAll(() => {
     vi.stubGlobal('fetch', (async (url: RequestInfo | URL) => {
-      if (String(url).startsWith('https://rdap.org/')) return new Response('', { status: 404 })
+      if (String(url).startsWith('https://rdap.org/')) {
+        const response = new Response('', { status: 404 })
+        Object.defineProperties(response, { url: { value: 'https://registry.example/domain/test' }, redirected: { value: true } })
+        return response
+      }
       throw new Error(`unexpected fetch in test: ${url}`)
     }) as typeof fetch)
   })

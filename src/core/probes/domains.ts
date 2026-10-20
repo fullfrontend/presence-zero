@@ -11,9 +11,17 @@ export function generateDomainCandidates(name: string, countryCode: string): str
   const full = words.join('')
   const compact = words.filter(w => !STOP_WORDS.has(w)).join('')
   const bases = [...new Set([full, compact])].filter(b => b.length >= 3 && b.length <= 40)
-  const cc = countryCode.toLowerCase()
-  const tlds = ['com', ...(cc && cc !== 'us' ? [cc] : [])]
+  const cc = countryCode.trim().toLowerCase()
+  const national = cc === 'gb' ? 'uk' : cc
+  const tlds = [...(/^[a-z]{2}$/.test(national) ? [national] : []), 'com']
   const out: string[] = []
   for (const base of bases) for (const tld of tlds) out.push(`${base}.${tld}`)
   return out.slice(0, 4)
+}
+
+/** Exact business name, using either the national extension or .com (no double bonus). */
+export function exactDomainCandidates(name: string, countryCode: string): string[] {
+  const candidates = generateDomainCandidates(name, countryCode)
+  const base = candidates[0]?.split('.')[0]
+  return candidates.filter(domain => domain.split('.')[0] === base)
 }

@@ -18,11 +18,11 @@ describe('explainResultRow', () => {
 })
 
 describe('bestAvailableDomain', () => {
-  it('prefers an available .com', () => {
+  it('prefers an available national domain', () => {
     expect(bestAvailableDomain([
       { domain: 'x.ca', available: true },
       { domain: 'x.com', available: true },
-    ])).toBe('x.com')
+    ])).toBe('x.ca')
   })
   it('falls back to any available domain', () => {
     expect(bestAvailableDomain([{ domain: 'x.ca', available: true }])).toBe('x.ca')
