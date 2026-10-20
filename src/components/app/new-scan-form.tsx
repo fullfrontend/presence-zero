@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/brand/button'
+import { GoogleCategoryInput } from './google-category-input'
 import { SUPPORTED_OSM_CATEGORIES } from '@/core/providers/osm-categories'
 
 const LAST_SCAN_KEY = 'pz-last-scan'
@@ -154,17 +155,19 @@ export default function NewScanForm({ defaultLocation, defaultCountryCode, hasIn
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <label className={label}>{t("Location")}<input className={input} value={location} onChange={e => setLocation(e.target.value)} placeholder={t("Charleroi, Belgique")} required />
         </label>
-        <label className={label}>{t("Category")}{provider === 'osm' ? (
-            <select className={input} value={category} onChange={e => setCategory(e.target.value)} required>
+        <div><label className={label} htmlFor="scan-category">{t("Category")}</label>{provider === 'osm' ? (
+            <select id="scan-category" className={input} value={category} onChange={e => setCategory(e.target.value)} required>
               <option value="">{t("Choose a category…")}</option>
               {SUPPORTED_OSM_CATEGORIES.map(c => (
                 <option key={c} value={c}>{t(c.replace(/_/g, ' '))}</option>
               ))}
             </select>
+          ) : provider === 'google' ? (
+            <GoogleCategoryInput id="scan-category" className={input} value={category} onChange={setCategory} />
           ) : (
-            <input className={input} value={category} onChange={e => setCategory(e.target.value)} placeholder={t("bakery")} required />
+            <input id="scan-category" className={input} value={category} onChange={e => setCategory(e.target.value)} placeholder={t("bakery")} required />
           )}
-        </label>
+        </div>
         <label className={label}>{t("Country code")}<input className={input} value={countryCode} onChange={e => setCountryCode(e.target.value)} maxLength={2} placeholder="be" required />
         </label>
       </div>

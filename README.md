@@ -520,3 +520,13 @@ to collect coordinates; no bulk address geocoding is performed.
 Map tiles load directly from OpenStreetMap with visible attribution and normal
 browser caching; internet access is required. Follow the
 [OSM tile usage policy](https://operations.osmfoundation.org/policies/tiles/) when hosting.
+
+### Google Places category suggestions
+
+Selecting Google Places enables category autocomplete using a bundled snapshot of
+[official Table A types](https://developers.google.com/maps/documentation/places/web-service/place-types#table-a)
+(verified 2026-10-20). Suggestions match type identifiers, words and available
+translated labels, without network calls. Use the arrow keys and Enter, or click
+an option. A selected official identifier is sent as `includedType` with strict
+type filtering; free-text categories remain supported as ordinary text searches.
+OSM retains its own supported-category selector.

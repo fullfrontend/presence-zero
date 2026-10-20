@@ -50,3 +50,18 @@ describe('google places provider', () => {
     expect(err.recoverable).toBe(true)
   })
 })
+
+it('uses a selected official category as a strict type filter and readable text query', async () => {
+  const fetchFn = vi.fn(async () => new Response('{"places":[]}'))
+  await createGooglePlacesProvider(fetchFn as typeof fetch).fetchPage({ ...area, category: 'belgian_restaurant' }, null, { apiKey: 'k' })
+  const body = JSON.parse((fetchFn.mock.calls as any)[0][1].body)
+  expect(body).toMatchObject({ textQuery: 'belgian restaurant in Ottawa, ON', includedType: 'belgian_restaurant', strictTypeFiltering: true })
+})
+it('preserves free text without sending an unsupported type to Google', async () => {
+  const fetchFn = vi.fn(async () => new Response('{"places":[]}'))
+  await createGooglePlacesProvider(fetchFn as typeof fetch).fetchPage({ ...area, category: 'artisanal bakeries' }, null, { apiKey: 'k' })
+  const body = JSON.parse((fetchFn.mock.calls as any)[0][1].body)
+  expect(body.textQuery).toBe('artisanal bakeries in Ottawa, ON')
+  expect(body).not.toHaveProperty('includedType')
+  expect(body).not.toHaveProperty('strictTypeFiltering')
+})

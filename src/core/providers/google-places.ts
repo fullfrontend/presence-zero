@@ -1,3 +1,4 @@
+import { isGooglePlaceType } from './google-place-types'
 import { coordinates } from '../coordinates'
 import type { RawBusiness } from '../types'
 import { Provider, ProviderError } from './provider'
@@ -21,7 +22,12 @@ export function createGooglePlacesProvider(fetchFn: typeof fetch = fetch): Provi
       if (!config.apiKey) {
         throw new ProviderError('Google Places requires an API key — add one in Settings or set GOOGLE_PLACES_API_KEY.')
       }
-      const body: Record<string, unknown> = { textQuery: `${area.category} in ${area.location}`, pageSize: 20 }
+      const category = area.category.trim()
+      const knownType = isGooglePlaceType(category)
+      const body: Record<string, unknown> = {
+        textQuery: `${knownType ? category.replace(/_/g, ' ') : category} in ${area.location}`, pageSize: 20,
+        ...(knownType ? { includedType: category, strictTypeFiltering: true } : {}),
+      }
       if (cursor) body.pageToken = cursor
       const res = await fetchFn('https://places.googleapis.com/v1/places:searchText', {
         method: 'POST',
