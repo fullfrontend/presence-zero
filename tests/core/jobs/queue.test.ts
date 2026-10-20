@@ -158,7 +158,7 @@ it.each([[false, false], [true, false], [false, true], [true, true]])(
   },
 )
 
-it('never adds the AI opportunity estimate to a live website lead score', async () => {
+it('uses verified website improvement potential as the lead score without adding other points', async () => {
   const { db, deps } = await setup({
     getProviderById: () => ({ id: 'test', async fetchPage() {
       return { businesses: [{ name: 'Website business', website: 'https://example.test' }], nextCursor: null }
@@ -175,7 +175,7 @@ it('never adds the AI opportunity estimate to a live website lead score', async 
   }
   await refreshScanProgress(db, 'scan')
   expect((await db.select().from(businesses))[0]).toMatchObject({
-    presenceStatus: 'alive', score: 0, auditReport: { opportunityScore: 99 },
+    presenceStatus: 'alive', score: 99, auditReport: { opportunityScore: 99 },
   })
   db.$client.close()
 })

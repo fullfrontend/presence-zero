@@ -77,7 +77,7 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
       </section>
       {row.score === null ? <p className="text-sm text-mute">{t("Score pending — enrichment is still in progress.")}</p> : <section aria-label={t("Score breakdown")}>
         <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Why this scores ")}{explanation.total}/100</h3>
-        <p className="mt-2 text-xs text-mute">{t("Search and AI add evidence, not bonus points. The lead score always uses the same scale out of 100.")}</p>
+        <p className="mt-2 text-xs text-mute">{t("The lead score stays out of 100. For a verified live website, documented improvement potential replaces the presence score; it is never added on top.")}</p>
         <div className="mt-3 space-y-2">
           {explanation.factors.map(f => <FactorBar key={f.key} label={system(f.label)} points={f.points} max={f.max} hit={f.hit} />)}
         </div>

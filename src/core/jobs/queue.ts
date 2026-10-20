@@ -93,7 +93,7 @@ export async function refreshScanProgress(db: Db, scanId: string) {
     if (!pending) completed++
     if (!b.presenceStatus) continue
     const exact = generateDomainCandidates(b.name, scan.countryCode)[0]
-    const score = computeScore({ presence: b.presenceStatus, reviewCount: b.reviewCount, rating: b.rating, hasPhone: !!b.phone,
+    const score = computeScore({ presence: b.presenceStatus, auditReport: b.auditReport, reviewCount: b.reviewCount, rating: b.rating, hasPhone: !!b.phone,
       exactComAvailable: !!exact?.endsWith('.com') && domains.some(d => d.businessId === b.id && d.domain === exact && d.available === true) })
     if (b.score !== score) await db.update(businesses).set({ score }).where(eq(businesses.id, b.id))
   }

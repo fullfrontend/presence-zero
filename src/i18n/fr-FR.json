@@ -712,5 +712,11 @@
   "tea house": "salon de thé",
   "steak house": "restaurant de grillades",
   "sushi restaurant": "restaurant de sushis",
-  "butcher shop": "boucherie"
+  "butcher shop": "boucherie",
+  "Website improvement potential": "Potentiel de refonte du site",
+  "The lead score stays out of 100. For a verified live website, documented improvement potential replaces the presence score; it is never added on top.": "Le score de lead reste sur 100. Pour un site actif vérifié, le potentiel d’amélioration documenté remplace le score de présence ; il ne s’y additionne pas.",
+  "Higher means more documented reasons to improve the website; lower means a less promising redesign lead.": "Un score élevé indique davantage de raisons documentées d’améliorer le site ; un score bas indique un lead moins intéressant pour une refonte.",
+  "This assessment uses sampled text and HTML. Visual design and current visual trends have not been assessed.": "Cette évaluation utilise des extraits de texte et du HTML. Le design visuel et les tendances graphiques actuelles n’ont pas été évalués.",
+  "A completed website audit with a verified business identity informs the lead score. Unverified, failed or profile-only audits do not affect it.": "Un audit de site terminé dont l’identité du commerce est vérifiée contribue au score de lead. Les audits non vérifiés, échoués ou limités au profil ne le modifient pas.",
+  "AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the cited evidence before acting.": "Estimation IA à partir d’extraits de texte et de HTML, sans test visuel, de performance ou d’accessibilité. Vérifiez les preuves citées avant d’agir."
 }

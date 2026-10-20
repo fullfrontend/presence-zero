@@ -143,7 +143,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       let found: string | null = null
       if (!b.phone) { try { found = await enrichPhone(b.name, b.address) } catch { found = null } }
       const score = computeScore({
-        presence, reviewCount: b.reviewCount, rating: b.rating,
+        presence, auditReport: b.auditReport, reviewCount: b.reviewCount, rating: b.rating,
         exactComAvailable, hasPhone: !!(b.phone || found),
       })
       await db.update(businesses)
@@ -155,7 +155,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
           const auditReport = await deps.auditLead({ name: b.name, address: b.address, phone: b.phone || found,
             category: b.category ?? scan.category, rating: b.rating, reviewCount: b.reviewCount,
             website, presence })
-          await db.update(businesses).set({ auditReport }).where(eq(businesses.id, b.id))
+          await db.update(businesses).set({ auditReport, score: computeScore({ presence, auditReport, reviewCount: b.reviewCount, rating: b.rating, exactComAvailable, hasPhone: !!(b.phone || found) }) }).where(eq(businesses.id, b.id))
         } catch { /* Injected audit failures leave the completed business check intact. */ }
       }
     } catch (err) {

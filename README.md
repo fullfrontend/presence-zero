@@ -156,7 +156,7 @@ matching hostnames, missing evidence, directories, and search failures remain
 unverified. This heuristic can miss legitimate sites; it is not proof of ownership
 or of absence. A selected site passes through the existing SSRF-protected probe
 and scoring pipeline. Its discovery source is recorded in the presence tooltip.
-Live sites score zero and disappear from the leads-only view.
+Live sites without a verified website audit score zero; qualified audited opportunities can appear in the leads-only view.
 
 Completed scans are snapshots: use **Rerun** after enabling discovery to create a
 fresh scan. Automated tests use synthetic search fixtures and never the network.
@@ -369,17 +369,26 @@ hash identifies the captured excerpt, not the entire original page. Partial read
 are marked. No raw HTML, cookies, screenshots or scraped email lists are stored.
 
 **Scores and reports.** The interface displays one **lead score /100**, using the same
-weights whether search and AI are enabled or disabled. Enabling a tool adds no
-points or new scoring category. Newly discovered facts can change the score
-through the existing factors (for example, finding a live site). AI findings and
-recommendations support manual research without adding a second visible score.
+0–100 scale whether search and AI are enabled or disabled. Enabling a tool adds no
+bonus points. A completed, identity-matched website audit supplies the score of a
+live site as **100 − website quality**: weaker sites are stronger redesign leads.
+This replaces the presence score rather than adding to it. Dead, parked, absent
+and unverified sites retain the presence-based scoring rules. Failed, skipped,
+profile-only and identity-unverified audits cannot supply a quality score.
+Historical completed scans with a valid audit use this rule in results and CSV,
+including sorting and minimum-score filters, without rerunning inference.
+
+Audits consider business relevance, clarity of services and contact paths,
+documented barriers, explicit content dates and HTML signals. Recent relevant
+content is positive evidence; a copyright year or business founding year is not
+a website creation/redesign date. No browser rendering occurs: visual fashion,
+actual mobile layout, performance and accessibility remain unassessed.
 
 For compatibility, downloaded reports and CSV retain technical audit metrics. Website quality (0–100, higher is better) is an AI estimate
 from text and HTML signals, not a visual, Lighthouse, speed or accessibility test.
 Improvement opportunity is `100 - website quality`. A verified audit above the
 configured opportunity threshold appears in **Leads only**, including a live site.
-The existing **Min score** filter still applies to the original lead score: keep
-it at zero to see live-site opportunities. **Audited websites only** narrows the
+The existing **Min score** filter applies to the unified lead score, including verified website improvement potential. **Audited websites only** narrows the
 view to completed website audits. Expand a finding to inspect the report and
 quoted evidence, or download its JSON. CSV export adds audit fields/evidence and
 uses the same filters and spreadsheet-injection protection as the UI.

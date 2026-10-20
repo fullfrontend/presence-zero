@@ -44,6 +44,7 @@ export function explainResultRow(row: ExplainableRow): ScoreExplanation {
   return explainScore(
     {
       presence: toPresence(row.presenceStatus),
+      auditReport: row.auditReport,
       reviewCount: row.reviewCount,
       rating: row.rating,
       exactComAvailable: row.domains.some(d => d.domain.endsWith('.com') && d.available === true),

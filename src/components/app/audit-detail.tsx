@@ -1,4 +1,5 @@
 'use client'
+import { websiteOpportunity } from '@/core/website-opportunity'
 import { useI18n } from '@/i18n/client'
 import type { AuditReport } from '@/core/audit/types'
 
@@ -24,6 +25,11 @@ export function AuditDetail({ report }: { report: AuditReport }) {
       <p className="mt-2 text-xs text-dim">{system(report.verification.detail)}</p>
       {report.reason && <p className="mt-2 text-sm text-amber-400">{system(report.reason)}</p>}
       {report.status === "complete" && <>
+        {websiteOpportunity(report) !== null && <div className="mt-4 rounded-lg border border-line p-4">
+          <h4 className="text-sm font-medium">{t("Website improvement potential")}</h4>
+          <p className="mt-1 text-xs text-dim">{t("Higher means more documented reasons to improve the website; lower means a less promising redesign lead.")}</p>
+          <p className="mt-2 text-xs text-mute">{t("This assessment uses sampled text and HTML. Visual design and current visual trends have not been assessed.")}</p>
+        </div>}
         <p className="mt-3 text-sm text-text">{report.summary}</p>
         <ul className="mt-4 space-y-4">
           {report.findings.map((finding, index) => <li key={index} className="border-l border-line pl-3">
@@ -34,8 +40,8 @@ export function AuditDetail({ report }: { report: AuditReport }) {
         </ul>
         <h4 className="mt-4 text-xs font-medium text-text">{t("Suggested project brief")}</h4>
         <p className="mt-1 whitespace-pre-wrap text-sm text-dim">{report.brief}</p>
-        <p className="mt-2 text-xs text-mute">{t("AI findings support your research. They do not add a second lead score or bonus points.")}</p>
-        <p className="mt-3 text-xs text-mute">{t("AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the evidence; the original lead score is unchanged.")}</p>
+        <p className="mt-2 text-xs text-mute">{t("A completed website audit with a verified business identity informs the lead score. Unverified, failed or profile-only audits do not affect it.")}</p>
+        <p className="mt-3 text-xs text-mute">{t("AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the cited evidence before acting.")}</p>
       </>}
       {report.evidence.length > 0 && <details className="mt-4 text-xs">
         <summary className="cursor-pointer text-dim">{t("Collected evidence (")}{report.evidence.length})</summary>

@@ -1,7 +1,10 @@
+import type { AuditReport } from './audit/types'
+import { websiteOpportunity } from './website-opportunity'
 import { SCORING_WEIGHTS as W } from '../../scoring.config'
 import type { PresenceStatus } from './types'
 
 export interface ScoreInput {
+  auditReport?: AuditReport | null
   presence: PresenceStatus
   reviewCount?: number | null
   rating?: number | null
@@ -9,7 +12,7 @@ export interface ScoreInput {
   hasPhone: boolean
 }
 
-export type ScoreFactorKey = 'presence' | 'reviews' | 'rating' | 'exactDomain' | 'phone'
+export type ScoreFactorKey = 'website' | 'presence' | 'reviews' | 'rating' | 'exactDomain' | 'phone'
 
 export interface ScoreFactor {
   key: ScoreFactorKey
@@ -47,6 +50,10 @@ function clamp(n: number, lo: number, hi: number): number {
  * returned domains list, but the other four factors are unambiguous from row signals.
  */
 export function explainScore(i: ScoreInput, opts?: { total?: number }): ScoreExplanation {
+  const opportunity = i.presence === 'alive' ? websiteOpportunity(i.auditReport) : null
+  if (opportunity !== null) return { total: opportunity, factors: [
+    { key: 'website', label: 'Website improvement potential', points: opportunity, max: 100, hit: opportunity > 0 },
+  ] }
   const isLead = i.presence !== 'alive' && i.presence !== 'probe_failed'
 
   const presencePts = isLead ? W.presence[i.presence as keyof typeof W.presence] : 0

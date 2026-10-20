@@ -1,3 +1,4 @@
+import { effectiveLeadScore } from '@/core/website-opportunity'
 import { desc, eq, inArray } from 'drizzle-orm'
 import { getDb } from '@/db/client'
 import { businesses, domainCandidates, scanJobs } from '@/db/schema'
@@ -22,13 +23,13 @@ export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }
   const db = await getDb()
   const rows = await db.select().from(businesses).where(eq(businesses.scanId, id)).orderBy(desc(businesses.score))
   const jobs = await db.select({ businessId: scanJobs.businessId, status: scanJobs.status }).from(scanJobs).where(eq(scanJobs.scanId, id))
-  const filtered = rows.map(row => ({ ...row, enrichment: jobs.filter(job => job.businessId === row.id) })).filter(r => matchesResultFilters(r, {
+  const filtered = rows.map(row => ({ ...row, score: effectiveLeadScore(row), enrichment: jobs.filter(job => job.businessId === row.id) })).filter(r => matchesResultFilters(r, {
     minScore,
     auditOnly,
     leadsOnly: leadsOnly || false,
     hasPhoneOnly: hasPhone || false,
     leadStatus: leadStatus ?? '',
-  }))
+  })).sort((a, b) => (b.score ?? -1) - (a.score ?? -1))
   const ids = filtered.map(r => r.id)
   const candidates = ids.length
     ? await db.select().from(domainCandidates).where(inArray(domainCandidates.businessId, ids))

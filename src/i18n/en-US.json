@@ -712,5 +712,11 @@
   "tea house": "tea house",
   "steak house": "steak house",
   "sushi restaurant": "sushi restaurant",
-  "butcher shop": "butcher shop"
+  "butcher shop": "butcher shop",
+  "Website improvement potential": "Website improvement potential",
+  "The lead score stays out of 100. For a verified live website, documented improvement potential replaces the presence score; it is never added on top.": "The lead score stays out of 100. For a verified live website, documented improvement potential replaces the presence score; it is never added on top.",
+  "Higher means more documented reasons to improve the website; lower means a less promising redesign lead.": "Higher means more documented reasons to improve the website; lower means a less promising redesign lead.",
+  "This assessment uses sampled text and HTML. Visual design and current visual trends have not been assessed.": "This assessment uses sampled text and HTML. Visual design and current visual trends have not been assessed.",
+  "A completed website audit with a verified business identity informs the lead score. Unverified, failed or profile-only audits do not affect it.": "A completed website audit with a verified business identity informs the lead score. Unverified, failed or profile-only audits do not affect it.",
+  "AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the cited evidence before acting.": "AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the cited evidence before acting."
 }
