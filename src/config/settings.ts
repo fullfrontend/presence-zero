@@ -2,7 +2,7 @@ export const settingFields = [
   {"key": "PRESENCEZERO_DEFAULT_LOCATION", "label": "Default location", "group": "general", "default": "Charleroi, Belgique", "kind": "text", "advanced": false},
   {"key": "PRESENCEZERO_DEFAULT_COUNTRY_CODE", "label": "Country code", "group": "general", "default": "be", "kind": "text", "advanced": false},
   {"key": "PRESENCEZERO_DEFAULT_LOCALE", "label": "Default interface language", "group": "general", "default": "en-US", "kind": "locale", "advanced": false},
-  {"key": "PRESENCEZERO_BATCH_SIZE", "label": "Businesses per batch", "group": "general", "default": "", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_BATCH_SIZE", "label": "New tasks per scheduling cycle", "group": "general", "default": "", "kind": "number", "advanced": true},
   {"key": "SEARXNG_ENABLED", "label": "Enable SearXNG", "group": "search", "default": "false", "kind": "boolean", "advanced": false},
   {"key": "SEARXNG_URL", "label": "SearXNG address", "group": "search", "default": "", "kind": "text", "advanced": false},
   {"key": "BRAVE_SEARCH_ENABLED", "label": "Enable Brave Search", "group": "search", "default": "false", "kind": "boolean", "advanced": false},
@@ -36,6 +36,12 @@ export const settingFields = [
   {"key": "AI_AUDIT_EXCLUDE_ECOMMERCE", "label": "Exclude online stores", "group": "ai", "default": "false", "kind": "boolean", "advanced": true},
   {"key": "AI_AUDIT_EXCLUDE_CHAINS", "label": "Exclude chains", "group": "ai", "default": "false", "kind": "boolean", "advanced": true},
   {"key": "AI_AUDIT_MIN_BUSINESS_AGE_YEARS", "label": "Minimum business age (years)", "group": "ai", "default": "0", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_COLLECT", "label": "Concurrent collection tasks", "group": "general", "default": "1", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_SEARCH", "label": "Concurrent website searches", "group": "general", "default": "1", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_PROBE", "label": "Concurrent website checks", "group": "general", "default": "4", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_DOMAINS", "label": "Concurrent domain checks", "group": "general", "default": "2", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_PHONE", "label": "Concurrent phone lookups", "group": "general", "default": "2", "kind": "number", "advanced": true},
+  {"key": "PRESENCEZERO_CONCURRENCY_AUDIT", "label": "Concurrent AI qualifications", "group": "general", "default": "1", "kind": "number", "advanced": true},
 ] as const
 
 export type SettingKey = typeof settingFields[number]["key"]

@@ -13,9 +13,9 @@ describe('presenceMeta', () => {
   it('maps alive to a non-lead muted dot', () => {
     expect(presenceMeta('alive')).toMatchObject({ label: 'ALIVE', dot: 'muted', isLead: false })
   })
-  it('maps probe_failed and null to unknown', () => {
+  it('distinguishes a pending check from a failed probe', () => {
     expect(presenceMeta('probe_failed')).toMatchObject({ label: 'PROBE-FAILED', dot: 'unknown', isLead: false })
-    expect(presenceMeta(null)).toMatchObject({ key: 'probe_failed', dot: 'unknown', isLead: false })
+    expect(presenceMeta(null)).toMatchObject({ key: 'pending', label: 'PENDING', dot: 'unknown', isLead: false })
   })
 })
 

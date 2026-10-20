@@ -99,7 +99,7 @@ export default function SettingsForm() {
           onChange={e => change(key, e.target.value)}>
           <option value="fr-FR">Français (France)</option><option value="en-US">English (US)</option>
         </select> : <input id={key} className={input} type={kind === 'number' ? 'number' : 'text'} step="any" value={value}
-          placeholder={key === 'PRESENCEZERO_BATCH_SIZE' ? t('Automatic (1 with AI, otherwise 8)') : undefined}
+          placeholder={key === 'PRESENCEZERO_BATCH_SIZE' ? t('Automatic (8)') : undefined}
           disabled={inherited} aria-invalid={invalid} aria-describedby={invalid ? `${key}-error` : undefined}
           onChange={e => change(key, e.target.value)} />}
       </div>

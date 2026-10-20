@@ -20,6 +20,9 @@ const extra: Record<string, z.ZodType> = {
   SEARXNG_COOLDOWN_MS: positiveMs,
   AI_PROMPT_PROFILE: z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/),
 }
+for (const field of settingFields) {
+  if (field.key.startsWith('PRESENCEZERO_CONCURRENCY_')) extra[field.key] = z.string().regex(/^\d+$/).refine(v => Number(v) >= 1 && Number(v) <= 16)
+}
 const auditFields: Record<string, z.ZodType> = auditConfigSchema.shape
 export const configurationPatchSchema = z.record(z.string(), z.string().max(500).nullable()).superRefine((patch, ctx) => {
   for (const [key, value] of Object.entries(patch)) {

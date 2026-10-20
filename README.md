@@ -9,7 +9,7 @@
 
 **[Live site](https://presencezero.its-tahir.com/)** · **[Live demo](https://presencezero.its-tahir.com/demo)** · **[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
 
-PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs free on Docker or Vercel. It's a lead *finder* — not an outreach or CRM tool.
+PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs on a persistent Node server or Docker. It's a lead *finder* — not an outreach or CRM tool.
 
 **Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
 
@@ -51,21 +51,12 @@ docker run -v ./data:/data -p 3000:3000 presencezero
 
 Open **http://localhost:3000**. The SQLite database lives at `./data/presencezero.db` on the host, so it survives container restarts and upgrades.
 
-### Option C — Vercel + Turso (free hosting)
+### Hosted database with a persistent server
 
-PresenceZero uses SQLite via [libSQL](https://turso.tech/libsql), so it runs equally well against a local file or a hosted [Turso](https://turso.tech) database — Turso's free tier is generous enough for personal/small-team use.
-
-1. Create a free Turso database (`turso db create presencezero`, or via the Turso dashboard) and grab its `libsql://` URL and an auth token.
-2. Deploy this repo to Vercel and set two environment variables (see the table below): `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
-3. Deploy. Migrations run against the Turso database on first request, the same way they do locally.
-
-**Verify the deploy in ~60 seconds:**
-
-1. Open your deployment's **`/demo`** — it's fully static, so if the scored table renders, the app built and shipped correctly.
-2. Open **`/app`** and run a small OpenStreetMap scan (e.g. `Ottawa, ON` / `cafe`). If results appear, the Turso database, the startup migrations, and the scan pipeline all work end to end.
-3. **If the app 500s on first load, it's almost always migrations.** Confirm `next.config.ts` still has `outputFileTracingIncludes: { "/**": ["./drizzle/**"] }` (this bundles the migration files into the serverless function) and that both `DATABASE_URL` and `DATABASE_AUTH_TOKEN` are set. The thrown error names the exact failing path.
-
-> **No login screen.** PresenceZero ships without auth — anyone with the URL can use it and see your leads. Keep any hosted deployment's URL private until auth lands. See [Known limitations](#known-limitations).
+A persistent Node/Docker server can use a hosted Turso database through
+`DATABASE_URL` and `DATABASE_AUTH_TOKEN`. Migrations run automatically at startup.
+The background worker requires a running server: Vercel/serverless deployments
+alone cannot process scans. The embedded worker is disabled on Vercel.
 
 ## Environment variables
 
@@ -77,12 +68,12 @@ cp .env.example .env
 
 | Variable | Default | When you need it |
 |---|---|---|
-| `DATABASE_URL` | `file:presencezero.db` | Set to a Turso `libsql://…` URL for hosted/Vercel deploys. |
+| `DATABASE_URL` | `file:presencezero.db` | Set to a Turso `libsql://…` URL for a hosted database. |
 | `DATABASE_AUTH_TOKEN` | — | Only for a hosted libSQL/Turso database. |
 | `GOOGLE_PLACES_API_KEY` | — | Only for the Google Places provider (you can also paste the key in the app's **Settings** page). |
 | `APIFY_TOKEN` | — | Only for the Apify (Google Maps) provider (you can also paste the token in the app's **Settings** page). |
 | `APIFY_MAX_PLACES` | `100` | Advanced: raises the per-scan place ceiling for the Apify provider. Each place costs money — see [Data sources](#data-sources). |
-| `PRESENCEZERO_BATCH_SIZE` | `8` | Advanced: businesses processed per scan step. Lower for tight serverless time limits; raise when self-hosting. |
+| `PRESENCEZERO_BATCH_SIZE` | `8` | Maximum new background tasks started per scheduling cycle (one second). |
 
 ## Data sources
 
@@ -225,14 +216,14 @@ Searches are serialized per SearXNG instance across scans and app workers sharin
 the database. `SEARXNG_MIN_INTERVAL_MS=5000` sets the minimum interval between
 request starts. CAPTCHA and rate-limit responses trigger a shared cooldown of at
 least `SEARXNG_COOLDOWN_MS=300000` (5 minutes), honoring longer `Retry-After` values.
-The same business is retried once after waiting. If it remains blocked, the scan
-pauses without marking that business as having no website; **Resume scan** continues
-from the saved progress. Successful businesses are saved and counted individually.
+Blocked searches are rescheduled independently, up to three attempts. Exhausted
+searches remain unverified; collection and other enrichment tasks continue. Waiting
+for the shared throttle does not consume a retry attempt.
 A valid website returned by another engine is kept, while the cooldown still applies
 to subsequent requests. Ordinary engine failures remain unverified.
 
-These waits deliberately make scans longer. Keep the scan page open; use a
-long-running local/Docker server rather than a short-lived serverless request.
+These waits deliberately make scans longer. You can close the scan page; keep the
+local/Docker server running.
 The existing SQLite/libSQL database stores pacing and cooldown state across app
 restarts, so Redis is not required. Changing language alone cannot clear an upstream
 CAPTCHA; you can adjust enabled engines in your local settings file.
@@ -406,12 +397,11 @@ These are conservative heuristics, not independently verified company facts.
 Unknown age passes the age filter. Rating/review filters use source data.
 No competitor/review sentiment is invented when the source has not supplied it.
 
-Audits are sequential within an app process; configure Ollama's own
-`OLLAMA_NUM_PARALLEL` to bound concurrent inference across app workers. AI-enabled
-scans default to one business per step unless `PRESENCEZERO_BATCH_SIZE` is explicitly
-set. Keep the page open and use a long-running local/Docker app. Large contexts,
-slow hardware and SearXNG cooldowns can make scans significantly longer. A model
-failure is recorded on the audit without changing the successful presence check.
+Audits run in a separate queue, with one concurrent audit by default. Configure
+`PRESENCEZERO_CONCURRENCY_AUDIT` (or its Settings override) to change this limit;
+Ollama's `OLLAMA_NUM_PARALLEL` controls inference on the model server. Slow audits
+never block collection, website checks or searches for other prospects. A model
+failure is recorded without changing the successful presence check.
 Unit/integration tests use synthetic HTML and Ollama responses without real network calls.
 
 
@@ -481,3 +471,29 @@ values. Use `useI18n()` in client components and `getI18n()` on the server. Neve
 translate identifiers or user/business data. Domain pitch generation accepts an
 optional presentation callback and remains framework-free. Tests cover locale
 negotiation, catalog placeholders, regional formats and rendered components.
+
+### Background processing
+
+Collected prospects appear immediately, with pending scores and per-stage progress.
+Search, website probing, domain availability, phone enrichment and Ollama audits
+run as separate durable tasks. Probing waits for the prospect's search; audits wait
+for its probe and phone lookup. Other prospects continue independently. Partial
+scores can change as evidence arrives; pending prospects stay visible in the lead list.
+
+Concurrency limits are configurable through Settings or
+`PRESENCEZERO_CONCURRENCY_COLLECT=1`, `SEARCH=1`, `PROBE=4`, `DOMAINS=2`,
+`PHONE=2`, `AUDIT=1` (each suffix uses the same `PRESENCEZERO_CONCURRENCY_`
+prefix). Each limit accepts 1–16 and applies across workers sharing the database.
+Search throttling still applies independently of concurrency.
+
+The SQLite/libSQL queue persists across page closes and server restarts. Workers
+renew task leases every 15 seconds; abandoned tasks become eligible after 60 seconds.
+An external request can repeat after a crash, but lease-protected writes and stable
+IDs prevent duplicate persisted prospects. Most failed tasks retry twice; blocked
+searches get three attempts. Failures preserve already collected prospects.
+
+Pause stops new tasks; in-flight tasks finish and save safely. Resume uses the saved
+cursor and queue. Provider pauses still let previously collected prospects finish.
+The scan completes when collection and all its enrichment tasks have settled.
+`PRESENCEZERO_WORKER_ENABLED=false` disables the worker on this server (restart
+required); use it only if another persistent server processes the same database.

@@ -9,9 +9,10 @@ import { DomainChips } from './domain-chips'
 import { ScoreHistogram } from './score-histogram'
 import { Skeleton } from './skeleton'
 import { Tour, type TourStep } from './tour'
+import { EnrichmentStatus, type EnrichmentTask } from './enrichment-status'
 import { LeadDetail } from './lead-detail'
 import { ScanSummary } from './scan-summary'
-import { buildExportQuery, isQualifiedLead, type LeadStatus } from '@/lib/result-filters'
+import { buildExportQuery, isQualifiedLead, isPendingResult, type LeadStatus } from '@/lib/result-filters'
 
 interface DomainInfo { domain: string; available: boolean | null }
 interface Result {
@@ -20,6 +21,7 @@ interface Result {
   presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
   facebookUrl?: string | null; sourceUrl?: string | null
   category?: string | null; seenBefore?: boolean
+  enrichment?: EnrichmentTask[]
   auditReport?: AuditReport | null
   domains: DomainInfo[]
 }
@@ -215,7 +217,7 @@ export default function ResultsTable(
 
   const byMinScore = readOnly ? results.filter(r => (r.score ?? 0) >= minScore) : results
   const byAudit = auditOnly ? byMinScore.filter(r => r.auditReport?.status === "complete" && r.auditReport.mode === 'website') : byMinScore
-  const byLeads = leadsOnly ? byAudit.filter(isQualifiedLead) : byAudit
+  const byLeads = leadsOnly ? byAudit.filter(row => isPendingResult(row) || isQualifiedLead(row)) : byAudit
   const byPhone = hasPhoneOnly ? byLeads.filter(r => r.phone) : byLeads
   const visible = leadStatusFilter ? byPhone.filter(r => r.leadStatus === leadStatusFilter) : byPhone
   const activeColumn = COLUMNS.find(c => c.key === sortKey) ?? COLUMNS[0]
@@ -422,7 +424,7 @@ export default function ResultsTable(
                       {r.address} {r.rating != null && <>· ★{number(r.rating)} ({r.reviewCount == null ? '—' : number(r.reviewCount)})</>}
                     </div>
                   </td>
-                  <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /></td>
+                  <td className="px-3 py-2"><PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /><EnrichmentStatus tasks={r.enrichment} compact /></td>
                   <td className="px-3 py-2"><DomainChips domains={r.domains} /></td>
                   <td className="px-3 py-2 text-xs text-dim">{r.phone}</td>
                   <td className="px-3 py-2">
@@ -447,6 +449,7 @@ export default function ResultsTable(
                 open && (
                   <tr key={`${r.id}-detail`} className="border-t border-line/50 bg-base/20">
                     <td colSpan={colCount} id={detailId} className="px-3 py-3">
+                      <EnrichmentStatus tasks={r.enrichment} />
                       <LeadDetail row={r} location={location} />
                     </td>
                   </tr>
@@ -510,7 +513,7 @@ export default function ResultsTable(
                       {r.auditReport?.opportunityScore != null && <span className="block text-[10px] text-dim" title={t("Separate AI estimate of website improvement potential")}>{t("Audit ")}{r.auditReport.opportunityScore}/100</span>}
                       <span className="font-medium text-text">{r.name}</span>
                     </button>
-                    <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} />
+                    <PresenceBadge status={r.presenceStatus} website={r.listedWebsite} detail={r.probeDetail} /><EnrichmentStatus tasks={r.enrichment} compact />
                   </div>
                   <p className="mt-1 text-xs text-mute">
                     {r.address} {r.rating != null && <>· ★{number(r.rating)} ({r.reviewCount == null ? '—' : number(r.reviewCount)})</>}
@@ -533,6 +536,7 @@ export default function ResultsTable(
                   </div>
                   {open && (
                     <div className="mt-3 border-t border-line pt-3">
+                      <EnrichmentStatus tasks={r.enrichment} />
                       <LeadDetail row={r} location={location} />
                     </div>
                   )}

@@ -1,11 +1,9 @@
 'use client'
-import { formatDate } from '@/i18n/translate'
-import type { Locale } from '@/i18n/config'
+import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '@/i18n/client'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import ResultsTable from '@/components/app/results-table'
+import ResultsTable from './results-table'
 import { Button } from '@/components/brand/button'
-import { Skeleton } from '@/components/app/skeleton'
+import { Skeleton } from './skeleton'
 
 interface ScanState {
   status: 'running' | 'paused' | 'done' | 'failed'
@@ -17,250 +15,93 @@ interface ScanState {
   category?: string
   provider?: string
   title?: string | null
-  label?: string | null
-  createdAt?: string | Date | number
-}
-
-const PHASES = ['fetch', 'process', 'retry', 'done'] as const
-
-function formatScanWhen(createdAt: ScanState['createdAt'], locale: Locale): string | null {
-  if (createdAt == null) return null
-  const d = createdAt instanceof Date ? createdAt : new Date(createdAt)
-  if (Number.isNaN(d.getTime())) return null
-  return formatDate(locale, d, { dateStyle: 'medium', timeStyle: 'short' }) + ' UTC'
+  enrichment?: { pending: number; running: number; done: number; failed: number }
 }
 
 export default function ScanRunner({ scanId }: { scanId: string }) {
-  const { t, locale, number, system } = useI18n()
+  const { t, number, system } = useI18n()
   const [scan, setScan] = useState<ScanState | null>(null)
-  const [working, setWorking] = useState(false)
-  const [provider, setProvider] = useState<string | null>(null)
-  const [etaLabel, setEtaLabel] = useState<string | null>(null)
-  const [driveError, setDriveError] = useState<string | null>(null)
-  const [interrupted, setInterrupted] = useState(false)
-  const [userPaused, setUserPaused] = useState(false)
-  const driving = useRef(false)
-  const stopRequested = useRef(false)
+  const [error, setError] = useState('')
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [cycle, setCycle] = useState(0)
+  const [busy, setBusy] = useState(false)
 
-  const drive = useCallback(async () => {
-    if (driving.current) return
-    driving.current = true
-    stopRequested.current = false
-    const started = Date.now()
-    setDriveError(null)
-    setInterrupted(false)
-    setUserPaused(false)
-    const updateEta = (s: ScanState) => {
-      if (s.status === 'running' && s.totalProcessed > 0 && s.totalFound > s.totalProcessed) {
-        const elapsed = (Date.now() - started) / 1000
-        const rate = s.totalProcessed / elapsed
-        if (rate > 0) {
-          const secs = Math.max(1, Math.round((s.totalFound - s.totalProcessed) / rate))
-          setEtaLabel(secs >= 90 ? `~${Math.round(secs / 60)}m left` : `~${secs}s left`)
-          return
-        }
-      }
-      setEtaLabel(null)
-    }
-    const advanceOnce = async (): Promise<ScanState | null> => {
-      try {
-        const res = await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })
-        if (!res.ok) {
-          const body = await res.json().catch(() => ({})) as { error?: string }
-          setDriveError(body.error ?? `Advance failed (HTTP ${res.status}). Your progress is saved — continue when ready.`)
-          setInterrupted(true)
-          return null
-        }
-        return await res.json() as ScanState
-      } catch {
-        setDriveError('Network error while advancing the scan. Progress is saved — hit Continue to resume.')
-        setInterrupted(true)
-        return null
-      }
-    }
-    setWorking(true)
+  const resume = useCallback(async () => {
+    setBusy(true); setError('')
     try {
-      const initial = await (await fetch(`/api/scans/${scanId}`)).json() as ScanState
-      if (typeof initial?.provider === 'string') setProvider(initial.provider)
-      let state: ScanState = initial
-      setScan(state)
-      updateEta(state)
-      if (state.status === 'paused') {
-        const next = await advanceOnce()
-        if (next === null) return
-        state = next
-        setScan(state)
-        updateEta(state)
-      }
-      while (state.status === 'running') {
-        if (stopRequested.current) {
-          setUserPaused(true)
-          break
-        }
-        const next = await advanceOnce()
-        if (next === null) break
-        state = next
-        setScan(state)
-        updateEta(state)
-      }
-    } finally {
-      driving.current = false
-      setWorking(false)
-      setEtaLabel(null)
-    }
+      const response = await fetch(`/api/scans/${scanId}/advance`, { method: 'POST' })
+      if (!response.ok) throw new Error('resume')
+      setScan(await response.json()); setCycle(value => value + 1)
+    } catch { setError('Could not resume the scan. Please try again.') }
+    finally { setBusy(false) }
   }, [scanId])
 
-  useEffect(() => { void drive() }, [drive])
+  useEffect(() => {
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
+    const controller = new AbortController()
+    const poll = async () => {
+      try {
+        const response = await fetch(`/api/scans/${scanId}`, { cache: 'no-store', signal: controller.signal })
+        if (!response.ok) throw new Error('status')
+        const current = await response.json() as ScanState
+        if (!active) return
+        setScan(current); setError(''); setRefreshKey(value => value + 1)
+        // Poll independently of all long-running work, including partial results on provider errors.
+        if (current.status === 'running' || (current.enrichment?.running ?? 0) > 0 ||
+          ((current.status !== 'paused' || current.errorMessage !== 'Paused by you.') && (current.enrichment?.pending ?? 0) > 0)) timer = setTimeout(poll, 1000)
+      } catch {
+        if (!active) return
+        setError('Connection interrupted. Background work continues; reconnecting…')
+        timer = setTimeout(poll, 3000)
+      }
+    }
+    void poll()
+    return () => { active = false; controller.abort(); clearTimeout(timer) }
+  }, [scanId, cycle])
 
-  function requestPause() {
-    stopRequested.current = true
+  async function pause() {
+    setBusy(true)
+    try {
+      const response = await fetch(`/api/scans/${scanId}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ paused: true }) })
+      if (!response.ok) throw new Error('pause')
+      setScan(await response.json()); setCycle(value => value + 1)
+    } catch { setError('Could not pause the scan. Please try again.') }
+    finally { setBusy(false) }
   }
 
-  if (!scan) {
-    return (
-      <div className="rounded-xl border border-line bg-surface p-6">
-        <div className="flex flex-wrap items-center gap-2">
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-16" />
-          <Skeleton className="h-3 w-16" />
-        </div>
-        <Skeleton className="mt-4 h-1.5 w-full" />
-        <Skeleton className="mt-2 h-3 w-32" />
-      </div>
-    )
-  }
-
-  const pct = scan.totalFound > 0 ? Math.round((scan.totalProcessed / scan.totalFound) * 100) : 0
-  const activeIndex = PHASES.indexOf(scan.phase as (typeof PHASES)[number])
-  const headline = scan.title?.trim()
-    || (scan.category && scan.location ? t("{0} in {1}", { 0: scan.category, 1: scan.location }) : t("Scan results"))
-  const when = formatScanWhen(scan.createdAt, locale)
-  const showContinue = interrupted
-    || userPaused
-    || scan.status === "paused"
-    || (scan.status === 'running' && !working)
-  const showPartialResults = scan.totalProcessed > 0 && scan.totalFound > 0
-  const scanDone = scan.status === "done"
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{headline}</h1>
-        <p className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-mute">
-          {scan.location && <span className="text-dim">{scan.location}</span>}
-          {scan.category && <span>· {scan.category}</span>}
-          {scan.provider && <span>· {scan.provider}</span>}
-          {scan.label && <span className="rounded border border-lime/40 px-1.5 py-0.5 text-lime">{scan.label}</span>}
-          {when && <span>· {when}</span>}
-        </p>
-      </div>
-
-      <div className="rounded-xl border border-line bg-surface p-6">
-        <div className="flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.14em]">
-          {PHASES.map((phase, i) => (
-            <span key={phase} className="flex items-center gap-2">
-              <span
-                className={
-                  scan.status === "done" || i === activeIndex
-                    ? 'text-lime'
-                    : i < activeIndex
-                      ? 'text-text'
-                      : 'text-mute'
-                }
-              >
-                {t(phase).toUpperCase()}
-              </span>
-              {i < PHASES.length - 1 && <span className="text-mute">→</span>}
-            </span>
-          ))}
-        </div>
-
-        <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-line">
-          <div
-            className={`h-full rounded-full bg-lime transition-all ${scan.status === 'running' && working ? 'pz-sheen' : ''}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-
-        <div className="mt-2 flex items-center justify-between font-mono text-[11px] uppercase tracking-[0.14em] text-mute">
-          <span className="flex items-center gap-2">
-            {userPaused ? t("paused by you") : scan.status === 'running' ? `${t(scan.phase)}…` : t(scan.status)}
-            {working && (
-              <span className="flex items-center gap-1.5 text-lime">
-                <span className="pz-spin inline-block h-3 w-3 rounded-full border border-lime border-t-transparent" />
-                {scan.status === "paused" ? t("Retrying…") : t("Working…")}
-              </span>
-            )}
-          </span>
-          <span className="flex items-center gap-3">
-            {etaLabel && <span className="text-dim">{system(etaLabel)}</span>}
-            <span>{number(scan.totalProcessed)}/{number(scan.totalFound)} {t("PROCESSED")}</span>
-          </span>
-        </div>
-
-        {scan.status === "paused" && (
-          <p className="mt-3 text-sm text-amber-400">
-            {scan.errorMessage ? t("Paused: {0}", { 0: system(scan.errorMessage) }) : t("Paused — the provider is busy or rate-limited.")} {t(" Hit Continue to resume where it left off.")}</p>
-        )}
-        {userPaused && (
-          <p className="mt-3 text-sm text-amber-400">
-            {t("Paused by you. Progress is saved — hit Continue when you want the scan to keep advancing.")}</p>
-        )}
-        {driveError && (
-          <p className="mt-3 text-sm text-amber-400" role="alert">{system(driveError)}</p>
-        )}
-        {scan.status === "failed" && (
-          <p className="mt-3 text-sm text-red-400">
-            {scan.errorMessage ? system(scan.errorMessage) : t("The scan failed.")}
-            {provider === 'google' && t(" If you selected Google Places, check that a valid API key is set in Settings.")}
-          </p>
-        )}
-
-        <div className="mt-4 flex flex-wrap items-center gap-3">
-          {working && scan.status === 'running' && (
-            <Button variant="ghost" onClick={requestPause}>{t("Pause")}</Button>
-          )}
-          {showContinue && (
-            <Button variant="ghost" onClick={() => { void drive() }} disabled={working}>
-              {working ? t("Continuing…") : interrupted || userPaused || scan.status === 'running' ? t("Continue scan") : t("Resume scan")}
-            </Button>
-          )}
-          {scan.status === "failed" && (
-            <Button href="/app">{t("Start a new scan")}</Button>
-          )}
-        </div>
-      </div>
-
-      {scanDone && scan.totalFound === 0 && (
-        <div className="rounded-xl border border-dashed border-line bg-surface/40 p-6 text-sm">
-          <p className="text-text">{t("The provider returned no businesses for this area and category.")}</p>
-          <p className="mt-2 text-dim">{t("Try a broader location, a different category, or the Google Places provider (richer coverage) — then start a new scan.")}</p>
-          <div className="mt-4"><Button href="/app">{t("Start a new scan")}</Button></div>
-        </div>
-      )}
-
-      {showPartialResults && (
-        <div className="space-y-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            {!scanDone && (
-              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-lime">
-                {t("Live results — updating as leads finish…")}</p>
-            )}
-            {scanDone && (
-              <div className="ml-auto">
-                <Button href="/app" variant="link">{t("New scan")}</Button>
-              </div>
-            )}
-          </div>
-          <ResultsTable
-            scanId={scanId}
-            location={scan.location ?? null}
-            refreshKey={scan.totalProcessed}
-            partial={!scanDone}
-          />
-        </div>
-      )}
+  if (!scan) return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-20 w-full" />{error && <p role="alert">{t(error)}</p>}</div>
+  const pct = scan.totalFound > 0 ? Math.min(100, Math.round(scan.totalProcessed / scan.totalFound * 100)) : 0
+  const complete = scan.status === 'done'
+  const enrichment = scan.enrichment
+  return <div className="space-y-6">
+    <div>
+      <h1 className="text-2xl font-semibold tracking-tight">{scan.title?.trim() || t('{0} in {1}', { 0: scan.category ?? '', 1: scan.location ?? '' })}</h1>
+      <p className="mt-2 text-sm text-mute">{t('Prospects appear immediately. Website searches, checks and AI qualification update independently in the background.')}</p>
     </div>
-  )
+    <section className="rounded-xl border border-line bg-surface p-6" aria-label={t('Scan progress')}>
+      <div className="flex flex-wrap justify-between gap-3 text-sm">
+        <span className="text-lime">{t('{0} prospects collected', { 0: number(scan.totalFound) })}</span>
+        <span className="text-dim">{t('{0} / {1} fully processed', { 0: number(scan.totalProcessed), 1: number(scan.totalFound) })}</span>
+      </div>
+      <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-line" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t('Enrichment progress')}>
+        <div className="h-full bg-lime transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-3 flex flex-wrap gap-x-6 gap-y-2 text-xs text-mute" role="status">
+        <span>{scan.status === 'running' ? scan.phase === 'fetch' ? t('Collecting prospects…') : t('Collection complete · enriching prospects…') : t(scan.status)}</span>
+        {enrichment && <><span>{t('{0} tasks waiting', { 0: number(enrichment.pending) })}</span><span>{t('{0} tasks running', { 0: number(enrichment.running) })}</span>
+          {enrichment.failed > 0 && <span className="text-amber-400">{t('{0} tasks failed', { 0: number(enrichment.failed) })}</span>}</>}
+      </div>
+      {scan.errorMessage && <p className="mt-3 text-sm text-amber-400">{system(scan.errorMessage)}</p>}
+      {error && <p className="mt-3 text-sm text-amber-400" role="alert">{t(error)}</p>}
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        {scan.status === 'running' && <Button variant="ghost" disabled={busy} onClick={pause}>{t('Pause')}</Button>}
+        {scan.status === 'paused' && <Button variant="ghost" disabled={busy} onClick={() => { void resume() }}>{t('Resume scan')}</Button>}
+        {(complete || scan.status === 'failed') && <Button href="/app" variant="link">{t('New scan')}</Button>}
+        {scan.status === 'paused' && <span className="text-xs text-mute">{t('Running tasks finish safely. No new tasks start while paused by you.')}</span>}
+      </div>
+    </section>
+    {complete && scan.totalFound === 0 && <p className="text-sm text-dim">{t('The provider returned no businesses for this area and category.')}</p>}
+    {scan.totalFound > 0 && <ResultsTable scanId={scanId} location={scan.location ?? null} refreshKey={refreshKey} partial={!complete} />}
+  </div>
 }

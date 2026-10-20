@@ -75,12 +75,12 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
           ))}
         </dl>
       </section>
-      <section aria-label={t("Score breakdown")}>
+      {row.score === null ? <p className="text-sm text-mute">{t("Score pending — enrichment is still in progress.")}</p> : <section aria-label={t("Score breakdown")}>
         <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Why this scores ")}{explanation.total}</h3>
         <div className="mt-3 space-y-2">
           {explanation.factors.map(f => <FactorBar key={f.key} label={system(f.label)} points={f.points} max={f.max} hit={f.hit} />)}
         </div>
-      </section>
+      </section>}
 
       {isLead ? (
         <section aria-label={t("Outreach pitch")} className="md:border-l md:border-line md:pl-6">
@@ -110,7 +110,7 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
         </section>
       ) : (
         <section className="md:border-l md:border-line md:pl-6">
-          <p className="text-xs text-mute">{t("Presence check: ")}{presenceMeta(row.presenceStatus).label.toLowerCase()}{t(". A local audit, when available, can identify website improvement opportunities.")}</p>
+          <p className="text-xs text-mute">{t("Presence check: ")}{t(presenceMeta(row.presenceStatus).label).toLowerCase()}{t(". A local audit, when available, can identify website improvement opportunities.")}</p>
         </section>
       )}
       {row.auditReport && <AuditDetail report={row.auditReport} />}
