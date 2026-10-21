@@ -6,7 +6,8 @@ For what the product *is* and how to run it, see [README.md](README.md).
 ## What this project is (one line)
 
 An open-source, self-hosted tool that finds local businesses with no/dead/parked websites,
-checks matching domain availability via RDAP, scores them 0–100 as leads, and exports CSV.
+checks domains via RDAP/DNS Belgium DAS, optionally audits sites with local Ollama,
+scores prospecting priority 0–100, and exports CSV. The root opens the application.
 
 ## Golden rule: `src/core/` is framework-free
 
@@ -20,9 +21,12 @@ CLI / npm package is a refactor, not a rewrite). CI/reviewers treat a violation 
 ```
 src/core/          Framework-free engine — DO NOT import next/react/app here
   providers/       Pluggable data sources (Google Places, Apify, OSM, CSV) behind one interface
-  probes/          Website presence probe, domain-candidate generation, RDAP checker
+  probes/          Website presence probe, domain-candidate generation, RDAP/DAS checkers
   scoring.ts       Lead scoring (weights in /scoring.config.ts)
-  pipeline.ts      Resumable batch orchestration (fetch → process → retry → done)
+  jobs/            Durable asynchronous collection and enrichment, leases and retries
+  audit/           Bounded evidence, Ollama roles and external private profiles
+  business-score.ts Shared evidence-to-score adapter for workers, routes and export
+  pipeline.ts      Legacy resumable pipeline (kept consistent with durable jobs)
 src/db/            Drizzle schema + libSQL client (SQLite locally, Turso hosted)
 src/server/        Zod validation + pipeline dependency wiring for routes
 src/app/           Next.js App Router — pages + API routes (UI/HTTP layer only)
@@ -30,12 +34,14 @@ src/components/    React client components
 tests/             Vitest — mirrors src/ layout
 fixtures/          Recorded API responses; tests run against these, never the network
 drizzle/           Generated SQL migrations (committed; run at startup by getDb())
+guides/            Operator guides linked from README
+examples/ai-prompts/ Generic profile only; private profiles live outside the repository
 ```
 
 ## Development workflow
 
 ```bash
-npm install
+npm ci              # Node.js 22+, matching CI and Docker
 npm run dev          # http://localhost:3000 (SQLite file, OSM + CSV work with no key)
 npm test             # Vitest
 npm run lint         # ESLint — must report 0 problems
@@ -102,5 +108,8 @@ CI (`.github/workflows/ci.yml`) runs all four on every push and PR.
 
 ## Configuration
 
-All env vars are optional and documented in [`.env.example`](.env.example): `DATABASE_URL`,
-`DATABASE_AUTH_TOKEN` (Turso), `GOOGLE_PLACES_API_KEY`, `PRESENCEZERO_BATCH_SIZE`.
+All environment variables are documented in [`.env.example`](.env.example). Saved
+Settings overrides take precedence over environment values and application defaults.
+Search and AI require independent opt-in; models, URLs and keys alone do not enable them.
+See [configuration](guides/CONFIGURATION.md) and [deployment](guides/DEPLOYMENT.md)
+for inheritance, deployment-only fields, worker behavior and persistence.
