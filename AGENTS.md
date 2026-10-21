@@ -43,6 +43,15 @@ npx tsc --noEmit     # Type check — must be clean
 npm run build        # Next production build — must compile
 ```
 
+## Guides & SEO content
+
+Long-form guides live in `src/content/guides/` — one typed `Guide` module per article (sections, FAQs,
+related slugs), registered in `index.ts` and rendered by `src/app/(marketing)/guides/[slug]/page.tsx`.
+Adding a guide = one module + one registry entry + one illustration in
+`src/components/guides/illustrations.tsx`; the sitemap, RSS feed, `llms.txt`, footer and OG image pick it
+up automatically. `tests/lib/guides-seo.test.ts` enforces title (30–60 chars) and description (120–160)
+lengths, unique slugs and valid related links. Keep claims verifiable — no invented statistics.
+
 ## Quality gates (all must pass before a commit/PR)
 
 1. `npm test` — full suite green, output pristine (no stray warnings).

@@ -2,23 +2,27 @@ import type { Metadata, Viewport } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
 import './globals.css'
+import { AUTHOR, SITE_NAME, SITE_URL } from '@/lib/site'
 
 const DESCRIPTION =
-  'Open-source, self-hosted lead finder. Turn a city + category into a scored, exportable list of local businesses with no website — and the matching domains you can pitch them.'
+  'Free, open-source lead finder: find local businesses with no website, a dead site or a parked domain, check matching domains, and export scored leads.'
+const HOME_TITLE = 'Find Businesses Without Websites (Free) | PresenceZero'
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://presencezero.its-tahir.com'),
-  title: { default: 'PresenceZero — Find businesses whose web presence is zero', template: '%s · PresenceZero' },
+  metadataBase: new URL(SITE_URL),
+  title: { default: HOME_TITLE, template: '%s | PresenceZero' },
   description: DESCRIPTION,
-  applicationName: 'PresenceZero',
-  authors: [{ name: 'Tahir Nazir', url: 'https://its-tahir.com' }],
-  creator: 'Tahir Nazir',
-  publisher: 'Tahir Nazir',
+  applicationName: SITE_NAME,
+  authors: [{ name: AUTHOR.name, url: AUTHOR.url }],
+  creator: AUTHOR.name,
+  publisher: AUTHOR.name,
+  category: 'technology',
   keywords: [
-    'find businesses without websites', 'local business lead generation', 'web design leads',
-    'domain availability checker', 'available domain finder', 'leads for web designers',
-    'local SEO prospecting', 'self-hosted lead finder', 'Google Places scraper alternative',
-    'OpenStreetMap business scraper',
+    'find businesses without websites', 'businesses without websites finder', 'local businesses without websites',
+    'web design leads', 'leads for web designers', 'how to get web design clients',
+    'no website leads', 'dead website checker', 'parked domain checker',
+    'domain availability checker', 'RDAP lookup', 'open source lead generation tool',
+    'self-hosted lead finder', 'Google Maps leads', 'OpenStreetMap business data',
   ],
   robots: {
     index: true,
@@ -26,16 +30,18 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, 'max-image-preview': 'large', 'max-snippet': -1, 'max-video-preview': -1 },
   },
   formatDetection: { telephone: false, email: false, address: false },
+  alternates: { types: { 'application/rss+xml': [{ url: '/guides/rss.xml', title: 'PresenceZero guides' }] } },
   openGraph: {
     type: 'website',
-    siteName: 'PresenceZero',
-    url: 'https://presencezero.its-tahir.com',
-    title: 'PresenceZero — Find businesses whose web presence is zero',
+    siteName: SITE_NAME,
+    locale: 'en_US',
+    url: SITE_URL,
+    title: HOME_TITLE,
     description: DESCRIPTION,
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PresenceZero — Find businesses whose web presence is zero',
+    title: HOME_TITLE,
     description: DESCRIPTION,
   },
 }

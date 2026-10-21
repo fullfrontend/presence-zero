@@ -5,8 +5,8 @@ import ResultsTable from '@/components/app/results-table'
 import { SectionTag } from '@/components/brand/section-tag'
 
 export const metadata: Metadata = {
-  title: 'Live demo',
-  description: 'Explore a real PresenceZero result set — scored local-business leads with available domains. Read-only; self-host to run your own scans.',
+  title: 'Live Demo: Scored Leads Without Websites',
+  description: 'Click through a real PresenceZero result set: local businesses with no, dead or parked websites, scored 0–100 with available domains. No install needed.',
   alternates: { canonical: '/demo' },
 }
 

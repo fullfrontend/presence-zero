@@ -8,7 +8,7 @@ export function Faq() {
   return (
     <section id="faq" className="mx-auto max-w-3xl px-6 py-20">
       <SectionTag>{'// FAQ'}</SectionTag>
-      <h2 className="mt-3 text-3xl font-semibold tracking-tight">Questions</h2>
+      <h2 className="mt-3 text-3xl font-semibold tracking-tight">Frequently asked questions</h2>
       <div className="mt-8 divide-y divide-line border-y border-line">
         {FAQ_ITEMS.map((it, i) => (
           <div key={i}>

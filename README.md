@@ -1,23 +1,50 @@
-# PresenceZero
+# PresenceZero: find businesses without websites
 
-**Find local businesses whose web presence is zero — and the domains you can pitch them.**
+**Free, open-source lead finder for web designers and agencies.** Turn *"plumbers in Ottawa"* into a scored list of local businesses with **no website, a dead website, or a parked domain**, plus the matching domains you can pitch them.
 
 [![CI](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml/badge.svg)](https://github.com/its-tahir/presence-zero/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
+![Self-hosted](https://img.shields.io/badge/self--hosted-Docker%20%7C%20Vercel-informational)
 
-**[Live site](https://presencezero.its-tahir.com/)** · **[Live demo](https://presencezero.its-tahir.com/demo)** · **[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
+**[Live demo](https://presencezero.its-tahir.com/demo)** · **[Website](https://presencezero.its-tahir.com/)** · **[Guides](https://presencezero.its-tahir.com/guides)** · **[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
 
-PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs free on Docker or Vercel. It's a lead *finder* — not an outreach or CRM tool.
+PresenceZero is a self-hosted alternative to paid "businesses without websites" finders and Google Maps lead scrapers. Pick a location and a business category. It pulls matching businesses from OpenStreetMap, Google Places, Apify or your own CSV, then:
 
-**Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
+- **checks every listed website** and labels it `none`, `dead`, `parked` or `alive`, recording the exact reason ("DNS lookup failed", "Returned HTTP 503", "Matched a registrar for-sale page");
+- **checks matching domain availability** (`smithplumbing.com`, plus the country domain) with free [RDAP](https://about.rdap.org/) lookups;
+- **scores every lead 0–100** from web presence, reviews, rating, phone number and domain availability;
+- hands you a **filterable, exportable lead list** (CSV / JSON).
 
-![PresenceZero demo — expand a lead to see the score breakdown and outreach pitch.](public/screenshots/demo-expand.gif)
+No account, no API key and no subscription required: OpenStreetMap and CSV work out of the box. It's a lead *finder*, not an outreach or CRM tool.
 
-If this helps you find leads, a star helps others find the project.
+![PresenceZero demo: expand a lead to see the score breakdown and outreach pitch.](public/screenshots/demo-expand.gif)
 
-![PresenceZero — “Find the businesses whose web presence is zero.” The landing page with a live scored lead preview.](public/screenshots/landing-hero.png)
+If this helps you find leads, a ⭐ helps others find the project.
+
+## Who it's for
+
+- **Freelance web designers and developers** looking for web design leads and their next client.
+- **Web design, marketing and local SEO agencies** that prospect local businesses.
+- **Anyone selling to local businesses** (websites, AI receptionists, booking tools) who wants businesses that are visibly missing online.
+- **Domain investors** who want available domains next to real, active businesses.
+
+## Why PresenceZero
+
+| | PresenceZero | Typical hosted lead finder |
+|---|---|---|
+| Price | Free, MIT licensed | Subscription or per-lead credits |
+| Your lead list | Stays on your machine | Stored on the vendor's servers |
+| Finds businesses with no website | Yes | Yes |
+| Catches **dead** and **parked** websites (with the reason) | Yes | Usually only "website field is empty" |
+| Checks if the matching domain is available | Yes, via RDAP | Rarely |
+| Data sources | OpenStreetMap, Google Places, Apify, CSV | Usually Google Maps only |
+| Bulk email / spam features | None, by design | Often built in |
+
+See the full, dated comparison with Grape Leads, Webleadr, B2BLeadFinder, Webless Leads, Outscraper and Thyonix: **[Tools to find businesses without websites, compared](https://presencezero.its-tahir.com/alternatives)**.
+
+![PresenceZero landing page with a live scored lead preview.](public/screenshots/landing-hero.png)
 
 ## How it works
 
@@ -90,7 +117,7 @@ cp .env.example .env
 
 **Apify (Google Maps)** — the easiest data source to set up: no Google Cloud project, no field-mask tuning, just one API token from [console.apify.com](https://console.apify.com) (Settings → API & Integrations), pasted into the app's **Settings** page or set as `APIFY_TOKEN`. It runs Apify's `compass/crawler-google-places` actor, which costs **$0.004 per scraped place**. Apify's free plan renews **$5 of credit every month, no credit card required**, which is roughly **1,250 places** — about 12 scans of 100 places, or 25 of 50. Scans simply stop when the credit runs out; nothing is charged beyond it.
 
-**OpenStreetMap** — no key required, backed by the public Nominatim (geocoding) and Overpass (data) APIs. Currently supported categories: `restaurant`, `cafe`, `bar`, `dentist`, `bakery`, `hairdresser`, `butcher`, `florist`, `plumber`, `electrician`, `carpenter`. More can be added by extending the tag map in `src/core/providers/osm.ts`. Along with CSV import below, this remains a fully free, keyless way to run PresenceZero end to end.
+**OpenStreetMap** — no key required, backed by the public Nominatim (geocoding) and Overpass (data) APIs. 23 categories are supported out of the box: `restaurant`, `cafe`, `bar`, `pub`, `fast_food`, `dentist`, `doctor`, `pharmacy`, `veterinary`, `bakery`, `hairdresser`, `butcher`, `florist`, `car_repair`, `beauty`, `optician`, `clothes`, `jewelry`, `boutique`, `plumber`, `electrician`, `carpenter` and `gym`. Common plurals and synonyms (`dentists`, `salon`, `coffee shop`) resolve automatically. Adding a category is one line in [`src/core/providers/osm-categories.ts`](src/core/providers/osm-categories.ts). Along with CSV import below, this is a fully free, keyless way to run PresenceZero end to end.
 
 **CSV import** — bring your own list. Expected header row:
 
@@ -117,6 +144,27 @@ Every lead gets a score out of 100, built from weighted signals. Defaults live i
 Edit `scoring.config.ts` directly to retune weights for your market — there's no UI for it by design, since it's a one-line config file meant to be forked.
 
 Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
+
+## Guides
+
+Practical, free playbooks on the PresenceZero site:
+
+- [How to find businesses without websites (4 free methods)](https://presencezero.its-tahir.com/guides/how-to-find-businesses-without-websites): Google Maps, an OpenStreetMap Overpass query, directories, and automation.
+- [How to get web design clients](https://presencezero.its-tahir.com/guides/how-to-get-web-design-clients): a local-first playbook for freelancers and agencies.
+- [How to sell websites to local businesses](https://presencezero.its-tahir.com/guides/how-to-sell-websites-to-local-businesses): scripts, pricing models and objection handling.
+- [Parked domains and dead websites](https://presencezero.its-tahir.com/guides/parked-domains-and-dead-websites): what they mean and how to check them.
+- [Check domain availability for free with RDAP](https://presencezero.its-tahir.com/guides/check-domain-availability-rdap): curl and JavaScript examples, no API key.
+- [Google Maps leads for free: 4 data sources compared](https://presencezero.its-tahir.com/guides/google-maps-leads-free-data-sources): Places API, Apify, OpenStreetMap and CSV.
+
+## FAQ
+
+**Is there a free tool to find businesses without websites?** Yes, this one. PresenceZero is MIT licensed and runs on your own machine. With OpenStreetMap or a CSV it needs no API key or account at all.
+
+**Can it find businesses without websites on Google Maps?** Yes, through the Google Places API with your own key, or Apify's Google Maps actor with your own account. PresenceZero never proxies or resells data.
+
+**What's the difference between a dead and a parked website?** A dead site doesn't load (DNS failure, connection refused, timeout, HTTP 5xx). A parked site loads a registrar placeholder or a "domain for sale" page. Both are often better leads than "no website", because the owner already paid for a site once.
+
+**Does it send cold emails?** No, and it never will. Find a short list, then reach out yourself, one business at a time.
 
 ## Tech stack
 

@@ -8,6 +8,7 @@ import { WhoFor } from '@/components/landing/who-for'
 import { Ethics } from '@/components/landing/ethics'
 import { Quickstart } from '@/components/landing/quickstart'
 import { Faq } from '@/components/landing/faq'
+import { GuidesTeaser } from '@/components/landing/guides-teaser'
 import { WorkWithMe } from '@/components/landing/work-with-me'
 import { JsonLd } from '@/components/brand/json-ld'
 import { Reveal } from '@/components/brand/reveal'
@@ -26,6 +27,7 @@ export default function LandingPage() {
       <Reveal><WhoFor /></Reveal>
       <Reveal><Ethics /></Reveal>
       <Reveal><Quickstart /></Reveal>
+      <Reveal><GuidesTeaser /></Reveal>
       <Reveal><Faq /></Reveal>
       <Reveal><WorkWithMe /></Reveal>
     </>

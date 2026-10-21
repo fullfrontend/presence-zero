@@ -88,3 +88,66 @@ select option { background-color: #0A0A0B; color: #FAFAFA; }
 /* Smooth in-page scrolling for nav anchors (respects reduced-motion), with offset for the sticky nav */
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
 [id] { scroll-margin-top: 5.5rem; }
+
+/* ---------------------------------------------------------------------------
+   Guide illustrations (.pzg). One sequence plays on load, then settles on its
+   final frame. `.pzg-still` and reduced-motion both render that final frame.
+   --------------------------------------------------------------------------- */
+@keyframes pzg-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes pzg-pop { 0% { opacity: 0; transform: scale(.6); } 70% { transform: scale(1.08); } 100% { opacity: 1; transform: none; } }
+@keyframes pzg-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@keyframes pzg-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes pzg-sweep { from { left: -25%; opacity: 1; } 90% { opacity: 1; } to { left: 105%; opacity: 0; } }
+@keyframes pzg-type { from { width: 0; } to { width: calc(var(--pzg-ch) * 1ch); } }
+@keyframes pzg-spin-out { 0% { opacity: 1; transform: rotate(0); } 80% { opacity: 1; } 100% { opacity: 0; transform: rotate(540deg); } }
+@keyframes pzg-ping { 0% { box-shadow: 0 0 0 0 rgba(198,242,78,.55); } 100% { box-shadow: 0 0 0 14px rgba(198,242,78,0); } }
+
+.pzg-rise   { animation: pzg-rise .5s cubic-bezier(.2,.7,.2,1) both; }
+.pzg-pop    { animation: pzg-pop .45s cubic-bezier(.2,.7,.2,1) both; }
+.pzg-grow   { transform-origin: left; animation: pzg-grow .8s cubic-bezier(.2,.7,.2,1) both; }
+.pzg-draw   { stroke-dasharray: 1; animation: pzg-draw 1s ease-out both; }
+.pzg-type   { width: calc(var(--pzg-ch) * 1ch); animation: pzg-type 1.4s steps(30, end) both; }
+.pzg-spinner { opacity: 0; animation: pzg-spin-out .6s linear both; }
+.pzg-ping   { animation: pzg-pop .45s cubic-bezier(.2,.7,.2,1) both, pzg-ping 1.6s ease-out 2; }
+.pzg-sweep  {
+  left: 105%; opacity: 0;
+  background: linear-gradient(90deg, transparent, rgba(198,242,78,.10) 60%, rgba(198,242,78,.35) 98%, transparent);
+  border-right: 1px solid rgba(198,242,78,.6);
+  animation: pzg-sweep 2.2s .2s cubic-bezier(.45,0,.25,1) both;
+}
+
+.pzg-still *, .pzg-still *::before, .pzg-still *::after { animation: none !important; }
+.pzg-still .pzg-spinner, .pzg-still .pzg-sweep { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .pzg *, .pzg *::before, .pzg *::after { animation: none !important; }
+  .pzg .pzg-spinner, .pzg .pzg-sweep { display: none; }
+}
+
+/* ---------------------------------------------------------------------------
+   Long-form prose for guides (.pz-prose). Measure ~68ch, generous leading.
+   --------------------------------------------------------------------------- */
+.pz-prose { color: var(--color-dim); font-size: 1.0625rem; line-height: 1.75; max-width: 68ch; }
+.pz-prose > * + * { margin-top: 1.1em; }
+.pz-prose strong { color: var(--color-text); font-weight: 600; }
+.pz-prose em { color: var(--color-text); }
+.pz-prose a { color: var(--color-lime); text-decoration: underline; text-decoration-color: rgba(198,242,78,.35); text-underline-offset: 3px; transition: text-decoration-color .15s; }
+.pz-prose a:hover { text-decoration-color: var(--color-lime); }
+.pz-prose h3 { color: var(--color-text); font-size: 1.125rem; font-weight: 600; margin-top: 1.8em; }
+.pz-prose ul, .pz-prose ol { padding-left: 1.4em; }
+.pz-prose li + li { margin-top: .5em; }
+.pz-prose ul > li { list-style: none; position: relative; }
+.pz-prose ul > li::before { content: ""; position: absolute; left: -1.1em; top: .72em; width: .4em; height: .4em; border-radius: 1px; background: var(--color-lime); opacity: .8; }
+.pz-prose ol { counter-reset: pz-ol; }
+.pz-prose ol > li { list-style: none; position: relative; counter-increment: pz-ol; }
+.pz-prose ol > li::before { content: counter(pz-ol); position: absolute; left: -1.6em; top: .15em; width: 1.25em; height: 1.25em; border-radius: 999px; border: 1px solid rgba(198,242,78,.45); color: var(--color-lime); font: 600 .72rem/1.15rem var(--font-mono); text-align: center; }
+.pz-prose code { font-family: var(--font-mono); font-size: .86em; color: var(--color-text); background: rgba(250,250,250,.06); border: 1px solid var(--color-line); border-radius: 4px; padding: .1em .35em; }
+.pz-prose pre code { background: none; border: 0; padding: 0; font-size: .82rem; color: var(--color-dim); }
+.pz-prose blockquote { border-left: 2px solid var(--color-lime); background: rgba(198,242,78,.04); padding: .9em 1.1em; border-radius: 0 8px 8px 0; color: var(--color-text); }
+.pz-prose blockquote > p + p { margin-top: .6em; }
+.pz-prose table { width: 100%; border-collapse: collapse; font-size: .9rem; line-height: 1.5; display: block; overflow-x: auto; }
+.pz-prose th { color: var(--color-text); font-weight: 600; text-align: left; border-bottom: 1px solid rgba(198,242,78,.4); padding: .6em .8em .6em 0; white-space: nowrap; }
+.pz-prose td { border-bottom: 1px solid var(--color-line); padding: .65em .8em .65em 0; vertical-align: top; }
+.pz-prose tr:hover td { background: rgba(250,250,250,.02); }
+
+/* Reading progress bar on guides */
+.pz-progress { transform-origin: left; transform: scaleX(0); }

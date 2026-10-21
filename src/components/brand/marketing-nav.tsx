@@ -9,7 +9,8 @@ export function MarketingNav() {
         <div className="ml-auto hidden items-center gap-6 text-sm text-dim sm:flex">
           <Link href="/#how" className="hover:text-text">How it works</Link>
           <Link href="/#features" className="hover:text-text">Features</Link>
-          <Link href="/#faq" className="hover:text-text">FAQ</Link>
+          <Link href="/guides" className="hover:text-text">Guides</Link>
+          <Link href="/alternatives" className="hover:text-text">Compare</Link>
           <a href="https://github.com/its-tahir/presence-zero" className="hover:text-text">GitHub ★</a>
         </div>
         <Button href="/app" className="ml-auto sm:ml-0">Open app</Button>
