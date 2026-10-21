@@ -37,7 +37,7 @@ The score is prospecting priority, not a probability of closing a sale. All weig
 
 **Formula:** need × (45 + activity + contact + reputation + domain readiness).
 Need is 100% for no site found after search, 95% for a dead site, 90% for a parked site,
-80% for a configuration problem, 75% for source-listed Facebook, and 40% for unverified absence. For a live site with a
+95% for a configuration problem, 75% for source-listed Facebook, and 40% for unverified absence. For a live site with a
 completed, identity-matched audit it is `(100 − website quality) / 100`.
 Thus popularity cannot compensate for a good website with little improvement need.
 Missing commercial evidence earns no points; missing website assessment remains unscored,
@@ -51,7 +51,7 @@ Historical results and exports are recalculated from stored evidence on read.
 
 Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
 
-Configuration problems target a technical repair first and are capped at 80/100
+Configuration problems target a technical repair first and are capped at 95/100
 with all commercial signals present. The existing domain earns readiness points
 without requiring a replacement domain. Unverified checks remain unscored.
 
@@ -99,3 +99,22 @@ with the [IANA bootstrap registry](https://data.iana.org/rdap/dns.json).
 Confirmed available results are cached for 24 hours, occupied domains for 30 days.
 These are registration checks, not a guarantee that an unused domain is available
 at a particular price or that the business owns a registered candidate.
+
+## Listing discrepancies: a separate maintenance opportunity
+
+A working official website and a broken website link on a Google/OSM listing can
+coexist. Diagnose each URL separately: a bad listing link does not make the
+confirmed official website dead or misconfigured. Keep the live site's score
+based on its own audit; do not apply the 95% repair multiplier to that site.
+
+For manual review, record the source listing URL, its currently published website
+URL, the working official URL, the observation date and identity evidence (for
+example a matching phone number). A different domain alone is insufficient:
+check whether the listing link redirects successfully before calling it broken.
+An old scan proves only what was collected then, not what the listing says today.
+A confirmed broken listing link is an opportunity to correct the listing or its
+redirect, without assuming ownership of the old domain, access rights, repair
+effort or financial return.
+
+Automatic comparison and a separate listing-maintenance score are not implemented
+yet. Record confirmed discrepancies in the prospect's notes in the meantime.

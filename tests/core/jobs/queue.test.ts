@@ -224,7 +224,7 @@ it('persists a certificate configuration lead with a weighted repair score', asy
   }
   await refreshScanProgress(db, 'scan')
   const row = (await db.select().from(businesses))[0]
-  expect(row).toMatchObject({ presenceStatus: 'configuration_error', score: 80, listedWebsite: 'https://certificate.example' })
+  expect(row).toMatchObject({ presenceStatus: 'configuration_error', score: 95, listedWebsite: 'https://certificate.example' })
   expect(row.probeDetail).toContain('HTTPS certificate validation failed (DEPTH_ZERO_SELF_SIGNED_CERT)')
   expect((await db.select().from(scans))[0].status).toBe('done')
   db.$client.close()
