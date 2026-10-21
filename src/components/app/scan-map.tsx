@@ -24,13 +24,15 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
   const [failed, setFailed] = useState(false)
   const [selection, setSelection] = useState<string[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const points = results.flatMap(row => {
+  const eligible = results.filter(row => row.score !== null && row.score >= 50)
+  const points = eligible.flatMap(row => {
     const point = coordinates(row.latitude, row.longitude)
     return point.latitude === undefined ? [] : [{ id: row.id, name: row.name, lat: point.latitude, lng: point.longitude! }]
   })
-  // Polling scores must not rebuild markers or reset the user's zoom/selection.
+  // Rebuild only when visible points change, including crossing the score threshold.
   const pointKey = JSON.stringify(points)
-  const selected = results.find(row => row.id === selectedId)
+  const selected = eligible.find(row => row.id === selectedId)
+  const visibleSelection = eligible.filter(row => selection.includes(row.id))
 
   useEffect(() => {
     let disposed = false
@@ -84,15 +86,16 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
   return <section className="overflow-hidden rounded-xl border border-line" aria-label={t('Business map')}>
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div><h2 className="text-sm font-medium">{t('Business map')}</h2>
-        <p className="mt-1 text-xs text-mute">{t('{0} of {1} businesses located', { 0: number(points.length), 1: number(results.length) })} · {t('Select a pin to view business details.')}</p></div>
+        <p className="mt-1 text-xs text-mute">{t('{0} of {1} businesses scoring 50+ located', { 0: number(points.length), 1: number(eligible.length) })} · {t('Select a pin to view business details.')}</p></div>
       <button type="button" disabled={!ready || !points.length} onClick={fitAll} className="rounded border border-line px-3 py-2 text-xs disabled:opacity-40">{t('Show all pins')}</button>
     </div>
     <div ref={host} className="relative z-0 h-80 bg-surface sm:h-96" aria-label={t('OpenStreetMap business locations')} />
     {failed && <p className="p-4 text-sm text-amber-400" role="alert">{t('The map could not load. Business details remain available in the list.')}</p>}
-    {points.length < results.length && <p className="border-t border-line p-4 text-xs text-mute">{t('Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.')}</p>}
+    {eligible.length === 0 && <p className="border-t border-line p-4 text-xs text-mute">{t('No businesses with a score of 50 or more yet.')}</p>}
+    {points.length < eligible.length && <p className="border-t border-line p-4 text-xs text-mute">{t('Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.')}</p>}
     {selected && <div className="border-t border-line p-4 sm:p-6" aria-label={t('Selected business')}>
-      {selection.length > 1 && <div className="mb-4 flex flex-wrap gap-2" aria-label={t('Businesses at this location')}>
-        {selection.map(id => { const row = results.find(item => item.id === id); return row && <button key={id} type="button" aria-pressed={selectedId === id} onClick={() => setSelectedId(id)} className={`rounded border px-3 py-2 text-xs ${selectedId === id ? 'border-lime text-lime' : 'border-line'}`}>{row.name}</button> })}
+      {visibleSelection.length > 1 && <div className="mb-4 flex flex-wrap gap-2" aria-label={t('Businesses at this location')}>
+        {visibleSelection.map(row => <button key={row.id} type="button" aria-pressed={selectedId === row.id} onClick={() => setSelectedId(row.id)} className={`rounded border px-3 py-2 text-xs ${selectedId === row.id ? 'border-lime text-lime' : 'border-line'}`}>{row.name}</button>)}
       </div>}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div><h3 className="font-medium">{selected.name}</h3><p className="mt-1 text-sm text-dim">{selected.address}</p>

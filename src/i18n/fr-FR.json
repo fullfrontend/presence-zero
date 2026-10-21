@@ -566,7 +566,6 @@
   "Concurrent AI qualifications": "Qualifications IA simultanées",
   "Enriching…": "Enrichissement…",
   "Business map": "Carte des établissements",
-  "{0} of {1} businesses located": "{0} établissements localisés sur {1}",
   "Select a pin to view business details.": "Cliquez sur un repère pour consulter la fiche.",
   "Show all pins": "Voir tous les repères",
   "OpenStreetMap business locations": "Localisation des établissements sur OpenStreetMap",
@@ -628,5 +627,7 @@
   "Observed need: {0}%": "Besoin observé : {0} %",
   "80–100 priority · 60–79 promising · 40–59 research · 20–39 low priority · 0–19 not a priority": "80–100 prioritaire · 60–79 prometteur · 40–59 à approfondir · 20–39 faible priorité · 0–19 non prioritaire",
   "Local business prospecting application.": "Application de prospection de commerces locaux.",
-  "Start a scan using the form above.": "Lancez une analyse avec le formulaire ci-dessus."
+  "Start a scan using the form above.": "Lancez une analyse avec le formulaire ci-dessus.",
+  "{0} of {1} businesses scoring 50+ located": "{0} commerces localisés sur {1} avec un score ≥ 50",
+  "No businesses with a score of 50 or more yet.": "Aucun commerce avec un score supérieur ou égal à 50 pour le moment."
 }

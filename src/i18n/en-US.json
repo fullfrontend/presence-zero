@@ -566,7 +566,6 @@
   "Concurrent AI qualifications": "Concurrent AI qualifications",
   "Enriching…": "Enriching…",
   "Business map": "Business map",
-  "{0} of {1} businesses located": "{0} of {1} businesses located",
   "Select a pin to view business details.": "Select a pin to view business details.",
   "Show all pins": "Show all pins",
   "OpenStreetMap business locations": "OpenStreetMap business locations",
@@ -628,5 +627,7 @@
   "Observed need: {0}%": "Observed need: {0}%",
   "80–100 priority · 60–79 promising · 40–59 research · 20–39 low priority · 0–19 not a priority": "80–100 priority · 60–79 promising · 40–59 research · 20–39 low priority · 0–19 not a priority",
   "Local business prospecting application.": "Local business prospecting application.",
-  "Start a scan using the form above.": "Start a scan using the form above."
+  "Start a scan using the form above.": "Start a scan using the form above.",
+  "{0} of {1} businesses scoring 50+ located": "{0} of {1} businesses scoring 50+ located",
+  "No businesses with a score of 50 or more yet.": "No businesses with a score of 50 or more yet."
 }

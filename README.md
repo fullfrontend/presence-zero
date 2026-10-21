@@ -93,8 +93,9 @@ name,address,phone,category,rating,review_count,website,latitude,longitude
 ```
 
 Leave unknown fields empty. Supplied coordinates place businesses on the map;
-missing positions are not guessed. The OSM map has no API key and displays all
-collected results independently of table filters. Businesses at the same position
+missing positions are not guessed. The OSM map has no API key and displays only
+results scoring **50 or more**, independently of table filters. Unscored prospects
+are excluded until their score reaches that threshold. Businesses at the same position
 share a marker. Tiles load from OpenStreetMap with attribution; see its
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
