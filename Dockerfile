@@ -10,7 +10,6 @@ WORKDIR /app
 ENV NODE_ENV=production DATABASE_URL=file:/data/presencezero.db
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
-COPY --from=builder /app/public ./public
 COPY --from=builder /app/drizzle ./drizzle
 VOLUME /data
 EXPOSE 3000

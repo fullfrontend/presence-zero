@@ -177,7 +177,7 @@ export default function PastScans({ scans: initialScans }: { scans: PastScan[] }
           <li><span className="text-lime">2.</span> {t(" PresenceZero probes each site, checks matching domains, and scores every lead 0–100.")}</li>
           <li><span className="text-lime">3.</span> {t(" Work the sorted list — expand a row for its score breakdown and a ready outreach angle.")}</li>
         </ol>
-        <p className="mt-3 text-xs text-mute">{t("New here? Try an example preset in the form above, or explore the ")}<a href="/demo" className="text-lime underline-offset-4 hover:underline">{t("read-only demo")}</a>.</p>
+        <p className="mt-3 text-xs text-mute">{t("Start a scan using the form above.")}</p>
       </div>
     )
   }

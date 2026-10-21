@@ -66,14 +66,6 @@ button:disabled, [aria-disabled="true"] { cursor: not-allowed; }
 select { color-scheme: dark; }
 select option { background-color: #0A0A0B; color: #FAFAFA; }
 
-/* Scroll reveal. Content is in the DOM at SSR (indexable); the Reveal client
-   component animates the entrance. .pz-reveal starts hidden; .is-visible settles it. */
-.pz-reveal { opacity: 0; transform: translateY(14px); transition: opacity .6s ease, transform .6s ease; }
-.pz-reveal.is-visible { opacity: 1; transform: none; }
-@media (prefers-reduced-motion: reduce) {
-  .pz-reveal, .pz-reveal.is-visible { opacity: 1 !important; transform: none !important; transition: none !important; }
-}
-
 /* Skeleton shimmer */
 @keyframes pz-shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 .pz-skeleton {
@@ -85,10 +77,6 @@ select option { background-color: #0A0A0B; color: #FAFAFA; }
 /* Spinner */
 @keyframes pz-spin { to { transform: rotate(360deg); } }
 .pz-spin { animation: pz-spin 0.7s linear infinite; }
-/* Smooth in-page scrolling for nav anchors (respects reduced-motion), with offset for the sticky nav */
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
-[id] { scroll-margin-top: 5.5rem; }
-
 .scan-map-pin span {
   display: flex;
   align-items: center;

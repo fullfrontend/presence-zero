@@ -44,7 +44,7 @@ export default async function AppHome() {
     <div className="space-y-12">
       <section>
         <SectionTag>{t("// NEW SCAN")}</SectionTag>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("Find businesses whose web presence is ")}<span className="text-lime">{t("zero")}</span>.</h1>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight">{t("New scan")}</h1>
         <HeadlineRule />
         <div className="mt-8"><NewScanForm hasInitialGoogleKey={hasGoogleKey} defaultLocation={defaultLocation} defaultCountryCode={defaultCountryCode} /></div>
       </section>

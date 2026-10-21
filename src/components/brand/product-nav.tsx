@@ -10,9 +10,7 @@ export function ProductNav() {
         <Logo />
         <a href="/app" className="hover:text-text">{t("New scan")}</a>
         <a href="/app/settings" className="hover:text-text">{t("Settings")}</a>
-        <a href="/demo" className="ml-auto hover:text-text">{t("View demo")}</a>
-        <a href="https://github.com/its-tahir/presence-zero" className="hover:text-text">{t("GitHub ★")}</a>
-      <LanguageSelector />
+        <div className="ml-auto"><LanguageSelector /></div>
       </nav>
     </header>
   )

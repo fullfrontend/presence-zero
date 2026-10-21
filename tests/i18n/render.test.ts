@@ -5,7 +5,6 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 import { LocaleProvider } from '@/i18n/client'
 import { PresenceBadge } from '@/components/app/presence-badge'
 import { AuditDetail } from '@/components/app/audit-detail'
-import { Faq } from '@/components/landing/faq'
 import SettingsForm from '@/components/app/settings-form'
 
 import type { Locale } from '@/i18n/config'
@@ -16,8 +15,6 @@ function render(locale: Locale, child: React.ReactNode) {
 it('renders distinct locales in the same process without shared mutable language state', () => {
   expect(render('fr-FR', h(PresenceBadge, { status: 'not_found' }))).toContain('AUCUN SITE TROUVÉ')
   expect(render('en-US', h(PresenceBadge, { status: 'not_found' }))).toContain('NO SITE FOUND')
-  expect(render('fr-FR', h(Faq))).toContain('PresenceZero est-il gratuit ?')
-  expect(render('en-US', h(Faq))).toContain('Is PresenceZero free?')
   expect(render('fr-FR', h(SettingsForm))).toContain('Clé API Google Places')
 })
 it('translates report controls but preserves model prose and collected evidence', () => {
@@ -35,9 +32,9 @@ it('translates report controls but preserves model prose and collected evidence'
 })
 
 import ResultsTable from '@/components/app/results-table'
-import { DEMO_SCAN } from '@/lib/demo-data'
+import { SAMPLE_SCAN } from '../fixtures/scan-results'
 it('translates table headers and read-only statuses without altering company names or notes', () => {
-  const html = render('fr-FR', h(ResultsTable, { scanId: 'demo', readOnly: true, initialResults: DEMO_SCAN.results }))
+  const html = render('fr-FR', h(ResultsTable, { scanId: 'demo', readOnly: true, initialResults: SAMPLE_SCAN.results }))
   expect(html).toContain('Entreprise')
   expect(html).toContain('Domaines disponibles')
   expect(html).toContain('contacté')

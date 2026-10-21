@@ -7,17 +7,15 @@
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-blue)
 
-**[Live site](https://presencezero.its-tahir.com/)** · **[Live demo](https://presencezero.its-tahir.com/demo)** · **[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
+**[Quick start](#quick-start)** · **[Contributing](CONTRIBUTING.md)**
 
 PresenceZero is an open-source, self-hosted tool that scans a location and business category, then flags the businesses most likely to need (and buy) a website: the ones with **no site, a dead site, or a domain parked for sale**. For each one it checks whether a **matching domain is still available to register**, scores the opportunity **0–100**, and hands you a filterable, exportable lead list. Bring-your-own-API-key, runs on a persistent Node server or Docker. It's a lead *finder* — not an outreach or CRM tool.
 
 **Who it's for:** freelance web developers, design/marketing/SEO agencies, and domain investors who want a repeatable way to find underserved local businesses instead of hunting Google Maps by hand.
 
-![PresenceZero demo — expand a lead to see the score breakdown and outreach pitch.](public/screenshots/demo-expand.gif)
 
-If this helps you find leads, a star helps others find the project.
+Opening `/` takes you directly to `/app`: scans, results and settings. This fork has no marketing homepage or public demo.
 
-![PresenceZero — “Find the businesses whose web presence is zero.” The landing page with a live scored lead preview.](public/screenshots/landing-hero.png)
 
 ## How it works
 
@@ -487,7 +485,7 @@ absolute host path for the mount, with `AI_PROMPT_PROFILE` selecting the file.
 
 The interface supports **French (`fr-FR`)** and **American English (`en-US`)**.
 Use the language selector in the navigation bar. The preference is saved in a
-`pz-locale` cookie for one year and applies throughout the app and demo, without
+`pz-locale` cookie for one year and applies throughout the app, without
 changing page URLs. Locale selection follows this order:
 
 1. Explicit language selected in this browser.

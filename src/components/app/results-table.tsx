@@ -105,12 +105,11 @@ function compareValues(a: number | string | null, b: number | string | null, dir
 }
 
 export default function ResultsTable(
-  { scanId, readOnly = false, initialResults, autoTour = false, location, refreshKey, partial = false }:
+  { scanId, readOnly = false, initialResults, location, refreshKey, partial = false }:
   {
     scanId: string
     readOnly?: boolean
     initialResults?: Result[]
-    autoTour?: boolean
     location?: string | null
     refreshKey?: number
     partial?: boolean
@@ -131,21 +130,6 @@ export default function ResultsTable(
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [bulkStatus, setBulkStatus] = useState<LeadStatus>("contacted")
   const [bulkBusy, setBulkBusy] = useState(false)
-
-  useEffect(() => {
-    if (!autoTour) return
-    const runOnce = () => {
-      try {
-        if (!window.localStorage.getItem('pz-demo-tour-seen')) {
-          setTourOpen(true)
-          window.localStorage.setItem('pz-demo-tour-seen', '1')
-        }
-      } catch {
-        // localStorage unavailable — skip auto-run silently.
-      }
-    }
-    runOnce()
-  }, [autoTour])
 
   useEffect(() => {
     if (readOnly) return

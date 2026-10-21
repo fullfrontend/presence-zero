@@ -49,7 +49,7 @@ CLAUDE.md
 *.db
 *.db-journal
 
-# recording scratch (demo GIF tooling)
+# Legacy local recordings
 tmp-demo-frames/
 .tmp-demo-record/
 .github/og-raw.png

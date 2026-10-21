@@ -6,20 +6,10 @@ const nextConfig: NextConfig = {
     "/**": ["./drizzle/**"],
   },
   async headers() {
-    return [
-      {
-        source: "/",
-        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
-      },
-      {
-        source: "/demo",
-        headers: [{ key: "X-Robots-Tag", value: "index, follow" }],
-      },
-      {
-        source: "/app/:path*",
-        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
-      },
-    ];
+    return [{
+      source: "/:path*",
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    }];
   },
 };
 

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { explainResultRow, pitchForRow, buildPitchText, bestAvailableDomain } from '@/lib/score-explain'
-import { DEMO_SCAN } from '@/lib/demo-data'
+import { SAMPLE_SCAN } from '../fixtures/scan-results'
 
-const cornerCrumb = DEMO_SCAN.results.find(r => r.id === 'd1')!
+const cornerCrumb = SAMPLE_SCAN.results.find(r => r.id === 'd1')!
 
 describe('explainResultRow', () => {
   it('explains current evidence consistently', () => {
@@ -12,7 +12,7 @@ describe('explainResultRow', () => {
     expect(ex.factors.find(f => f.key === 'exactDomain')!.hit).toBe(true)
   })
   it('handles a null-score probe_failed row without throwing', () => {
-    const failed = DEMO_SCAN.results.find(r => r.presenceStatus === 'probe_failed')!
+    const failed = SAMPLE_SCAN.results.find(r => r.presenceStatus === 'probe_failed')!
     expect(explainResultRow(failed).total).toBeNull()
   })
 })

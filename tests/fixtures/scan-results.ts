@@ -1,5 +1,5 @@
 import { explainBusinessScore } from '@/core/business-score'
-export interface DemoResult {
+export interface FixtureResult {
   id: string
   name: string
   address: string | null
@@ -16,7 +16,7 @@ export interface DemoResult {
   seenBefore?: boolean
 }
 
-export const DEMO_SCAN: { location: string; category: string; results: DemoResult[] } = {
+export const SAMPLE_SCAN: { location: string; category: string; results: FixtureResult[] } = {
   location: 'Ottawa, ON',
   category: 'bakery',
   results: [
@@ -265,4 +265,4 @@ export const DEMO_SCAN: { location: string; category: string; results: DemoResul
   ],
 }
 
-for (const row of DEMO_SCAN.results) row.score = explainBusinessScore(row, row.domains, 'ca').total
+for (const row of SAMPLE_SCAN.results) row.score = explainBusinessScore(row, row.domains, 'ca').total
