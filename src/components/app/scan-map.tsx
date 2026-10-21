@@ -24,10 +24,10 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
   const [failed, setFailed] = useState(false)
   const [selection, setSelection] = useState<string[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const eligible = results.filter(row => row.score !== null && row.score >= 50)
+  const eligible = results.filter(row => row.score !== null && Number.isFinite(row.score) && row.score >= 50)
   const points = eligible.flatMap(row => {
     const point = coordinates(row.latitude, row.longitude)
-    return point.latitude === undefined ? [] : [{ id: row.id, name: row.name, lat: point.latitude, lng: point.longitude! }]
+    return point.latitude === undefined ? [] : [{ id: row.id, name: row.name, score: row.score!, lat: point.latitude, lng: point.longitude! }]
   })
   // Rebuild only when visible points change, including crossing the score threshold.
   const pointKey = JSON.stringify(points)
@@ -65,12 +65,17 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
     }
     for (const group of groups.values()) {
       const point = group[0]
+      const scores = group.map(row => row.score)
+      const minimum = Math.min(...scores), maximum = Math.max(...scores)
+      const scoreLabel = minimum === maximum ? String(maximum) : `${minimum}–${maximum}`
+      const label = group.map(row => `${row.name}: ${row.score}/100`).join(' · ')
+      const width = minimum === maximum ? 40 : 68
       const marker = library.marker([point.lat, point.lng], {
-        title: group.map(row => row.name).join(' · '),
-        alt: group.map(row => row.name).join(' · '),
-        icon: library.divIcon({ className: 'scan-map-pin', html: `<span>${group.length > 1 ? group.length : '•'}</span>`, iconSize: [32, 38], iconAnchor: [16, 38] }),
+        title: label,
+        alt: label,
+        icon: library.divIcon({ className: 'scan-map-pin', html: `<span style="width:${width}px">${scoreLabel}</span>${group.length > 1 ? `<small>${group.length}</small>` : ''}`, iconSize: [width, 40], iconAnchor: [width / 2, 40] }),
       }).addTo(layer)
-      marker.getElement()?.setAttribute('aria-label', group.map(row => row.name).join(' · '))
+      marker.getElement()?.setAttribute('aria-label', label)
       marker.on('click', () => { setSelection(group.map(row => row.id)); setSelectedId(point.id) })
     }
     if (!fitted.current && rows.length) {
@@ -86,7 +91,7 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
   return <section className="overflow-hidden rounded-xl border border-line" aria-label={t('Business map')}>
     <div className="flex flex-wrap items-center justify-between gap-3 p-4">
       <div><h2 className="text-sm font-medium">{t('Business map')}</h2>
-        <p className="mt-1 text-xs text-mute">{t('{0} of {1} businesses scoring 50+ located', { 0: number(points.length), 1: number(eligible.length) })} · {t('Select a pin to view business details.')}</p></div>
+        <p className="mt-1 text-xs text-mute">{t('{0} of {1} businesses scoring 50+ located', { 0: number(points.length), 1: number(eligible.length) })} · {t('Scores out of 100. Grouped pins show the score range.')}</p></div>
       <button type="button" disabled={!ready || !points.length} onClick={fitAll} className="rounded border border-line px-3 py-2 text-xs disabled:opacity-40">{t('Show all pins')}</button>
     </div>
     <div ref={host} className="relative z-0 h-80 bg-surface sm:h-96" aria-label={t('OpenStreetMap business locations')} />
@@ -95,7 +100,7 @@ export default function ScanMap({ results, location }: { results: MapBusiness[];
     {points.length < eligible.length && <p className="border-t border-line p-4 text-xs text-mute">{t('Some results have no coordinates. Older scans must be rerun to collect locations; CSV imports can include latitude and longitude.')}</p>}
     {selected && <div className="border-t border-line p-4 sm:p-6" aria-label={t('Selected business')}>
       {visibleSelection.length > 1 && <div className="mb-4 flex flex-wrap gap-2" aria-label={t('Businesses at this location')}>
-        {visibleSelection.map(row => <button key={row.id} type="button" aria-pressed={selectedId === row.id} onClick={() => setSelectedId(row.id)} className={`rounded border px-3 py-2 text-xs ${selectedId === row.id ? 'border-lime text-lime' : 'border-line'}`}>{row.name}</button>)}
+        {visibleSelection.map(row => <button key={row.id} type="button" aria-pressed={selectedId === row.id} onClick={() => setSelectedId(row.id)} className={`rounded border px-3 py-2 text-xs ${selectedId === row.id ? 'border-lime text-lime' : 'border-line'}`}>{row.name} · {row.score}/100</button>)}
       </div>}
       <div className="mb-4 flex items-start justify-between gap-3">
         <div><h3 className="font-medium">{selected.name}</h3><p className="mt-1 text-sm text-dim">{selected.address}</p>

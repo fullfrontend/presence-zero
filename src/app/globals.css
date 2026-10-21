@@ -81,13 +81,30 @@ select option { background-color: #0A0A0B; color: #FAFAFA; }
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 36px;
   border: 2px solid #0a0a0b;
   border-radius: 50% 50% 50% 0;
   background: #c6f24e;
   color: #0a0a0b;
-  font: bold 16px sans-serif;
+  font: bold 14px sans-serif;
   box-shadow: 0 2px 8px #0005;
 }
 .scan-map-pin:focus-visible { outline: 3px solid #4f46e5; outline-offset: 3px; }
+
+.scan-map-pin small {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border: 1px solid #c6f24e;
+  border-radius: 999px;
+  background: #0a0a0b;
+  color: #c6f24e;
+  font: bold 10px sans-serif;
+}

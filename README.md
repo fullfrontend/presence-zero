@@ -96,7 +96,8 @@ Leave unknown fields empty. Supplied coordinates place businesses on the map;
 missing positions are not guessed. The OSM map has no API key and displays only
 results scoring **50 or more**, independently of table filters. Unscored prospects
 are excluded until their score reaches that threshold. Businesses at the same position
-share a marker. Tiles load from OpenStreetMap with attribution; see its
+share a marker showing their score range and a count badge; individual markers show
+the lead score. Click to inspect each business. Tiles load from OpenStreetMap with attribution; see its
 [tile usage policy](https://operations.osmfoundation.org/policies/tiles/).
 
 ## Understand the results

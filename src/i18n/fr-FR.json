@@ -629,5 +629,6 @@
   "Local business prospecting application.": "Application de prospection de commerces locaux.",
   "Start a scan using the form above.": "Lancez une analyse avec le formulaire ci-dessus.",
   "{0} of {1} businesses scoring 50+ located": "{0} commerces localisés sur {1} avec un score ≥ 50",
-  "No businesses with a score of 50 or more yet.": "Aucun commerce avec un score supérieur ou égal à 50 pour le moment."
+  "No businesses with a score of 50 or more yet.": "Aucun commerce avec un score supérieur ou égal à 50 pour le moment.",
+  "Scores out of 100. Grouped pins show the score range.": "Scores sur 100. Les bulles groupées affichent la plage de scores."
 }

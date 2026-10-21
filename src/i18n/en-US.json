@@ -629,5 +629,6 @@
   "Local business prospecting application.": "Local business prospecting application.",
   "Start a scan using the form above.": "Start a scan using the form above.",
   "{0} of {1} businesses scoring 50+ located": "{0} of {1} businesses scoring 50+ located",
-  "No businesses with a score of 50 or more yet.": "No businesses with a score of 50 or more yet."
+  "No businesses with a score of 50 or more yet.": "No businesses with a score of 50 or more yet.",
+  "Scores out of 100. Grouped pins show the score range.": "Scores out of 100. Grouped pins show the score range."
 }
