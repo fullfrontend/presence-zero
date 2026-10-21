@@ -37,7 +37,7 @@ const INPUT_CLS = 'w-36 rounded border border-line bg-surface px-2 py-1 text-xs 
 type SortDir = 'asc' | 'desc'
 type SortKey = 'score' | 'name' | 'presence' | 'domains' | 'phone' | 'status' | 'note'
 
-const PRESENCE_RANK: Record<string, number> = { not_found: 0, dead: 1, parked: 2, facebook: 3, none: 4, alive: 5, probe_failed: 6 }
+const PRESENCE_RANK: Record<string, number> = { not_found: 0, dead: 1, parked: 2, configuration_error: 3, facebook: 4, none: 5, alive: 6, probe_failed: 7 }
 const STATUS_RANK: Record<string, number> = { new: 0, contacted: 1, replied: 2, won: 3, lost: 4, skipped: 5 }
 
 interface Column {

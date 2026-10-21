@@ -1,4 +1,4 @@
-export type PresenceKey = 'pending' | 'not_found' | 'none' | 'facebook' | 'alive' | 'dead' | 'parked' | 'probe_failed'
+export type PresenceKey = 'pending' | 'not_found' | 'none' | 'facebook' | 'alive' | 'dead' | 'parked' | 'configuration_error' | 'probe_failed'
 type Dot = 'solid' | 'ring' | 'half' | 'muted' | 'unknown'
 interface PresenceMeta { key: PresenceKey; label: string; dot: Dot; isLead: boolean }
 
@@ -10,6 +10,7 @@ const MAP: Record<PresenceKey, Omit<PresenceMeta, 'key'>> = {
   dead:         { label: 'DEAD',         dot: 'ring',    isLead: true },
   parked:       { label: 'PARKED',       dot: 'half',    isLead: true },
   alive:        { label: 'ALIVE',        dot: 'muted',   isLead: false },
+  configuration_error: { label: 'CONFIGURATION ISSUE', dot: 'ring', isLead: true },
   probe_failed: { label: 'PROBE-FAILED', dot: 'unknown', isLead: false },
 }
 
@@ -31,6 +32,7 @@ const FALLBACK: Record<PresenceKey, string> = {
   dead: "The listed site didn't respond — DNS failure, connection refused, HTTP 5xx, or timeout.",
   parked: 'The listed site looked like a registrar parking page.',
   alive: 'The listed site responded normally.',
+  configuration_error: 'A website configuration problem was detected. Check the recorded diagnosis before proposing a repair.',
   probe_failed: 'The check itself failed.',
 }
 

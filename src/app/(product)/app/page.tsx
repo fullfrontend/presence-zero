@@ -21,7 +21,7 @@ export default async function AppHome() {
   const rows = await db.select().from(scans).orderBy(desc(scans.createdAt))
   const counts = await db.select({ scanId: businesses.scanId, leads: sql<number>`count(*)` })
     .from(businesses)
-    .where(inArray(businesses.presenceStatus, ['not_found', 'none', 'dead', 'parked', 'facebook']))
+    .where(inArray(businesses.presenceStatus, ['not_found', 'none', 'dead', 'parked', 'configuration_error', 'facebook']))
     .groupBy(businesses.scanId)
   const leadCounts = new Map(counts.map(c => [c.scanId, Number(c.leads)]))
   const scanRows = rows.map(s => ({

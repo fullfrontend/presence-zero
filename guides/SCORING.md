@@ -12,10 +12,12 @@
 | `dead` | The supplied or discovered site failed the website probe's availability checks. |
 | `parked` | The probe identified a parked domain. |
 | `alive` | The site responds; a verified audit is needed to assess its improvement need. |
-| `probe_failed` | The check could not establish presence (for example, invalid HTTPS certificate, blocked access or rate limit). This is not a confirmed dead site. |
+| `configuration_error` | A confirmed HTTPS/TLS problem, redirect loop or explicit hosting-domain configuration page. A repair opportunity, not proof that the site is absent. |
+| `probe_failed` | The check could not establish presence (for example, blocked access or rate limit). This is not a confirmed dead site. |
 
 HTTPS validation stays enabled: certificate errors are recorded with their diagnostic
-code, without an insecure retry. HTTP 404/410 pages are classified as unavailable;
+code under `configuration_error`, without an insecure retry. Ordinary HTTP 404/410
+pages are classified as unavailable; an explicit hosting setup page takes precedence;
 other HTTP 4xx responses leave verification incomplete.
 
 A live response does not prove that the site belongs to the business. Website
@@ -31,11 +33,11 @@ The score is prospecting priority, not a probability of closing a sale. All weig
 | Activity (review volume, capped at 100) | 20 |
 | Direct contact (phone) | 20 |
 | Reputation (rating, supported by at least 10 reviews) | 10 |
-| Domain readiness (existing live site or exact national domain or .com available) | 5 |
+| Domain readiness (existing live/configuration-affected site or exact national domain or .com available) | 5 |
 
 **Formula:** need × (45 + activity + contact + reputation + domain readiness).
 Need is 100% for no site found after search, 95% for a dead site, 90% for a parked site,
-75% for source-listed Facebook, and 40% for unverified absence. For a live site with a
+80% for a configuration problem, 75% for source-listed Facebook, and 40% for unverified absence. For a live site with a
 completed, identity-matched audit it is `(100 − website quality) / 100`.
 Thus popularity cannot compensate for a good website with little improvement need.
 Missing commercial evidence earns no points; missing website assessment remains unscored,
@@ -48,6 +50,10 @@ they do not infer an IT maintenance need from unavailable evidence.
 Historical results and exports are recalculated from stored evidence on read.
 
 Every lead's score is also **explained per row**: expand a result to see exactly which signals earned which points, plus a deterministic, non-spammy **outreach angle** drafted from that lead's real signals (no site + strong reviews + an available domain) that you can copy and personalize before reaching out.
+
+Configuration problems target a technical repair first and are capped at 80/100
+with all commercial signals present. The existing domain earns readiness points
+without requiring a replacement domain. Unverified checks remain unscored.
 
 ### Contribution details
 

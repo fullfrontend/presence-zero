@@ -633,5 +633,12 @@
   "Scores out of 100. Grouped pins show the score range.": "Scores out of 100. Grouped pins show the score range.",
   "HTTPS certificate validation failed ({0}). Website availability could not be verified.": "HTTPS certificate validation failed ({0}). Website availability could not be verified.",
   "HTTPS negotiation failed ({0}). Website availability could not be verified.": "HTTPS negotiation failed ({0}). Website availability could not be verified.",
-  "HTTP {0} prevented website verification.": "HTTP {0} prevented website verification."
+  "HTTP {0} prevented website verification.": "HTTP {0} prevented website verification.",
+  "CONFIGURATION ISSUE": "CONFIGURATION ISSUE",
+  "Website configuration problem": "Website configuration problem",
+  "A website configuration problem was detected. Check the recorded diagnosis before proposing a repair.": "A website configuration problem was detected. Check the recorded diagnosis before proposing a repair.",
+  "A website configuration problem to resolve.": "A website configuration problem to resolve.",
+  "A configuration problem was detected for {0}. Review the diagnosis and propose a targeted repair before considering a redesign.": "A configuration problem was detected for {0}. Review the diagnosis and propose a targeted repair before considering a redesign.",
+  "A configuration error does not prove the website is absent or needs rebuilding.": "A configuration error does not prove the website is absent or needs rebuilding.",
+  "The hosting service reports that the domain is not configured for the website.": "The hosting service reports that the domain is not configured for the website."
 }

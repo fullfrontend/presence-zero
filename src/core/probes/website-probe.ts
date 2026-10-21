@@ -32,7 +32,7 @@ function tlsDiagnostic(error: unknown): string | null {
 
 /** A presence verdict plus the human reason behind it. */
 export interface ProbeResult {
-  status: 'alive' | 'dead' | 'parked' | 'facebook' | 'probe_failed'
+  status: 'alive' | 'dead' | 'parked' | 'facebook' | 'configuration_error' | 'probe_failed'
   detail: string
 }
 
@@ -77,7 +77,7 @@ async function readBounded(res: Response, maxBytes: number): Promise<string> {
 }
 
 /**
- * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked | facebook | probe_failed`
+ * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked | facebook | configuration_error | probe_failed`
  * label plus the human-readable reason behind it.
  *
  * SSRF-hardened: only http(s) is fetched, redirects are followed manually, and
@@ -136,19 +136,23 @@ export function createWebsiteProbe(
           }
           continue
         }
-        if (res.status >= 500 || res.status === 404 || res.status === 410) return dead(`Returned HTTP ${res.status}.`)
-        if (res.status >= 400) return { status: 'probe_failed', detail: `HTTP ${res.status} prevented website verification.` }
+        if (res.status >= 500 || res.status === 410) return dead(`Returned HTTP ${res.status}.`)
+        if (res.status >= 400 && res.status !== 404) return { status: 'probe_failed', detail: `HTTP ${res.status} prevented website verification.` }
 
 
         const html = await readBounded(res, 100_000)
+        if (/domain has been assigned/i.test(html) && /please go to the site settings and put the domain name in the domain tab/i.test(html) && /https:\/\/tilda\.(cc|ws)/i.test(html)) {
+          return { status: 'configuration_error', detail: 'The hosting service reports that the domain is not configured for the website.' }
+        }
+        if (res.status === 404) return dead('Returned HTTP 404.')
         return PARKED_PATTERNS.some(p => p.test(html))
           ? { status: 'parked', detail: 'Matched a registrar for-sale page.' }
           : { status: 'alive', detail: 'Responded normally.' }
       }
-      return dead(`Redirect loop — more than ${MAX_REDIRECTS} hops.`)
+      return { status: 'configuration_error', detail: `Redirect loop — more than ${MAX_REDIRECTS} hops.` }
     } catch (error) {
       const tlsDetail = tlsDiagnostic(error)
-      if (!ctrl.signal.aborted && tlsDetail) return { status: 'probe_failed', detail: tlsDetail }
+      if (!ctrl.signal.aborted && tlsDetail) return { status: 'configuration_error', detail: tlsDetail }
       // The abort signal is the source of truth for "timed out" — never sniff error text.
       return dead(ctrl.signal.aborted ? `Timed out after ${Math.round(timeoutMs / 1000)}s.` : 'The connection failed.')
     } finally {

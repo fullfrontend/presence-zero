@@ -34,3 +34,10 @@ it('missing and invalid activity evidence never earns points', () => {
     expect(ex.total).toBe(45)
   }
 })
+
+it('weights a confirmed configuration issue below a broken site, without requiring a new domain', () => {
+  expect(computeScore({ ...full, presence: 'configuration_error', exactDomainAvailable: false })).toBe(80)
+  expect(computeScore({ presence: 'configuration_error', hasPhone: false, exactDomainAvailable: false })).toBe(40)
+  const ex = explainScore({ ...full, presence: 'configuration_error' })
+  expect(ex.factors.reduce((sum, f) => sum + f.points, 0)).toBe(80)
+})

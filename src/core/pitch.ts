@@ -49,6 +49,13 @@ const GOOD_RATING = 4.0
  * never a mass-mail template (PresenceZero is a finder, not a spam tool).
  */
 export function generatePitch(i: PitchInput, t: TranslateText = englishText): Pitch {
+  if (i.presence === 'configuration_error') {
+    return {
+      headline: t('A website configuration problem to resolve.'),
+      angle: t('A configuration problem was detected for {0}. Review the diagnosis and propose a targeted repair before considering a redesign.', { 0: i.name }),
+      talkingPoints: [t('A configuration error does not prove the website is absent or needs rebuilding.')],
+    }
+  }
   if (i.presence === 'facebook') {
     return {
       headline: t("A Facebook presence to complement with an independent website."),

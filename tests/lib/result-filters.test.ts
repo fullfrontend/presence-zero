@@ -47,3 +47,7 @@ it('keeps pending prospects visible in the table and matching exports', () => {
   expect(matchesResultFilters({ ...row({ presenceStatus: 'alive' }), enrichment: [{ status: 'running' }] }, { leadsOnly: true })).toBe(true)
   expect(matchesResultFilters({ ...row({ presenceStatus: 'alive' }), enrichment: [{ status: 'done' }] }, { leadsOnly: true })).toBe(false)
 })
+
+it('includes configuration problems in the lead shortlist', () => {
+  expect(matchesResultFilters(row({ presenceStatus: 'configuration_error', score: 70 }), { leadsOnly: true, minScore: 50 })).toBe(true)
+})

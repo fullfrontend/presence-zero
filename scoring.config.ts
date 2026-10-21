@@ -2,7 +2,7 @@
 // Need modulates every factor, so popularity alone cannot make a good website a hot lead.
 export const SCORING_WEIGHTS = {
   needMax: 45,
-  need: { not_found: 1, dead: 0.95, parked: 0.9, facebook: 0.75, none: 0.4 },
+  need: { not_found: 1, dead: 0.95, parked: 0.9, configuration_error: 0.8, facebook: 0.75, none: 0.4 },
   activityMax: 20,
   activityTiers: [[100, 1], [50, 0.85], [20, 0.65], [5, 0.4], [1, 0.2]] as const,
   contactMax: 20,

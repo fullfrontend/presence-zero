@@ -21,7 +21,7 @@ function Stat({ value, label, hint }: { value: string; label: string; hint?: str
   )
 }
 
-const PRESENCE_ORDER = ['not_found', 'facebook', 'none', 'alive', 'dead', 'parked', 'probe_failed'] as const
+const PRESENCE_ORDER = ['not_found', 'facebook', 'none', 'alive', 'dead', 'parked', 'configuration_error', 'probe_failed'] as const
 
 /**
  * Scan-level insight row. Computed client-side from the loaded results, so it works

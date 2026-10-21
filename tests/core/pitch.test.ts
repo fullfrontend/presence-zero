@@ -65,3 +65,9 @@ it('suggests complementing Facebook without claiming an independent site is abse
   expect(pitch.angle).toContain('Check whether a separate website already exists')
   expect(pitch.angle).not.toContain('already has a working site')
 })
+
+it('proposes repair for configuration issues without claiming the site is absent', () => {
+  const pitch = generatePitch({ name: 'Example', presence: 'configuration_error', availableDomain: 'example.be' })
+  expect(pitch.angle).toContain('targeted repair')
+  expect(pitch.suggestedDomain).toBeUndefined()
+})

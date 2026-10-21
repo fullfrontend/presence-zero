@@ -23,6 +23,7 @@ export interface ScoreExplanation {
 }
 const LABELS: Record<PresenceStatus, string> = {
   not_found: 'No website found after search', none: 'Website unverified', facebook: 'Facebook page, no independent site verified',
+  configuration_error: 'Website configuration problem',
   dead: 'Dead website', parked: 'Parked domain', alive: 'Website improvement potential', probe_failed: 'Probe failed',
 }
 const clamp = (value: number, max = 1) => Math.max(0, Math.min(max, value))
@@ -47,7 +48,7 @@ export function explainScore(i: ScoreInput): ScoreExplanation {
     ['reviews', 'Observed business activity (reviews)', W.activityMax * activity, W.activityMax],
     ['phone', 'Direct contact available (phone)', i.hasPhone ? W.contactMax : 0, W.contactMax],
     ['rating', 'Reputation supported by reviews', W.reputationMax * reputation, W.reputationMax],
-    ['exactDomain', 'Domain ready for the website project', i.presence === 'alive' || i.exactDomainAvailable ? W.domainMax : 0, W.domainMax],
+    ['exactDomain', 'Domain ready for the website project', i.presence === 'alive' || i.presence === 'configuration_error' || i.exactDomainAvailable ? W.domainMax : 0, W.domainMax],
   ]
   // Cumulative rounding keeps monotonic totals and an exact, honest breakdown.
   let sum = 0, rounded = 0

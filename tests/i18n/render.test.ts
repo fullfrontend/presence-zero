@@ -42,3 +42,8 @@ it('translates table headers and read-only statuses without altering company nam
   expect(html).toContain('Signed — 5-page site, build starts in Aug')
   expect(html).not.toContain('>Available domains<')
 })
+
+it('renders the dedicated configuration issue badge in both languages', () => {
+  expect(render('fr-FR', h(PresenceBadge, { status: 'configuration_error' }))).toContain('PROBLÈME DE CONFIGURATION')
+  expect(render('en-US', h(PresenceBadge, { status: 'configuration_error' }))).toContain('CONFIGURATION ISSUE')
+})

@@ -63,7 +63,7 @@ describe('website probe', () => {
   it('reports a redirect loop distinctly', async () => {
     const loop = (async () => new Response('', { status: 302, headers: { location: 'https://example.com/next' } })) as unknown as typeof fetch
     const r = await createWebsiteProbe(loop, { lookup: publicLookup })('example.com')
-    expect(r.status).toBe('dead')
+    expect(r.status).toBe('configuration_error')
     expect(r.detail).toBe('Redirect loop — more than 5 hops.')
   })
 
@@ -134,7 +134,7 @@ describe('website probe', () => {
   it('gives up after too many redirects', async () => {
     const fetchFn = (async () => new Response(null, { status: 302, headers: { location: 'https://example.com/next' } })) as typeof fetch
     const result = await createWebsiteProbe(fetchFn, { lookup: publicLookup })('example.com')
-    expect(result.status).toBe('dead')
+    expect(result.status).toBe('configuration_error')
   })
 })
 
@@ -143,7 +143,7 @@ it.each(['DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN', 'CERT_HAS_E
   'UNABLE_TO_GET_ISSUER_CERT_LOCALLY'])('does not mistake a TLS certificate failure for a dead site: %s', async code => {
   const fetchFn = vi.fn<typeof fetch>(async () => { throw new TypeError('fetch failed', { cause: Object.assign(new Error('TLS'), { code }) }) })
   const result = await createWebsiteProbe({ lookup: publicLookup, fetchFn })('https://business.example')
-  expect(result.status).toBe('probe_failed')
+  expect(result.status).toBe('configuration_error')
   expect(result.detail).toBe(`HTTPS certificate validation failed (${code}). Website availability could not be verified.`)
   expect(fetchFn).toHaveBeenCalledTimes(1) // Never disable certificate checks or silently downgrade to HTTP.
   expect(fetchFn.mock.calls[0][0]).toBe('https://business.example')
@@ -151,7 +151,7 @@ it.each(['DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN', 'CERT_HAS_E
 it('reports TLS protocol failures separately from certificate validation', async () => {
   const fetchFn = async () => { throw Object.assign(new Error('TLS'), { code: 'ERR_SSL_WRONG_VERSION_NUMBER' }) }
   const result = await createWebsiteProbe({ lookup: publicLookup, fetchFn })('https://business.example')
-  expect(result.status).toBe('probe_failed')
+  expect(result.status).toBe('configuration_error')
   expect(result.detail).toContain('HTTPS negotiation failed')
 })
 it.each([404, 410])('does not classify HTTP %s error pages as live websites', async status => {
@@ -161,4 +161,11 @@ it.each([404, 410])('does not classify HTTP %s error pages as live websites', as
 it.each([401, 403, 429])('leaves an HTTP %s blocked check unverified', async status => {
   const result = await createWebsiteProbe(respond('Blocked', status), { lookup: publicLookup })('example.com')
   expect(result).toEqual({ status: 'probe_failed', detail: `HTTP ${status} prevented website verification.` })
+})
+
+it.each([200, 404])('recognizes an explicit hosting configuration page at HTTP %s', async status => {
+  const html = '<a href="https://tilda.cc">Tilda</a><b>Domain has been assigned.</b>Please go to the site settings and put the domain name in the Domain tab.'
+  expect(await createWebsiteProbe(respond(html, status), { lookup: publicLookup })('example.com')).toEqual({
+    status: 'configuration_error', detail: 'The hosting service reports that the domain is not configured for the website.',
+  })
 })

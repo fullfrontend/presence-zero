@@ -35,3 +35,8 @@ it('shows Facebook as a distinct potential lead', () => {
   expect(presenceMeta('facebook')).toMatchObject({ label: 'FACEBOOK', isLead: true })
   expect(probeFallbackDetail('facebook')).toContain('not an independent website')
 })
+
+it('keeps configuration problems as distinct actionable leads', () => {
+  expect(presenceMeta('configuration_error')).toMatchObject({ label: 'CONFIGURATION ISSUE', isLead: true })
+  expect(probeFallbackDetail('configuration_error')).toContain('configuration problem')
+})

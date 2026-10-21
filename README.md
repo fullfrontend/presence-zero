@@ -118,7 +118,9 @@ can change the score. A found website counts just like a source-listed website.
 
 A missing source URL is **unverified**, not proof that no website exists. Source-listed
 Facebook has its own classification; Facebook found only in search is ignored.
-A live site without a verified quality assessment remains unscored. Won, lost and
+Confirmed HTTPS, redirect-loop or hosting setup problems have a distinct
+**configuration issue** status and a weighted repair score. A live site without a
+verified quality assessment remains unscored. Won, lost and
 skipped prospects score zero for new prospecting.
 
 Domain checks prefer the country extension, then `.com`, using public RDAP or DNS
