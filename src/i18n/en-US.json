@@ -630,5 +630,8 @@
   "Start a scan using the form above.": "Start a scan using the form above.",
   "{0} of {1} businesses scoring 50+ located": "{0} of {1} businesses scoring 50+ located",
   "No businesses with a score of 50 or more yet.": "No businesses with a score of 50 or more yet.",
-  "Scores out of 100. Grouped pins show the score range.": "Scores out of 100. Grouped pins show the score range."
+  "Scores out of 100. Grouped pins show the score range.": "Scores out of 100. Grouped pins show the score range.",
+  "HTTPS certificate validation failed ({0}). Website availability could not be verified.": "HTTPS certificate validation failed ({0}). Website availability could not be verified.",
+  "HTTPS negotiation failed ({0}). Website availability could not be verified.": "HTTPS negotiation failed ({0}). Website availability could not be verified.",
+  "HTTP {0} prevented website verification.": "HTTP {0} prevented website verification."
 }

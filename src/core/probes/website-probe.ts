@@ -9,9 +9,30 @@ export const PARKED_PATTERNS: RegExp[] = [
 
 const MAX_REDIRECTS = 5
 
+const CERTIFICATE_ERRORS = new Set([
+  'DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN', 'CERT_HAS_EXPIRED',
+  'CERT_NOT_YET_VALID', 'ERR_TLS_CERT_ALTNAME_INVALID', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY', 'UNABLE_TO_GET_ISSUER_CERT', 'CERT_UNTRUSTED',
+])
+
+/** Node fetch wraps TLS failures in cause; do not infer certificate problems from prose. */
+function tlsDiagnostic(error: unknown): string | null {
+  const seen = new Set<unknown>()
+  for (let depth = 0; depth < 8 && error && typeof error === 'object' && !seen.has(error); depth++) {
+    seen.add(error)
+    const { code, cause } = error as { code?: unknown; cause?: unknown }
+    if (typeof code === 'string') {
+      if (CERTIFICATE_ERRORS.has(code)) return `HTTPS certificate validation failed (${code}). Website availability could not be verified.`
+      if (/^(ERR_SSL_|ERR_TLS_)[A-Z0-9_]+$/.test(code)) return `HTTPS negotiation failed (${code}). Website availability could not be verified.`
+    }
+    error = cause
+  }
+  return null
+}
+
 /** A presence verdict plus the human reason behind it. */
 export interface ProbeResult {
-  status: 'alive' | 'dead' | 'parked' | 'facebook'
+  status: 'alive' | 'dead' | 'parked' | 'facebook' | 'probe_failed'
   detail: string
 }
 
@@ -56,7 +77,7 @@ async function readBounded(res: Response, maxBytes: number): Promise<string> {
 }
 
 /**
- * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked | facebook`
+ * Probes a listed website and returns a `ProbeResult` carrying its `alive | dead | parked | facebook | probe_failed`
  * label plus the human-readable reason behind it.
  *
  * SSRF-hardened: only http(s) is fetched, redirects are followed manually, and
@@ -115,7 +136,9 @@ export function createWebsiteProbe(
           }
           continue
         }
-        if (res.status >= 500) return dead(`Returned HTTP ${res.status}.`)
+        if (res.status >= 500 || res.status === 404 || res.status === 410) return dead(`Returned HTTP ${res.status}.`)
+        if (res.status >= 400) return { status: 'probe_failed', detail: `HTTP ${res.status} prevented website verification.` }
+
 
         const html = await readBounded(res, 100_000)
         return PARKED_PATTERNS.some(p => p.test(html))
@@ -123,7 +146,9 @@ export function createWebsiteProbe(
           : { status: 'alive', detail: 'Responded normally.' }
       }
       return dead(`Redirect loop — more than ${MAX_REDIRECTS} hops.`)
-    } catch {
+    } catch (error) {
+      const tlsDetail = tlsDiagnostic(error)
+      if (!ctrl.signal.aborted && tlsDetail) return { status: 'probe_failed', detail: tlsDetail }
       // The abort signal is the source of truth for "timed out" — never sniff error text.
       return dead(ctrl.signal.aborted ? `Timed out after ${Math.round(timeoutMs / 1000)}s.` : 'The connection failed.')
     } finally {

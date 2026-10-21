@@ -53,6 +53,7 @@ describe('translation and regional formats', () => {
     expect(translateSystem('fr-FR', 'Returned HTTP 503.')).toBe('Réponse HTTP 503.')
     expect(translateSystem('fr-FR', 'Google Places error (HTTP 429).')).toBe('Erreur Google Places (HTTP 429).')
     expect(translateSystem('en-US', 'Returned HTTP 503.')).toBe('Returned HTTP 503.')
+    expect(translateSystem('fr-FR', 'HTTPS certificate validation failed (CERT_HAS_EXPIRED). Website availability could not be verified.')).toContain('certificat HTTPS (CERT_HAS_EXPIRED)')
     expect(translateSystem('fr-FR', 'Unknown vendor response.')).toBe('Unknown vendor response.')
   })
   it('localizes pitch presentation without translating names, domains or altering scores', () => {

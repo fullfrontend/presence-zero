@@ -12,7 +12,11 @@
 | `dead` | The supplied or discovered site failed the website probe's availability checks. |
 | `parked` | The probe identified a parked domain. |
 | `alive` | The site responds; a verified audit is needed to assess its improvement need. |
-| `probe_failed` | The check could not establish presence. This is not a confirmed dead site. |
+| `probe_failed` | The check could not establish presence (for example, invalid HTTPS certificate, blocked access or rate limit). This is not a confirmed dead site. |
+
+HTTPS validation stays enabled: certificate errors are recorded with their diagnostic
+code, without an insecure retry. HTTP 404/410 pages are classified as unavailable;
+other HTTP 4xx responses leave verification incomplete.
 
 A live response does not prove that the site belongs to the business. Website
 identity matching is part of the optional AI audit's evidence checks.

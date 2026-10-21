@@ -5,6 +5,7 @@ import { createDb } from '@/db/client'
 import { businesses, scanJobs, scans, domainCandidates } from '@/db/schema'
 import { claimJob, ensureScanJobs, JOB_KINDS, LEASE_MS, refreshScanProgress } from '@/core/jobs/queue'
 import { processJob } from '@/core/jobs/process'
+import { createWebsiteProbe } from '@/core/probes/website-probe'
 import type { PipelineDeps } from '@/core/pipeline'
 
 async function setup(overrides: Partial<PipelineDeps> = {}) {
@@ -206,4 +207,25 @@ it.each([
     db.$client.close()
   }
   expect(scores[0]).toBe(scores[1])
+})
+
+it('persists a certificate failure without awarding a dead-website score', async () => {
+  const { db, deps } = await setup({
+    getProviderById: () => ({ id: 'test', async fetchPage() {
+      return { businesses: [{ name: 'Certificate fixture', website: 'https://certificate.example', phone: '123', rating: 5, reviewCount: 100 }], nextCursor: null }
+    } }),
+    probe: createWebsiteProbe({ lookup: async () => ['93.184.216.34'], fetchFn: async () => {
+      throw new TypeError('fetch failed', { cause: Object.assign(new Error('TLS'), { code: 'DEPTH_ZERO_SELF_SIGNED_CERT' }) })
+    } }),
+  })
+  for (const kind of JOB_KINDS) {
+    const job = await claimJob(db, kind, 1)
+    if (job) await processJob(job, deps)
+  }
+  await refreshScanProgress(db, 'scan')
+  const row = (await db.select().from(businesses))[0]
+  expect(row).toMatchObject({ presenceStatus: 'probe_failed', score: null, listedWebsite: 'https://certificate.example' })
+  expect(row.probeDetail).toContain('HTTPS certificate validation failed (DEPTH_ZERO_SELF_SIGNED_CERT)')
+  expect((await db.select().from(scans))[0].status).toBe('done')
+  db.$client.close()
 })

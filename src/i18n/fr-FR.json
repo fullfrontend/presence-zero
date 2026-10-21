@@ -630,5 +630,8 @@
   "Start a scan using the form above.": "Lancez une analyse avec le formulaire ci-dessus.",
   "{0} of {1} businesses scoring 50+ located": "{0} commerces localisés sur {1} avec un score ≥ 50",
   "No businesses with a score of 50 or more yet.": "Aucun commerce avec un score supérieur ou égal à 50 pour le moment.",
-  "Scores out of 100. Grouped pins show the score range.": "Scores sur 100. Les bulles groupées affichent la plage de scores."
+  "Scores out of 100. Grouped pins show the score range.": "Scores sur 100. Les bulles groupées affichent la plage de scores.",
+  "HTTPS certificate validation failed ({0}). Website availability could not be verified.": "Échec de validation du certificat HTTPS ({0}). La disponibilité du site n’a pas pu être vérifiée.",
+  "HTTPS negotiation failed ({0}). Website availability could not be verified.": "Échec de négociation HTTPS ({0}). La disponibilité du site n’a pas pu être vérifiée.",
+  "HTTP {0} prevented website verification.": "La réponse HTTP {0} empêche de vérifier le site."
 }

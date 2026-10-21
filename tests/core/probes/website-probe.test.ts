@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import { createWebsiteProbe } from '@/core/probes/website-probe'
 
@@ -136,4 +136,29 @@ describe('website probe', () => {
     const result = await createWebsiteProbe(fetchFn, { lookup: publicLookup })('example.com')
     expect(result.status).toBe('dead')
   })
+})
+
+it.each(['DEPTH_ZERO_SELF_SIGNED_CERT', 'SELF_SIGNED_CERT_IN_CHAIN', 'CERT_HAS_EXPIRED',
+  'CERT_NOT_YET_VALID', 'ERR_TLS_CERT_ALTNAME_INVALID', 'UNABLE_TO_VERIFY_LEAF_SIGNATURE',
+  'UNABLE_TO_GET_ISSUER_CERT_LOCALLY'])('does not mistake a TLS certificate failure for a dead site: %s', async code => {
+  const fetchFn = vi.fn<typeof fetch>(async () => { throw new TypeError('fetch failed', { cause: Object.assign(new Error('TLS'), { code }) }) })
+  const result = await createWebsiteProbe({ lookup: publicLookup, fetchFn })('https://business.example')
+  expect(result.status).toBe('probe_failed')
+  expect(result.detail).toBe(`HTTPS certificate validation failed (${code}). Website availability could not be verified.`)
+  expect(fetchFn).toHaveBeenCalledTimes(1) // Never disable certificate checks or silently downgrade to HTTP.
+  expect(fetchFn.mock.calls[0][0]).toBe('https://business.example')
+})
+it('reports TLS protocol failures separately from certificate validation', async () => {
+  const fetchFn = async () => { throw Object.assign(new Error('TLS'), { code: 'ERR_SSL_WRONG_VERSION_NUMBER' }) }
+  const result = await createWebsiteProbe({ lookup: publicLookup, fetchFn })('https://business.example')
+  expect(result.status).toBe('probe_failed')
+  expect(result.detail).toContain('HTTPS negotiation failed')
+})
+it.each([404, 410])('does not classify HTTP %s error pages as live websites', async status => {
+  const result = await createWebsiteProbe(respond('<title>Domain has been assigned</title>', status), { lookup: publicLookup })('example.com')
+  expect(result).toEqual({ status: 'dead', detail: `Returned HTTP ${status}.` })
+})
+it.each([401, 403, 429])('leaves an HTTP %s blocked check unverified', async status => {
+  const result = await createWebsiteProbe(respond('Blocked', status), { lookup: publicLookup })('example.com')
+  expect(result).toEqual({ status: 'probe_failed', detail: `HTTP ${status} prevented website verification.` })
 })
