@@ -1,3 +1,4 @@
+import { differentWebsite, needsWebsiteRecovery, type ListingIssue } from '../listing-issue'
 import { eq } from 'drizzle-orm'
 import type { InStatement, InValue } from '@libsql/client'
 import { businesses, scans, scanJobs } from '@/db/schema'
@@ -38,7 +39,7 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
         writes.push(writer.insert('businesses', { id, scan_id: scan.id, name: raw.name, address: raw.address ?? null,
           latitude: raw.latitude ?? null, longitude: raw.longitude ?? null,
           phone: raw.phone ?? null, category: raw.category ?? null, rating: raw.rating ?? null, review_count: raw.reviewCount ?? null,
-          listed_website: raw.website ?? null, facebook_url: raw.facebookUrl ?? (isFacebookUrl(raw.website) ? raw.website! : null),
+          listed_website: raw.website ?? null, source_website: raw.website ?? null, facebook_url: raw.facebookUrl ?? (isFacebookUrl(raw.website) ? raw.website! : null),
           source_url: raw.sourceUrl ?? null, lead_status: raw.closed ? 'skipped' : 'new' }))
         for (const row of stageRows(scan.id, id)) writes.push(writer.insert('scan_jobs', row))
       })
@@ -52,18 +53,41 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
     if (!b) throw new Error('Missing business')
     const patch: Record<string, InValue> = {}
     let auditFailed = false
+    let recoverWebsite = false
+    const recovering = job.kind === 'search' && job.result === 'recover_website'
     const domains: { domain: string; available: boolean | null }[] = []
     if (job.kind === 'search') {
       const key = deps.braveSearchEnabled ? await secret('brave_search_api_key') : undefined
       const search = deps.discoverWebsite ?? (key ? createWebsiteSearch(key) : undefined)
-      if (search && (!b.listedWebsite || isFacebookUrl(b.listedWebsite))) {
-        const result = await search({ name: b.name, address: b.address })
+      if (search && (recovering || !b.listedWebsite || isFacebookUrl(b.listedWebsite))) {
+        const result = await search({ name: b.name, address: b.address, ...(recovering ? { excludeWebsite: b.listedWebsite } : {}) })
         if (result.retryAfterMs && !result.website) throw new DeferredJob(result.retryAfterMs, !result.deferred,
           result.deferred ? 'Waiting for the shared search throttle.' : 'Search rate limited or CAPTCHA blocked; retry scheduled.')
-        // Search-only Facebook results never become listing evidence.
-        patch.listed_website = result.website && !isFacebookUrl(result.website) ? result.website : b.listedWebsite
-        patch.probe_detail = result.detail
-        if (!patch.listed_website && !b.facebookUrl && result.outcome === 'not_found') patch.presence_status = 'not_found'
+        if (recovering) {
+          // Recovery requires explicit identity evidence, not a URL-only legacy result.
+          if (result.outcome === 'matched' && result.website && b.listedWebsite &&
+            !isFacebookUrl(result.website) && differentWebsite(b.listedWebsite, result.website)) {
+            const verified = await (deps.probe ?? createWebsiteProbe())(result.website)
+            if (verified.status === 'alive') {
+              patch.listed_website = result.website
+              patch.presence_status = 'alive'
+              patch.probe_detail = verified.detail
+              patch.audit_report = null
+              patch.score = null
+              if (b.sourceWebsite === b.listedWebsite && needsWebsiteRecovery(b.presenceStatus)) {
+                const issue: ListingIssue = { sourceWebsite: b.sourceWebsite, replacementWebsite: result.website,
+                  sourceUrl: b.sourceUrl, sourceStatus: b.presenceStatus!, sourceDetail: b.probeDetail ?? '',
+                  matchDetail: result.detail, checkedAt: new Date(now()).toISOString() }
+                patch.listing_issue = JSON.stringify(issue)
+              }
+            }
+          }
+        } else {
+          // Search-only Facebook results never become listing evidence.
+          patch.listed_website = result.website && !isFacebookUrl(result.website) ? result.website : b.listedWebsite
+          patch.probe_detail = result.detail
+          if (!patch.listed_website && !b.facebookUrl && result.outcome === 'not_found') patch.presence_status = 'not_found'
+        }
       }
     } else if (job.kind === 'probe') {
       const website = b.listedWebsite ?? b.facebookUrl
@@ -83,6 +107,11 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
       } else {
         presence = b.presenceStatus === 'not_found' ? 'not_found' : 'none'
         detail = presence === 'not_found' ? 'No website found after search.' : 'No website was listed on the source listing. Website presence is unverified.'
+      }
+      if (website && needsWebsiteRecovery(presence) && b.sourceWebsite === website &&
+        (deps.websiteSearchEnabled || deps.discoverWebsite || deps.braveSearchEnabled)) {
+        const discovery = (await db.select().from(scanJobs).where(eq(scanJobs.id, `${b.id}:search`)))[0]
+        recoverWebsite = discovery?.status === 'done' && discovery.result !== 'recovery_complete'
       }
       patch.presence_status = presence
       patch.probe_detail = [b.probeDetail, detail].filter(Boolean).join(' ')
@@ -105,9 +134,12 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
     const writer = jobWrites(job, now())
     const writes: InStatement[] = []
     if (Object.keys(patch).length) writes.push(writer.update('businesses', b.id, patch))
+    if (recoverWebsite) writes.push(writer.update('scan_jobs', `${b.id}:search`, {
+      status: 'pending', attempts: 0, available_at: now(), lease_until: 0, owner: null, error: null, result: 'recover_website',
+    }))
     for (const d of domains) writes.push(writer.insert('domain_candidates', { id: `${b.id}:${d.domain}`, business_id: b.id,
       domain: d.domain, available: d.available === null ? null : Number(d.available), checked_at: Math.floor(now() / 1000) }))
-    writes.push(writer.update('scan_jobs', job.id, { result: job.kind === 'search' && patch.listed_website && patch.listed_website !== b.listedWebsite ? 'discovered' : null, status: auditFailed ? 'failed' : 'done', lease_until: 0, owner: null, error: auditFailed ? 'Audit unavailable or model output invalid.' : null }))
+    writes.push(writer.update('scan_jobs', job.id, { result: recovering ? 'recovery_complete' : job.kind === 'search' && patch.listed_website && patch.listed_website !== b.listedWebsite ? 'discovered' : null, status: auditFailed ? 'failed' : 'done', lease_until: 0, owner: null, error: auditFailed ? 'Audit unavailable or model output invalid.' : null }))
     await db.$client.batch(writes, 'write')
   } catch (error) {
     await failJob(job, deps, error, now())

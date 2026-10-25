@@ -11,6 +11,7 @@ import { ScoreHistogram } from './score-histogram'
 import { Skeleton } from './skeleton'
 import { Tour, type TourStep } from './tour'
 import { EnrichmentStatus, type EnrichmentTask } from './enrichment-status'
+import type { ListingIssue } from '@/core/listing-issue'
 import { LeadDetail } from './lead-detail'
 import { ScanSummary } from './scan-summary'
 import { buildExportQuery, isQualifiedLead, isPendingResult, type LeadStatus } from '@/lib/result-filters'
@@ -21,6 +22,7 @@ interface Result {
   id: string; name: string; address: string | null; phone: string | null
   rating: number | null; reviewCount: number | null; listedWebsite: string | null
   presenceStatus: string | null; probeDetail: string | null; score: number | null; leadStatus: string; note: string | null
+  listingIssue?: ListingIssue | null
   facebookUrl?: string | null; sourceUrl?: string | null
   category?: string | null; seenBefore?: boolean
   enrichment?: EnrichmentTask[]

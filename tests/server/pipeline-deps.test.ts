@@ -106,3 +106,13 @@ it.each([undefined, 'false', 'TRUE', '1'])('disables the entire AI workflow with
   expect(rows.every(row => row.auditReport === null)).toBe(true)
   expect(fetchFn).not.toHaveBeenCalled()
 })
+
+it('exposes search availability to probe workers without constructing a search client', () => {
+  const db = createDb(':memory:')
+  const env = { SEARXNG_ENABLED: 'true', SEARXNG_URL: 'http://searxng:8080', AI_AUDIT_ENABLED: 'false' }
+  const probe = buildPipelineDeps(db, env, { search: false, audit: false, queued: true })
+  expect(probe.websiteSearchEnabled).toBe(true)
+  expect(probe.discoverWebsite).toBeUndefined()
+  expect(buildPipelineDeps(db, { ...env, SEARXNG_ENABLED: 'false' }, { search: false }).websiteSearchEnabled).toBe(false)
+  db.$client.close()
+})

@@ -1,8 +1,10 @@
+import { differentWebsite } from '../listing-issue'
 import { isFacebookUrl } from '../probes/facebook'
 
 export interface WebsiteSearchInput {
   name: string
   address: string | null
+  excludeWebsite?: string | null
 }
 
 export interface WebsiteSearchResult {
@@ -33,6 +35,7 @@ const EXCLUDED = /(^|\.)(facebook|instagram|tripadvisor|yelp|pagesdor|google|boo
 
 function candidate(hit: SearchHit, input: WebsiteSearchInput): URL | null {
   const url = new URL(hit.url)
+  if (input.excludeWebsite && !differentWebsite(input.excludeWebsite, url.href)) return null
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password || EXCLUDED.test(url.hostname) || isFacebookUrl(hit.url)) return null
   const brand = normalize(input.name).split(' ').filter(t => t.length >= 3 && !GENERIC.has(t))
   const host = normalize(url.hostname.replace(/^www\./, '').split('.')[0]).replace(/ /g, '')

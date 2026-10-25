@@ -640,5 +640,12 @@
   "A website configuration problem to resolve.": "Un problème de configuration du site à résoudre.",
   "A configuration problem was detected for {0}. Review the diagnosis and propose a targeted repair before considering a redesign.": "Un problème de configuration a été détecté pour {0}. Consultez le diagnostic et proposez une réparation ciblée avant d’envisager une refonte.",
   "A configuration error does not prove the website is absent or needs rebuilding.": "Une erreur de configuration ne prouve pas que le site est absent ou doit être refait.",
-  "The hosting service reports that the domain is not configured for the website.": "L’hébergeur indique que le domaine n’est pas configuré pour ce site."
+  "The hosting service reports that the domain is not configured for the website.": "L’hébergeur indique que le domaine n’est pas configuré pour ce site.",
+  "Listing link to review": "Lien de fiche à vérifier",
+  "The collected listing URL failed verification. Another matching website responds. Check the current listing before proposing a correction.": "Le lien collecté sur la fiche a échoué au contrôle. Un autre site correspondant répond. Vérifiez la fiche actuelle avant de proposer une correction.",
+  "Collected listing website": "Site collecté sur la fiche",
+  "Matching website found": "Site correspondant trouvé",
+  "Diagnosis": "Diagnostic",
+  "Identity evidence": "Preuves de correspondance",
+  "Checked at": "Vérifié le"
 }

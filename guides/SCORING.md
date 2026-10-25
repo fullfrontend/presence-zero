@@ -116,5 +116,16 @@ A confirmed broken listing link is an opportunity to correct the listing or its
 redirect, without assuming ownership of the old domain, access rights, repair
 effort or financial return.
 
-Automatic comparison and a separate listing-maintenance score are not implemented
-yet. Record confirmed discrepancies in the prospect's notes in the meantime.
+New scans preserve the website supplied by the provider. When that URL is dead,
+parked, has a configuration error or cannot be verified, an enabled search provider
+gets one recovery lookup (with the usual throttle/retry policy). A replacement
+requires an unambiguous name/domain/address match and a successful website probe.
+Facebook, ambiguous matches, the same host and inaccessible replacements are rejected.
+Failed recovery preserves the original diagnosis and score. Successful recovery
+uses the live site's audit for scoring and records a **listing link to review**
+with both URLs, source diagnosis, match evidence and timestamp in the UI and CSV.
+This does not re-read Google/OSM: check the current listing before outreach.
+Search must be enabled in settings/environment; Ollama is not required for recovery.
+Collection of other prospects continues while recovery runs. Existing scans without
+recorded source website provenance need a new scan for this detection.
+A separate listing-maintenance score is not implemented.

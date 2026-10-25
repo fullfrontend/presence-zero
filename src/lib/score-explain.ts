@@ -1,3 +1,4 @@
+import type { ListingIssue } from '@/core/listing-issue'
 import { explainBusinessScore } from '@/core/business-score'
 import { englishText, type TranslateText } from '@/core/text'
 import type { AuditReport } from '@/core/audit/types'
@@ -15,6 +16,7 @@ export interface ExplainableRow {
   scoreExplanation?: ScoreExplanation
   leadStatus?: string
   auditReport?: AuditReport | null
+  listingIssue?: ListingIssue | null
   listedWebsite?: string | null
   facebookUrl?: string | null
   sourceUrl?: string | null

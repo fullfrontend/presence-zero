@@ -1,3 +1,4 @@
+import { differentWebsite, needsWebsiteRecovery, type ListingIssue } from './listing-issue'
 import type { AuditLead } from './audit/types'
 import { isFacebookUrl, FACEBOOK_DETAIL } from './probes/facebook'
 import { and, eq, isNull, sql } from 'drizzle-orm'
@@ -31,6 +32,7 @@ export interface PipelineDeps {
   getSecret?: (name: SecretName) => Promise<string | undefined>
   enrichPhone?: (name: string, address: string | null) => Promise<string | null>
   discoverWebsite?: (input: WebsiteSearchInput) => Promise<WebsiteSearchResult>
+  websiteSearchEnabled?: boolean
   braveSearchEnabled?: boolean
   auditLead?: AuditLead
   batchSize?: number
@@ -93,6 +95,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       let discoveryDetail = ''
       let searchNotFound = false
       let discoveredWebsite = false
+      let auditReportForScore = b.auditReport
       if ((!website || isFacebookUrl(website)) && discoverWebsite && !b.retried) {
         try {
           const discovery = await discoverWebsite({ name: b.name, address: b.address })
@@ -127,6 +130,28 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         await db.update(businesses).set({ listedWebsite: b.listedWebsite })
           .where(eq(businesses.id, b.id))
       }
+      if (website && b.sourceWebsite === website && needsWebsiteRecovery(outcome.status) && discoverWebsite && !b.retried) {
+        try {
+          const discovery = await discoverWebsite({ name: b.name, address: b.address, excludeWebsite: website })
+          if (discovery.retryAfterMs && !discovery.website) {
+            throw new ProviderError(`Website recovery is rate limited. Wait ${Math.ceil(discovery.retryAfterMs / 1000)} seconds before resuming. Progress is saved.`, true)
+          }
+          if (discovery.outcome === 'matched' && discovery.website && !isFacebookUrl(discovery.website) && differentWebsite(website, discovery.website)) {
+            const replacement = await probe(discovery.website)
+            if (replacement.status === 'alive') {
+              const listingIssue: ListingIssue = { sourceWebsite: website, replacementWebsite: discovery.website,
+                sourceUrl: b.sourceUrl, sourceStatus: outcome.status, sourceDetail: outcome.detail,
+                matchDetail: discovery.detail, checkedAt: new Date().toISOString() }
+              website = discovery.website
+              outcome.status = replacement.status
+              outcome.detail = replacement.detail
+              auditReportForScore = null
+              await db.update(businesses).set({ listedWebsite: website, listingIssue, auditReport: null, score: null })
+                .where(eq(businesses.id, b.id))
+            }
+          }
+        } catch (err) { if (err instanceof ProviderError) throw err }
+      }
       if (discoveryDetail) outcome.detail = `${discoveryDetail} ${outcome.detail}`
       const presence = outcome.status
       let exactDomainAvailable = false
@@ -143,13 +168,13 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
       let found: string | null = null
       if (!b.phone) { try { found = await enrichPhone(b.name, b.address) } catch { found = null } }
       const score = computeScore({
-        presence, leadStatus: b.leadStatus, auditReport: b.auditReport, reviewCount: b.reviewCount, rating: b.rating,
+        presence, leadStatus: b.leadStatus, auditReport: auditReportForScore, reviewCount: b.reviewCount, rating: b.rating,
         exactDomainAvailable, hasPhone: !!(b.phone || found),
       })
       await db.update(businesses)
         .set({ presenceStatus: presence, probeDetail: outcome.detail, score, ...(found ? { phone: found } : {}) })
         .where(eq(businesses.id, b.id))
-      if (deps.auditLead && !b.auditReport) {
+      if (deps.auditLead && !auditReportForScore) {
         // Auditing is optional enrichment; an inference failure must not overwrite presence/scoring.
         try {
           const auditReport = await deps.auditLead({ name: b.name, address: b.address, phone: b.phone || found,
@@ -179,7 +204,7 @@ export async function advanceScan(scanId: string, deps: PipelineDeps): Promise<A
         await db.insert(businesses).values(page.businesses.map(raw => ({
           id: randomUUID(), scanId, name: raw.name, address: raw.address, phone: raw.phone,
           category: raw.category, rating: raw.rating, reviewCount: raw.reviewCount,
-          listedWebsite: raw.website,
+          listedWebsite: raw.website, sourceWebsite: raw.website,
           facebookUrl: raw.facebookUrl ?? (isFacebookUrl(raw.website) ? raw.website : undefined),
           sourceUrl: raw.sourceUrl, latitude: raw.latitude, longitude: raw.longitude,
           leadStatus: raw.closed ? ('skipped' as const) : ('new' as const),

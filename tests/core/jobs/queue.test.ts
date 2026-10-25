@@ -195,7 +195,7 @@ it.each([
       discoverWebsite: async () => ({ website: 'https://business.example', outcome: 'matched', detail: 'Matching website found' }),
       probe,
     })
-    for (const kind of JOB_KINDS) {
+    for (let pass = 0; pass < 2; pass++) for (const kind of JOB_KINDS) {
       const job = await claimJob(db, kind, 1)
       if (job) await processJob(job, deps)
     }
@@ -227,5 +227,75 @@ it('persists a certificate configuration lead with a weighted repair score', asy
   expect(row).toMatchObject({ presenceStatus: 'configuration_error', score: 95, listedWebsite: 'https://certificate.example' })
   expect(row.probeDetail).toContain('HTTPS certificate validation failed (DEPTH_ZERO_SELF_SIGNED_CERT)')
   expect((await db.select().from(scans))[0].status).toBe('done')
+  db.$client.close()
+})
+
+async function recoverySetup(overrides: Partial<PipelineDeps> = {}) {
+  const context = await setup({
+    getProviderById: () => ({ id: 'test', async fetchPage() {
+      return { businesses: [{ name: 'Business', address: '12 Rue Test, Charleroi', website: 'https://old.example', sourceUrl: 'https://maps.google.com/?cid=123' }], nextCursor: null }
+    } }),
+    discoverWebsite: async () => ({ website: 'https://new.example', outcome: 'matched', detail: 'Name and address match' }),
+    probe: async url => url === 'https://old.example' ? { status: 'configuration_error', detail: 'TLS error' } : { status: 'alive', detail: 'OK' },
+    ...overrides,
+  })
+  for (const kind of ['collect', 'search', 'probe', 'phone'] as const) {
+    await processJob((await claimJob(context.db, kind, 1))!, context.deps)
+  }
+  return context
+}
+
+it('recovers a broken source link asynchronously and preserves evidence before auditing the replacement', async () => {
+  const search = vi.fn<NonNullable<PipelineDeps['discoverWebsite']>>(async () => ({ website: 'https://new.example', outcome: 'matched', detail: 'Name and address match' }))
+  const { db, deps } = await recoverySetup({ discoverWebsite: search })
+  expect(search).not.toHaveBeenCalled() // Source URL is checked before recovery search.
+  expect(await claimJob(db, 'audit', 1)).toBeUndefined()
+  expect(await claimJob(db, 'domains', 1)).toBeUndefined()
+  await processJob((await claimJob(db, 'search', 1))!, deps)
+  expect(search).toHaveBeenCalledWith({ name: 'Business', address: '12 Rue Test, Charleroi', excludeWebsite: 'https://old.example' })
+  const row = (await db.select().from(businesses))[0]
+  expect(row).toMatchObject({ sourceWebsite: 'https://old.example', listedWebsite: 'https://new.example', presenceStatus: 'alive', auditReport: null,
+    listingIssue: { sourceWebsite: 'https://old.example', replacementWebsite: 'https://new.example', sourceStatus: 'configuration_error', sourceDetail: 'TLS error', sourceUrl: 'https://maps.google.com/?cid=123' } })
+  expect(await claimJob(db, 'audit', 1)).toBeDefined()
+  expect(await claimJob(db, 'search', 1)).toBeUndefined() // No repeated recovery loop.
+  await refreshScanProgress(db, 'scan')
+  expect((await db.select().from(businesses))[0].score).toBeNull() // No stale repair score for a live replacement.
+  db.$client.close()
+})
+
+it.each([
+  { website: null, outcome: 'not_found' as const },
+  { website: 'https://new.example', outcome: 'inconclusive' as const },
+  { website: 'https://new.example' },
+  { website: 'https://www.old.example', outcome: 'matched' as const },
+  { website: 'https://facebook.com/business', outcome: 'matched' as const },
+])('preserves the diagnosis on inconclusive recovery: %j', async result => {
+  const { db, deps } = await recoverySetup({ discoverWebsite: async () => ({ ...result, detail: 'Search result' }) })
+  await processJob((await claimJob(db, 'search', 1))!, deps)
+  expect((await db.select().from(businesses))[0]).toMatchObject({ listedWebsite: 'https://old.example', presenceStatus: 'configuration_error', probeDetail: 'TLS error', listingIssue: null })
+  db.$client.close()
+})
+
+it('rejects a matching replacement that is also broken', async () => {
+  const { db, deps } = await recoverySetup({ probe: async () => ({ status: 'dead', detail: 'HTTP 404' }) })
+  await processJob((await claimJob(db, 'search', 1))!, deps)
+  expect((await db.select().from(businesses))[0]).toMatchObject({ listedWebsite: 'https://old.example', presenceStatus: 'dead', listingIssue: null })
+  db.$client.close()
+})
+
+it('keeps the recovery marker through a throttle deferral and respects pause', async () => {
+  const { db, deps } = await recoverySetup({ discoverWebsite: async () => ({ website: null, detail: 'wait', retryAfterMs: 1000, deferred: true }) })
+  const job = (await claimJob(db, 'search', 1))!
+  await processJob(job, deps)
+  expect((await db.select().from(scanJobs).where(eq(scanJobs.id, job.id)))[0]).toMatchObject({ result: 'recover_website', status: 'pending', attempts: 0 })
+  await db.update(scans).set({ status: 'paused', errorMessage: 'Paused by you.' })
+  expect(await claimJob(db, 'search', 1, Date.now() + 2000)).toBeUndefined()
+  db.$client.close()
+})
+
+it('does not schedule recovery when search is disabled', async () => {
+  const { db } = await recoverySetup({ discoverWebsite: undefined })
+  expect(await claimJob(db, 'search', 1)).toBeUndefined()
+  expect((await db.select().from(businesses))[0].presenceStatus).toBe('configuration_error')
   db.$client.close()
 })

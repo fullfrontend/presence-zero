@@ -47,3 +47,15 @@ it('renders the dedicated configuration issue badge in both languages', () => {
   expect(render('fr-FR', h(PresenceBadge, { status: 'configuration_error' }))).toContain('PROBLÈME DE CONFIGURATION')
   expect(render('en-US', h(PresenceBadge, { status: 'configuration_error' }))).toContain('CONFIGURATION ISSUE')
 })
+
+import { LeadDetail } from '@/components/app/lead-detail'
+it('shows listing discrepancy evidence in both locales without unsafe links', () => {
+  const row = { name: 'Business', phone: null, rating: null, reviewCount: null, score: null, presenceStatus: 'alive', domains: [],
+    listingIssue: { sourceWebsite: 'javascript:alert(1)', replacementWebsite: 'https://business.example', sourceUrl: null,
+      sourceStatus: 'dead', sourceDetail: 'Returned HTTP 404.', matchDetail: 'Name and address match', checkedAt: '2026-10-21T12:00:00Z' } }
+  const fr = render('fr-FR', h(LeadDetail, { row }))
+  expect(fr).toContain('Lien de fiche à vérifier')
+  expect(fr).toContain('https://business.example')
+  expect(fr).not.toContain('href="javascript:')
+  expect(render('en-US', h(LeadDetail, { row }))).toContain('Listing link to review')
+})

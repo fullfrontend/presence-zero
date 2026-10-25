@@ -3,7 +3,7 @@ import { useI18n } from '@/i18n/client'
 import { useState } from 'react'
 import { AuditDetail } from './audit-detail'
 import { explainResultRow, pitchForRow, buildPitchText, type ExplainableRow } from '@/lib/score-explain'
-import { businessLinks } from '@/lib/business-links'
+import { businessLinks, safeWebUrl } from '@/lib/business-links'
 import { scoreLevel } from '@/lib/score-display'
 import { presenceMeta } from '@/lib/presence'
 
@@ -76,6 +76,21 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
           ))}
         </dl>
       </section>
+      {row.listingIssue && <section className="rounded border border-lime/40 p-3 md:col-span-2" aria-label={t("Listing link to review")}>
+        <h3 className="text-sm font-medium text-lime">{t("Listing link to review")}</h3>
+        <p className="mt-2 text-sm">{t("The collected listing URL failed verification. Another matching website responds. Check the current listing before proposing a correction.")}</p>
+        <dl className="mt-2 space-y-2 text-xs">
+          {[
+            [t("Collected listing website"), row.listingIssue.sourceWebsite],
+            [t("Matching website found"), row.listingIssue.replacementWebsite],
+          ].map(([label, value]) => <div key={label}><dt className="text-mute">{label}</dt><dd>
+            {safeWebUrl(value) ? <a className="break-all text-lime underline" href={safeWebUrl(value)!} target="_blank" rel="noopener noreferrer">{value}</a> : value}
+          </dd></div>)}
+          <div><dt className="text-mute">{t("Diagnosis")}</dt><dd>{system(row.listingIssue.sourceDetail)}</dd></div>
+          <div><dt className="text-mute">{t("Identity evidence")}</dt><dd>{system(row.listingIssue.matchDetail)}</dd></div>
+          <div><dt className="text-mute">{t("Checked at")}</dt><dd>{row.listingIssue.checkedAt}</dd></div>
+        </dl>
+      </section>}
       {explanation.total === null ? <p className="text-sm text-mute">{t("Not assessed — insufficient evidence about the website.")}</p> : <section aria-label={t("Score breakdown")}>
         <h3 className="font-mono text-[10px] uppercase tracking-[0.14em] text-mute">{t("Why this scores ")}{explanation.total}/100</h3>
         <p className="mt-2 text-xs text-mute">{t("Need 45%, activity 20%, contactability 20%, reputation 10%, domain readiness 5%. All contributions decrease when the website need is low.")}</p>

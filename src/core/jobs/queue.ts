@@ -51,7 +51,7 @@ export async function ensureScanJobs(db: Db, scanId: string) {
 
 /** A single UPDATE atomically enforces a global per-stage concurrency ceiling. */
 export async function claimJob(db: Db, kind: JobKind, limit: number, now = Date.now()): Promise<Job | undefined> {
-  const dependencies = kind === 'probe' ? ['search'] : kind === 'domains' ? ['probe'] : kind === 'audit' ? ['probe', 'phone'] : []
+  const dependencies = kind === 'probe' ? ['search'] : kind === 'domains' ? ['search', 'probe'] : kind === 'audit' ? ['search', 'probe', 'phone'] : []
   const dependencySql = dependencies.length ? sql`AND NOT EXISTS (
     SELECT 1 FROM scan_jobs dependency WHERE dependency.business_id = candidate.business_id
     AND dependency.kind IN (${sql.join(dependencies.map(value => sql`${value}`), sql`, `)}) AND dependency.status IN ('pending', 'running')

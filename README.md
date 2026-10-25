@@ -131,7 +131,9 @@ can earn the same domain contribution, without doubling it. Read the
 ## Add optional enrichment
 
 **Website discovery** searches by business name and address when no independent
-website is supplied. SearXNG takes precedence over Brave when configured; it never
+website is supplied, or when the supplied site fails verification. A matching live
+replacement preserves the original link and diagnosis as a listing correction
+opportunity in the result details and CSV. SearXNG takes precedence over Brave when configured; it never
 falls back to Brave after a failure. Search throttling can extend scans while new
 prospects continue to appear. See [search configuration](guides/CONFIGURATION.md)
 and [SearXNG operations](guides/DEPLOYMENT.md#searxng-configuration-and-throttling).

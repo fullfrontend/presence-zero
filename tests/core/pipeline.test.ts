@@ -296,7 +296,7 @@ describe('pipeline', () => {
 
 
 describe('website discovery in the pipeline', () => {
-  it('discovers and probes missing websites before scoring, leaving supplied sites alone', async () => {
+  it('discovers and probes missing websites before scoring, leaving healthy supplied sites alone', async () => {
     const db = await freshDb()
     await insertScan(db)
     const lookedUp: string[] = []
@@ -306,7 +306,7 @@ describe('website discovery in the pipeline', () => {
         return { website: 'https://joes.example', detail: 'Discovered via search.' }
       },
     }))
-    expect(lookedUp).toEqual(["Joe's Bakery"])
+    expect(lookedUp).toEqual(["Joe's Bakery", "Dead Site Bikes"])
     const joe = (await db.select().from(businesses)).find(b => b.name === "Joe's Bakery")!
     expect(joe.listedWebsite).toBe('https://joes.example')
     expect(joe.presenceStatus).toBe('alive')
@@ -513,4 +513,18 @@ describe('Brave environment opt-in', () => {
     expect(fetchFn).toHaveBeenCalledTimes(flag === 'true' ? 1 : 0)
     if (flag === 'true') expect(String(fetchFn.mock.calls[0][0])).toContain('api.search.brave.com')
   })
+})
+
+it('keeps legacy recovery consistent with queued recovery and clears the stale repair score', async () => {
+  const db = await freshDb()
+  await insertScan(db)
+  const search = vi.fn<NonNullable<PipelineDeps['discoverWebsite']>>(async () => ({ website: 'https://new.example', outcome: 'matched', detail: 'Name and address match' }))
+  await runToCompletion(db, deps(db, {
+    getProviderById: () => ({ id: 'mock', async fetchPage() { return { businesses: [{ name: 'Business', website: 'https://dead.example', address: '12 Main St, Ottawa' }], nextCursor: null } } }),
+    discoverWebsite: search,
+  }))
+  expect(search).toHaveBeenCalledTimes(1)
+  expect((await db.select().from(businesses))[0]).toMatchObject({ sourceWebsite: 'https://dead.example', listedWebsite: 'https://new.example', presenceStatus: 'alive', score: null,
+    listingIssue: { sourceWebsite: 'https://dead.example', replacementWebsite: 'https://new.example', sourceStatus: 'dead' } })
+  db.$client.close()
 })

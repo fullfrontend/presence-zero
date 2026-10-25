@@ -1,3 +1,4 @@
+import type { ListingIssue } from '@/core/listing-issue'
 import type { AuditReport } from '@/core/audit/types'
 import { sqliteTable, text, integer, real, index } from 'drizzle-orm/sqlite-core'
 
@@ -33,6 +34,8 @@ export const businesses = sqliteTable('businesses', {
   rating: real('rating'),
   reviewCount: integer('review_count'),
   listedWebsite: text('listed_website'),
+  sourceWebsite: text('source_website'),
+  listingIssue: text('listing_issue', { mode: 'json' }).$type<ListingIssue>(),
   facebookUrl: text('facebook_url'),
   sourceUrl: text('source_url'),
   presenceStatus: text('presence_status', { enum: ['not_found', 'none', 'facebook', 'alive', 'dead', 'parked', 'configuration_error', 'probe_failed'] }),

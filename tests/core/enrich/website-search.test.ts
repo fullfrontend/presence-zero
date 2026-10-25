@@ -65,3 +65,11 @@ it('does not count search-only Facebook or directories as an independent website
   ] } }))
   expect((await search(business)).outcome).toBe('not_found')
 })
+
+it('excludes the broken source host during recovery without weakening identity checks', async () => {
+  const hit = fixture.web.results[2]
+  const search = createWebsiteSearch('secret', fetchResult({ web: { results: [hit, { ...hit, url: 'https://chezleon.other/contact' }] } }))
+  expect((await search({ ...business, excludeWebsite: hit.url })).website).toBe('https://chezleon.other/contact')
+  const unrelated = createWebsiteSearch('secret', fetchResult({ web: { results: [{ ...hit, description: 'Another city', extra_snippets: [] }] } }))
+  expect((await unrelated({ ...business, excludeWebsite: 'https://old.example' })).website).toBeNull()
+})

@@ -57,6 +57,13 @@
       "when": 1792486247201,
       "tag": "0007_business_coordinates",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1792610805158,
+      "tag": "0008_listing_website_recovery",
+      "breakpoints": true
     }
   ]
 }

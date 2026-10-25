@@ -41,6 +41,7 @@ export function buildPipelineDeps(db: Db, env: Record<string, string | undefined
   const auditLead = options.audit === false ? undefined : buildAuditLead(env)
   return {
     db,
+    websiteSearchEnabled: (env.SEARXNG_ENABLED === 'true' && !!env.SEARXNG_URL?.trim()) || (env.BRAVE_SEARCH_ENABLED === 'true' && !!env.BRAVE_SEARCH_API_KEY?.trim()),
     braveSearchEnabled: !searxngUrl && env.BRAVE_SEARCH_ENABLED === 'true',
     ...(auditLead ? { auditLead, batchSize: batchSize ?? 1 } : {}),
     ...(batchSize ? { batchSize } : {}),

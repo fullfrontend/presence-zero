@@ -48,3 +48,18 @@ it('keeps UI/export filter semantics aligned for local audit opportunities', () 
   expect(buildExportQuery({ leadsOnly: true, auditOnly: true })).toContain('auditOnly=1')
   expect(matchesResultFilters(row, { minScore: 40 })).toBe(false)
 })
+
+it('exports listing recovery evidence while neutralizing formulas in source fields', async () => {
+  const db = await getDb()
+  await db.insert(scans).values({ id: 'recovered-export', createdAt: new Date(), location: 'Charleroi', category: 'restaurant', provider: 'csv' })
+  await db.insert(businesses).values({ id: 'recovered', scanId: 'recovered-export', name: 'Recovered business', presenceStatus: 'alive',
+    listedWebsite: 'https://new.example', sourceWebsite: '=untrusted()',
+    listingIssue: { sourceWebsite: '=untrusted()', replacementWebsite: 'https://new.example', sourceUrl: null,
+      sourceStatus: 'dead', sourceDetail: 'HTTP 404', matchDetail: 'Name and address match', checkedAt: '2026-10-25T12:00:00Z' } })
+  const exp = await import('@/app/api/scans/[id]/export/route')
+  const csv = await (await exp.GET(new Request('http://test'), { params: Promise.resolve({ id: 'recovered-export' }) })).text()
+  expect(csv).toContain('source_website,listing_issue')
+  expect(csv).toContain("'=untrusted()")
+  expect(csv).toContain('https://new.example')
+  expect(csv).toContain('HTTP 404')
+})
