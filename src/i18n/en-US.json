@@ -656,5 +656,13 @@
   "Retry this task": "Retry this task",
   "Scan collection": "Scan collection",
   "No diagnostic available.": "No diagnostic available.",
-  "Attempts: {0}": "Attempts: {0}"
+  "Attempts: {0}": "Attempts: {0}",
+  "Add or correct the website": "Add or correct the website",
+  "The previous audit is replaced. The new website is checked, then audited if AI is enabled.": "The previous audit is replaced. The new website is checked, then audited if AI is enabled.",
+  "Save and analyse": "Save and analyse",
+  "Website saved. Resume the scan to check and audit it.": "Website saved. Resume the scan to check and audit it.",
+  "Website saved. Verification and AI audit are queued.": "Website saved. Verification and AI audit are queued.",
+  "Website saved. Verification is queued; enable AI in Settings, then save again to run an AI audit.": "Website saved. Verification is queued; enable AI in Settings, then save again to run an AI audit.",
+  "Enter a valid independent website URL (HTTP or HTTPS).": "Enter a valid independent website URL (HTTP or HTTPS).",
+  "Could not save the website. Please try again.": "Could not save the website. Please try again."
 }

@@ -107,7 +107,7 @@ function compareValues(a: number | string | null, b: number | string | null, dir
 }
 
 export default function ResultsTable(
-  { scanId, readOnly = false, initialResults, location, refreshKey, partial = false }:
+  { scanId, readOnly = false, initialResults, location, refreshKey, partial = false, onEnrichmentQueued }:
   {
     scanId: string
     readOnly?: boolean
@@ -115,6 +115,7 @@ export default function ResultsTable(
     location?: string | null
     refreshKey?: number
     partial?: boolean
+    onEnrichmentQueued?: () => void
   },
 ) {
   const { t, number } = useI18n()
@@ -438,7 +439,7 @@ export default function ResultsTable(
                   <tr key={`${r.id}-detail`} className="border-t border-line/50 bg-base/20">
                     <td colSpan={colCount} id={detailId} className="px-3 py-3">
                       <EnrichmentStatus tasks={r.enrichment} />
-                      <LeadDetail row={r} location={location} />
+                      <LeadDetail row={r} location={location} businessId={readOnly ? undefined : r.id} onWebsiteSaved={() => { void reload(); onEnrichmentQueued?.() }} />
                     </td>
                   </tr>
                 ),
@@ -524,7 +525,7 @@ export default function ResultsTable(
                   {open && (
                     <div className="mt-3 border-t border-line pt-3">
                       <EnrichmentStatus tasks={r.enrichment} />
-                      <LeadDetail row={r} location={location} />
+                      <LeadDetail row={r} location={location} businessId={readOnly ? undefined : r.id} onWebsiteSaved={() => { void reload(); onEnrichmentQueued?.() }} />
                     </div>
                   )}
                   <button

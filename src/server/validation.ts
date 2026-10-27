@@ -1,3 +1,4 @@
+import { isFacebookUrl } from '@/core/probes/facebook'
 import { configurationPatchSchema } from './settings-validation'
 import { z } from 'zod'
 
@@ -81,3 +82,14 @@ export const retryJobsSchema = z.union([
   z.object({ jobId: z.string().min(1).max(256) }).strict(),
   z.object({ all: z.literal(true) }).strict(),
 ])
+
+export const manualWebsiteSchema = z.object({
+  website: z.string().trim().min(1).max(2048)
+    .transform(value => /^[a-z][a-z0-9+.-]*:/i.test(value) ? value : `https://${value}`)
+    .refine(value => {
+      try {
+        const url = new URL(value)
+        return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !isFacebookUrl(value)
+      } catch { return false }
+    }).transform(value => new URL(value).href),
+}).strict()

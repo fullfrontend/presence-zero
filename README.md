@@ -67,6 +67,12 @@ Use **Rerun** when you need fresh evidence or want to apply newly enabled search
 to a completed scan. Existing evidence is rescored automatically when displayed;
 that does not repeat external checks or regenerate reports.
 
+In an expanded prospect, use **Add or correct the website** to supply an independent
+HTTP(S) site. Saving queues verification and a fresh audit (when AI is enabled),
+clears the previous audit/score and preserves the original provider URL. In-flight
+results for the old URL cannot overwrite the edit. Paused scans require Resume;
+if AI is disabled, enable it in Settings and save the site again to request an audit.
+
 ### Choose a data source
 
 | Source | Setup | Category input |

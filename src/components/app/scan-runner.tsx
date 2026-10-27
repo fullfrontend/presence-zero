@@ -112,6 +112,6 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
     </section>
     <FailedJobs scanId={scanId} refreshKey={refreshKey} onRetry={() => setCycle(v => v + 1)} />
     {complete && scan.totalFound === 0 && <p className="text-sm text-dim">{t('The provider returned no businesses for this area and category.')}</p>}
-    {scan.totalFound > 0 && <ResultsTable scanId={scanId} location={scan.location ?? null} refreshKey={refreshKey} partial={!complete} />}
+    {scan.totalFound > 0 && <ResultsTable scanId={scanId} location={scan.location ?? null} refreshKey={refreshKey} partial={!complete} onEnrichmentQueued={() => setCycle(v => v + 1)} />}
   </div>
 }

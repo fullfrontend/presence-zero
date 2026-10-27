@@ -1,6 +1,7 @@
 'use client'
 import { useI18n } from '@/i18n/client'
 import { useState } from 'react'
+import { WebsiteEditor } from './website-editor'
 import { AuditDetail } from './audit-detail'
 import { explainResultRow, pitchForRow, buildPitchText, type ExplainableRow } from '@/lib/score-explain'
 import { businessLinks, safeWebUrl } from '@/lib/business-links'
@@ -22,7 +23,7 @@ function FactorBar({ label, points, max, hit }: { label: string; points: number;
   )
 }
 
-export function LeadDetail({ row, location }: { row: ExplainableRow; location?: string | null }) {
+export function LeadDetail({ row, location, businessId, onWebsiteSaved }: { row: ExplainableRow; location?: string | null; businessId?: string; onWebsiteSaved?: () => void }) {
   const { t, system } = useI18n()
   const [copied, setCopied] = useState(false)
   const links = businessLinks(row)
@@ -75,6 +76,7 @@ export function LeadDetail({ row, location }: { row: ExplainableRow; location?: 
             </div>
           ))}
         </dl>
+        {businessId && onWebsiteSaved && <WebsiteEditor businessId={businessId} website={row.listedWebsite} onSaved={onWebsiteSaved} />}
       </section>
       {row.listingIssue && <section className="rounded border border-lime/40 p-3 md:col-span-2" aria-label={t("Listing link to review")}>
         <h3 className="text-sm font-medium text-lime">{t("Listing link to review")}</h3>

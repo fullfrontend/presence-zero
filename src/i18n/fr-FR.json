@@ -656,5 +656,13 @@
   "Retry this task": "Relancer cette tâche",
   "Scan collection": "Collecte du scan",
   "No diagnostic available.": "Aucun diagnostic disponible.",
-  "Attempts: {0}": "Tentatives : {0}"
+  "Attempts: {0}": "Tentatives : {0}",
+  "Add or correct the website": "Ajouter ou corriger le site internet",
+  "The previous audit is replaced. The new website is checked, then audited if AI is enabled.": "L’ancien audit est remplacé. Le nouveau site est vérifié, puis audité si l’IA est activée.",
+  "Save and analyse": "Enregistrer et analyser",
+  "Website saved. Resume the scan to check and audit it.": "Site enregistré. Reprenez le scan pour lancer la vérification et l’audit.",
+  "Website saved. Verification and AI audit are queued.": "Site enregistré. La vérification et l’audit IA sont en attente de traitement.",
+  "Website saved. Verification is queued; enable AI in Settings, then save again to run an AI audit.": "Site enregistré. La vérification est en attente ; activez l’IA dans les réglages, puis enregistrez à nouveau pour lancer un audit IA.",
+  "Enter a valid independent website URL (HTTP or HTTPS).": "Saisissez une adresse de site internet valide (HTTP ou HTTPS), hors Facebook.",
+  "Could not save the website. Please try again.": "Impossible d’enregistrer le site. Réessayez."
 }

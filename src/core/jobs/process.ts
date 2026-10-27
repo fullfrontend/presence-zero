@@ -111,7 +111,7 @@ export async function processJob(job: Job, deps: PipelineDeps, now: () => number
       if (website && needsWebsiteRecovery(presence) && b.sourceWebsite === website &&
         (deps.websiteSearchEnabled || deps.discoverWebsite || deps.braveSearchEnabled)) {
         const discovery = (await db.select().from(scanJobs).where(eq(scanJobs.id, `${b.id}:search`)))[0]
-        recoverWebsite = discovery?.status === 'done' && discovery.result !== 'recovery_complete'
+        recoverWebsite = discovery?.status === 'done' && !['recovery_complete', 'manual'].includes(discovery.result ?? '')
       }
       patch.presence_status = presence
       patch.probe_detail = [b.probeDetail, detail].filter(Boolean).join(' ')
