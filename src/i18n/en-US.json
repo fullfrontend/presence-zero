@@ -647,5 +647,14 @@
   "Matching website found": "Matching website found",
   "Diagnosis": "Diagnosis",
   "Identity evidence": "Identity evidence",
-  "Checked at": "Checked at"
+  "Checked at": "Checked at",
+  "Failed tasks": "Failed tasks",
+  "Could not load failed tasks.": "Could not load failed tasks.",
+  "Could not retry tasks. Dependent work may still be running; refresh and try again.": "Could not retry tasks. Dependent work may still be running; refresh and try again.",
+  "Retry failed tasks after correcting the cause. Dependent checks are refreshed when needed. A paused scan stays paused.": "Retry failed tasks after correcting the cause. Dependent checks are refreshed when needed. A paused scan stays paused.",
+  "Retry all failed tasks": "Retry all failed tasks",
+  "Retry this task": "Retry this task",
+  "Scan collection": "Scan collection",
+  "No diagnostic available.": "No diagnostic available.",
+  "Attempts: {0}": "Attempts: {0}"
 }

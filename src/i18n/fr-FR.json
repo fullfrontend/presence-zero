@@ -647,5 +647,14 @@
   "Matching website found": "Site correspondant trouvé",
   "Diagnosis": "Diagnostic",
   "Identity evidence": "Preuves de correspondance",
-  "Checked at": "Vérifié le"
+  "Checked at": "Vérifié le",
+  "Failed tasks": "Tâches en échec",
+  "Could not load failed tasks.": "Impossible de charger les tâches en échec.",
+  "Could not retry tasks. Dependent work may still be running; refresh and try again.": "Impossible de relancer les tâches. Un traitement lié est peut-être en cours ; actualisez puis réessayez.",
+  "Retry failed tasks after correcting the cause. Dependent checks are refreshed when needed. A paused scan stays paused.": "Relancez les tâches après avoir corrigé la cause. Les vérifications liées sont actualisées si nécessaire. Un scan en pause reste en pause.",
+  "Retry all failed tasks": "Relancer tous les échecs",
+  "Retry this task": "Relancer cette tâche",
+  "Scan collection": "Collecte du scan",
+  "No diagnostic available.": "Aucun diagnostic disponible.",
+  "Attempts: {0}": "Tentatives : {0}"
 }

@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
 import { useI18n } from '@/i18n/client'
+import { FailedJobs } from './failed-jobs'
 import { STAGE_LABELS } from './enrichment-status'
 import ResultsTable from './results-table'
 import { Button } from '@/components/brand/button'
@@ -109,6 +110,7 @@ export default function ScanRunner({ scanId }: { scanId: string }) {
         {scan.status === 'paused' && <span className="text-xs text-mute">{t('Running tasks finish safely. No new tasks start while paused by you.')}</span>}
       </div>
     </section>
+    <FailedJobs scanId={scanId} refreshKey={refreshKey} onRetry={() => setCycle(v => v + 1)} />
     {complete && scan.totalFound === 0 && <p className="text-sm text-dim">{t('The provider returned no businesses for this area and category.')}</p>}
     {scan.totalFound > 0 && <ResultsTable scanId={scanId} location={scan.location ?? null} refreshKey={refreshKey} partial={!complete} />}
   </div>

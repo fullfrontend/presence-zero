@@ -76,3 +76,8 @@ export const exportQuerySchema = z.object({
   hasPhone: truthyFlag,
   leadStatus: z.enum(['new', 'contacted', 'replied', 'won', 'lost', 'skipped']).optional(),
 })
+
+export const retryJobsSchema = z.union([
+  z.object({ jobId: z.string().min(1).max(256) }).strict(),
+  z.object({ all: z.literal(true) }).strict(),
+])

@@ -164,3 +164,14 @@ AI collection additionally validates and pins public IPs, respects robots.txt an
 stores bounded evidence. These controls do not replace private deployment. Map tiles
 are fetched by the browser from OpenStreetMap; the map needs internet access and
 must retain attribution and follow its tile policy.
+
+### Retry failed tasks
+
+Expand **Failed tasks** on a scan to see each business, stage, attempt count and
+recorded error. Retry one task or all failures after correcting the cause. Successful
+independent tasks stay intact; downstream checks are refreshed when their inputs
+may change (search → probe/domains/audit, probe → domains/audit, phone → audit).
+Failed audit output is cleared so a retry actually runs the model again. Collection
+retries keep the saved cursor. Completed scans reopen; user-paused scans stay paused
+until resumed. If dependent work is running, retry after it finishes. Settings and
+search throttling still apply.
