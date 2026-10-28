@@ -1,3 +1,4 @@
+import { inspectSeo } from './seo'
 import { createHash } from 'node:crypto'
 import { load } from 'cheerio'
 import robotsParser from 'robots-parser'
@@ -54,7 +55,9 @@ export function createEvidenceCrawler(options: CrawlOptions) {
       if (!Number.isFinite(crawlDelay) || crawlDelay > 60000) { page.error = 'crawl_delay_exceeds_budget'; break }
       if (robots.isAllowed(target, 'PresenceZero') === false) { page.error = 'robots_disallowed'; continue }
       try {
+        const responseStart = now()
         const { response, url } = await get(target, AbortSignal.timeout(options.timeoutMs), origin, url => robots.isAllowed(url, 'PresenceZero') !== false)
+        const responseMs = Math.max(0, now() - responseStart)
         page.url = url
         page.statusCode = response.status
         page.contentType = response.headers.get('content-type')?.split(';')[0].trim().toLowerCase() ?? ''
@@ -65,6 +68,7 @@ export function createEvidenceCrawler(options: CrawlOptions) {
         }
         if (robots.isAllowed(url, 'PresenceZero') === false) { await response.body?.cancel(); page.error = 'robots_disallowed'; continue }
         const body = await readLimited(response, options.maxBytes)
+        page.seo = inspectSeo(body.text, url, body.truncated, response.headers, responseMs)
         const $ = load(body.text)
         const facts: string[] = [`HTTPS: ${url.startsWith('https:') ? 'yes' : 'no'}`]
         const title = cleanText($('title').text()).slice(0, 300)
@@ -95,6 +99,7 @@ export function createEvidenceCrawler(options: CrawlOptions) {
         if (/\b(franchise|franchis[ée]|franchising|national chain|cha[iî]ne nationale)\b/i.test(text)) facts.push('Franchise or national-chain wording observed (heuristic)')
         page.text = text.slice(0, options.maxChars)
         page.truncated = body.truncated || text.length > options.maxChars
+        facts.push(...page.seo.checks.map(check => `SEO ${check.label} [${check.status}]: ${check.detail}`))
         page.facts = facts
         page.sha256 = createHash('sha256').update(JSON.stringify({ text: page.text, facts })).digest('hex')
         if (page.text.length < 200) { page.error = 'insufficient_content'; continue }

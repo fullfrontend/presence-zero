@@ -44,7 +44,7 @@ it('rejects an invented evidence quote or unknown evidence reference', async () 
     expect(result.status).toBe('failed')
     expect(result.qualified).toBe(false)
     expect(result.websiteQuality).toBeNull()
-    expect(result.evidence).toHaveLength(1)
+    expect(result.evidence.map(page => page.id)).toEqual(['page-1', 'seo-summary'])
   }
 })
 
@@ -112,8 +112,73 @@ it('sends separate selected excerpts to inference and stores the original eviden
   })(input)
   expect(result.status).toBe('complete')
   expect(result.preparation?.status).toBe('complete')
-  expect(heavy.mock.calls[0][0]).toMatchObject({ evidence: [{ excerpts, truncated: false }] })
+  expect(heavy.mock.calls[0][0]).toMatchObject({ evidence: expect.arrayContaining([expect.objectContaining({ excerpts, truncated: false })]) })
   expect((heavy.mock.calls[0][0] as { evidence: object[] }).evidence[0]).not.toHaveProperty('text')
-  expect(result.evidence).toEqual(pages)
+  expect(result.evidence.slice(0, pages.length)).toEqual(pages)
+  expect(pages).toHaveLength(1)
   expect(result.evidence[0]).not.toHaveProperty('excerpts')
+})
+
+it('provides measured Lighthouse evidence to inference without replacing raw page evidence', async () => {
+  const heavy = vi.fn(async (payload: unknown) => {
+    const evidence = (payload as { evidence: { id: string; facts: string[] }[] }).evidence
+    const measured = evidence.find(page => page.id === 'lighthouse-mobile')!
+    return { summary: 'Measured performance plus content review', websiteQuality: 85, brief: 'Targeted improvements',
+      findings: [{ observation: 'Performance measured in a mobile lab', recommendation: 'Validate with repeat measurements', evidenceId: measured.id, quote: measured.facts[0] }] }
+  })
+  const result = await createLeadAuditor({ ...options, infer: heavy, lighthouse: async () => [{ status: 'complete', strategy: 'mobile', checkedAt: '2026-10-28T00:00:00Z', durationMs: 1000, requestedUrl: input.website!, scores: { performance: 95, seo: 92, accessibility: 89, bestPractices: 96 } }] })(input)
+  expect(result.status).toBe('complete')
+  expect(result.lighthouse?.[0].scores?.performance).toBe(95)
+  expect(result.seo?.pagesChecked).toBe(1)
+  expect(result.evidence.find(page => page.id === 'page-1')?.text).toContain('Chez Léon')
+  expect(result.websiteQuality).toBe(85) // AI synthesis, not Lighthouse performance copied as the lead score.
+})
+it('retains technical measurements on inference failure and labels measurement failures as unknown', async () => {
+  const result = await createLeadAuditor({ ...options, infer: async () => { throw new Error('ollama_output_truncated') },
+    lighthouse: async () => [{ status: 'unavailable', strategy: 'mobile', checkedAt: '2026-10-28T00:00:00Z', durationMs: 1000, requestedUrl: input.website!, reason: 'pagespeed_http_429' }] })(input)
+  expect(result.status).toBe('failed')
+  expect(result.failureCode).toBe('ollama_output_truncated')
+  expect(result.seo?.pagesChecked).toBe(1)
+  expect(result.lighthouse?.[0].scores).toBeUndefined()
+  expect(result.websiteQuality).toBeNull()
+})
+it('does not spend a Lighthouse request on unverified identities or profile-only audits', async () => {
+  const lighthouse = vi.fn(async () => [])
+  await createLeadAuditor({ ...options, lighthouse })({ ...input, name: 'Namesake', phone: null, address: null })
+  await createLeadAuditor({ ...options, lighthouse })({ ...input, presence: 'none' })
+  expect(lighthouse).not.toHaveBeenCalled()
+})
+
+
+it('restores original quotations from selected citation IDs instead of model paraphrases', async () => {
+  let selected: { quoteId: string; evidenceId: string; quote: string }
+  const result = await createLeadAuditor({ ...options, infer: async payload => {
+    selected = (payload as { citationCatalog: typeof selected[] }).citationCatalog[0]
+    return { summary: 'Grounded report', brief: 'Review targeted corrections', websiteQuality: 80,
+      findings: [{ observation: 'Observed fact', recommendation: 'Review this fact', quoteId: selected.quoteId, evidenceId: 'invented', quote: 'Model paraphrase' }] }
+  } })(input)
+  expect(result.status).toBe('complete')
+  expect(result.findings[0]).toMatchObject({ quote: selected!.quote, evidenceId: selected!.evidenceId })
+})
+
+it('rejects invented citation IDs even when the supplied quote is valid', async () => {
+  const result = await createLeadAuditor({ ...options, infer: async () => {
+    const answer = await infer({})
+    answer.findings[0].quoteId = 'page-999:q0'
+    return answer
+  } })(input)
+  expect(result.status).toBe('failed')
+  expect(result.failureCode).toBe('ungrounded_finding')
+})
+
+it('omits recommendations backed only by a generator name', async () => {
+  const pages = await crawl(input.website!)
+  pages[0].facts.push('Declared generator: Example CMS')
+  const result = await createLeadAuditor({ ...options, crawl: async () => pages, infer: async () => {
+    const answer = await infer({})
+    answer.findings.push({ observation: 'CMS weakness', recommendation: 'Migrate the site', evidenceId: 'page-1', quote: 'Declared generator: Example CMS' })
+    return answer
+  } })(input)
+  expect(result.status).toBe('complete')
+  expect(result.findings.some(finding => finding.observation === 'CMS weakness')).toBe(false)
 })

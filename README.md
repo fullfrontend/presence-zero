@@ -146,8 +146,9 @@ and [SearXNG operations](guides/DEPLOYMENT.md#searxng-configuration-and-throttli
 
 **Local AI** uses Ollama with separate light and heavy model roles for evidence
 selection, listing summaries and verified website audits. It collects bounded text
-and HTML evidence; it does not render websites or measure visual design, actual
-mobile layout, Lighthouse performance or accessibility. Operator business profiles
+and HTML evidence, runs automatic SEO checks and can include Google-hosted Lighthouse
+lab measurements. Visual design, real-user experience and actual search rankings remain
+unverified. Operator business profiles
 live outside the repository. Follow [local AI setup](guides/LOCAL_AI.md) and the
 [model roles and evaluation notes](LOCAL_AI_MODELS.md).
 

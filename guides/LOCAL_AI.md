@@ -92,11 +92,13 @@ failed, skipped, profile-only and unverified reports cannot establish website qu
 Audits consider business relevance, clarity of services and contact paths,
 documented barriers, explicit content dates and HTML signals. Recent relevant
 content is positive evidence; a copyright year or business founding year is not
-a website creation/redesign date. No browser rendering occurs: visual fashion,
-actual mobile layout, performance and accessibility remain unassessed.
+a website creation/redesign date. The bounded crawler does not render pages. Optional
+Lighthouse runs measure lab performance and automated accessibility/SEO checks; visual
+fashion, usability and real-user experience still require separate assessment.
 
 For compatibility, downloaded reports and CSV retain technical audit metrics. Website quality (0–100, higher is better) is an AI estimate
-from text and HTML signals, not a visual, Lighthouse, speed or accessibility test.
+from content, HTML and any explicitly supplied measurements. It is distinct from
+Lighthouse category scores, not a visual judgement or a compliance certification.
 Improvement opportunity is `100 - website quality`. A verified audit above the
 configured opportunity threshold appears in **Leads only**, including a live site.
 The existing **Min score** filter applies to the unified lead score, including verified website improvement potential. **Audited websites only** narrows the
@@ -162,3 +164,80 @@ The Docker launcher reads `.env` and, when `AI_PROMPTS_DIR` is set, includes
 `/run/presencezero-prompts`; the image contains only the generic example. For manual
 Compose use, load `.env` and `.env.docker` and include both Compose files. Use an
 absolute host path for the mount, with `AI_PROMPT_PROFILE` selecting the file.
+
+## Automatic SEO and measured performance
+
+Each fetched HTML page is checked for titles, descriptions, indexing directives
+(including HTTP X-Robots-Tag), headings, language, viewport, canonical URL, image
+alt attributes and JSON-LD syntax. Sampled pages are compared for repeated titles
+and descriptions. Truncated HTML leaves absent fields unknown. Empty alt text can
+be appropriate for decorative images; absent canonical or JSON-LD alone is not
+proof of poor SEO. These checks do not query Google indexing, rankings, backlinks
+or traffic, and do not certify structured-data eligibility.
+
+The heavy model receives these observations as citable evidence alongside the
+business content. It prioritizes contact/conversion barriers, relevance, local
+information and targeted SEO improvements, recognizes strengths, and distinguishes
+corrections from a redesign. Missing metadata alone should not justify a poor
+quality score. Generated conclusions remain estimates to review, even when their
+quotes are exact. Models select citation IDs; the application restores the original
+quotation and rejects unknown references. Findings supported only by a declared
+CMS/generator name are omitted: that is not evidence for a migration. Private profile instructions remain outside Git; mandatory
+evidence rules apply after the profile.
+
+Enable **Measure with Lighthouse (Google PageSpeed)** in Settings, or set:
+
+```dotenv
+AI_AUDIT_LIGHTHOUSE_ENABLED=true
+AI_AUDIT_LIGHTHOUSE_STRATEGY=mobile
+AI_AUDIT_LIGHTHOUSE_TIMEOUT_MS=90000
+PAGESPEED_API_KEY=
+```
+
+`mobile`, `desktop` and `both` are supported. AI must also be enabled for automatic
+scan audits. The optional key uses your own Google PageSpeed quota; configure it in
+Settings or the environment. The public website URL is sent to Google's service;
+private prompt profiles and Ollama content are not. URLs containing credentials,
+query parameters or private-address targets are rejected. No local browser is
+started by automatic scan jobs. An anonymous request may hit a shared quota (HTTP
+429); this is reported as unavailable and never counted as a site defect. There
+is no paid fallback and no immediate repeat after a quota error.
+
+Reports show four Lighthouse scores (performance, accessibility, SEO, best
+practices), LCP/FCP/TBT/Speed Index in milliseconds, and unitless CLS. These are lab
+measurements, not real-user Core Web Vitals; TBT is not INP. One run is variable.
+[PageSpeed API](https://developers.google.com/speed/docs/insights/v5/get-started)
+and [Lighthouse variability](https://developer.chrome.com/docs/lighthouse/performance/variability)
+explain the scope. Automated SEO checks are not ranking predictions; see the
+[Google SEO guide](https://developers.google.com/search/docs/fundamentals/seo-starter-guide).
+
+Technical results survive an Ollama failure and remain visible in the detail,
+JSON download and CSV (`seo_audit`, `lighthouse_audit`, `audit_timings`). Timings
+separate crawl, Lighthouse, preparation and inference. Diagnostic codes distinguish
+truncated or invalid model output and unsupported quotations. Existing reports are
+not silently changed: retry an audit or save the website again to regenerate it.
+
+### Explicit live evaluation
+
+Unit tests never access the network. For an explicit live technical audit:
+
+```bash
+npm run audit:website -- --url https://example.com --device mobile
+```
+
+To include local Ollama, add `--ai --name "Business name" --phone "Business phone"`
+(and optionally `--address`). This explicitly opts into a one-off AI/Lighthouse run
+without changing saved Settings. Outputs go to ignored `.local-audits/`.
+
+For a local Lighthouse measurement, install/use the official Lighthouse CLI and a
+compatible Chrome, for example:
+
+```bash
+npx lighthouse https://example.com --chrome-flags="--headless" --only-categories=performance,accessibility,best-practices,seo --output=json --output-path=.local-audits/lighthouse.json
+npm run audit:website -- --url https://example.com --ai --name "Business name" --phone "Business phone" --lighthouse-report .local-audits/lighthouse.json
+```
+
+The second command uses the recorded report instead of PageSpeed. It checks the
+final host, retains the measurement timestamp and device, and supplies those
+measurements to Ollama. Use this explicit CLI only for sites you intend to test;
+automatic arbitrary-prospect jobs always use the hosted measurement service.

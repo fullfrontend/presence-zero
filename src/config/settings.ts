@@ -1,4 +1,7 @@
 export const settingFields = [
+  {"key": "AI_AUDIT_LIGHTHOUSE_ENABLED", "label": "Measure with Lighthouse (Google PageSpeed)", "group": "ai", "default": "false", "kind": "boolean", "advanced": false},
+  {"key": "AI_AUDIT_LIGHTHOUSE_STRATEGY", "label": "Lighthouse device (mobile, desktop, both)", "group": "ai", "default": "mobile", "kind": "text", "advanced": false},
+  {"key": "AI_AUDIT_LIGHTHOUSE_TIMEOUT_MS", "label": "Lighthouse timeout (ms)", "group": "ai", "default": "90000", "kind": "number", "advanced": true},
   {"key": "PRESENCEZERO_DEFAULT_LOCATION", "label": "Default location", "group": "general", "default": "Charleroi, Belgique", "kind": "text", "advanced": false},
   {"key": "PRESENCEZERO_DEFAULT_COUNTRY_CODE", "label": "Country code", "group": "general", "default": "be", "kind": "text", "advanced": false},
   {"key": "PRESENCEZERO_DEFAULT_LOCALE", "label": "Default interface language", "group": "general", "default": "en-US", "kind": "locale", "advanced": false},

@@ -51,11 +51,12 @@ export const patchScanSchema = z.object({
 }).refine(d => Object.values(d).some(v => v !== undefined), { message: 'nothing to update' })
 
 export const putSettingsSchema = z.object({
+  pagespeedApiKey: z.string().trim().max(4096).nullable().optional(),
   googleApiKey: z.string().trim().max(4096).nullable().optional(),
   apifyToken: z.string().trim().max(4096).nullable().optional(),
   braveSearchApiKey: z.string().trim().max(4096).nullable().optional(),
   configuration: configurationPatchSchema.optional(),
-}).strict().refine(d => d.googleApiKey !== undefined || d.apifyToken !== undefined || d.braveSearchApiKey !== undefined
+}).strict().refine(d => d.pagespeedApiKey !== undefined || d.googleApiKey !== undefined || d.apifyToken !== undefined || d.braveSearchApiKey !== undefined
   || Object.keys(d.configuration ?? {}).length > 0, { message: 'nothing to update' })
 
 export const resultsQuerySchema = z.object({

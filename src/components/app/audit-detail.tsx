@@ -1,4 +1,5 @@
 'use client'
+import { TechnicalAudit } from './technical-audit'
 import { websiteOpportunity } from '@/core/website-opportunity'
 import { useI18n } from '@/i18n/client'
 import type { AuditReport } from '@/core/audit/types'
@@ -24,6 +25,8 @@ export function AuditDetail({ report }: { report: AuditReport }) {
       {report.preparation && <p className="mt-1 text-xs text-mute">{t("Evidence preparation: ")}{report.preparation.model} · {report.preparation.status === "complete" ? t("verified excerpts selected") : t("original evidence used after preparation failure")}</p>}
       <p className="mt-2 text-xs text-dim">{system(report.verification.detail)}</p>
       {report.reason && <p className="mt-2 text-sm text-amber-400">{system(report.reason)}</p>}
+      {report.failureCode && <p className="mt-2 text-xs text-mute">{t("Audit diagnostic")} : {report.failureCode}</p>}
+      <TechnicalAudit report={report} />
       {report.status === "complete" && <>
         {websiteOpportunity(report) !== null && <div className="mt-4 rounded-lg border border-line p-4">
           <h4 className="text-sm font-medium">{t("Website improvement potential")}</h4>
@@ -41,7 +44,7 @@ export function AuditDetail({ report }: { report: AuditReport }) {
         <h4 className="mt-4 text-xs font-medium text-text">{t("Suggested project brief")}</h4>
         <p className="mt-1 whitespace-pre-wrap text-sm text-dim">{report.brief}</p>
         <p className="mt-2 text-xs text-mute">{t("A completed website audit with a verified business identity informs the lead score. Unverified, failed or profile-only audits do not affect it.")}</p>
-        <p className="mt-3 text-xs text-mute">{t("AI estimate from sampled text and HTML. No visual, performance or accessibility test. Review the cited evidence before acting.")}</p>
+        <p className="mt-3 text-xs text-mute">{t("AI conclusions use the collected evidence. Only explicitly listed Lighthouse results are measured. Visual design and real-world business impact remain unverified.")}</p>
       </>}
       {report.evidence.length > 0 && <details className="mt-4 text-xs">
         <summary className="cursor-pointer text-dim">{t("Collected evidence (")}{report.evidence.length})</summary>

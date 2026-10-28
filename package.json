@@ -40,7 +40,8 @@
     "docker:up": "node scripts/docker.mjs up",
     "docker:down": "node scripts/docker.mjs down",
     "docker:search": "node scripts/docker.mjs search",
-    "ai:evaluate": "tsx scripts/evaluate-ollama.ts"
+    "ai:evaluate": "tsx scripts/evaluate-ollama.ts",
+    "audit:website": "tsx scripts/audit-website.ts"
   },
   "dependencies": {
     "@libsql/client": "^0.17.4",

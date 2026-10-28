@@ -5,7 +5,7 @@ import { useI18n } from '@/i18n/client'
 import { Button } from '@/components/brand/button'
 import { settingFields, type SettingKey, type SettingsConfiguration } from '@/config/settings'
 
-type SecretKey = 'googleApiKey' | 'apifyToken' | 'braveSearchApiKey'
+type SecretKey = 'pagespeedApiKey' | 'googleApiKey' | 'apifyToken' | 'braveSearchApiKey'
 type Source = 'settings' | 'environment' | 'default'
 type SettingsData = {
   configuration: SettingsConfiguration
@@ -15,6 +15,7 @@ type SettingsData = {
   braveSearchEnabled: boolean
 }
 const secretFields: { key: SecretKey; label: string }[] = [
+  { key: 'pagespeedApiKey', label: 'PageSpeed Insights API key (optional)' },
   { key: 'googleApiKey', label: 'Google Places API key' },
   { key: 'apifyToken', label: 'Apify API token' },
   { key: 'braveSearchApiKey', label: 'Brave Search API key' },

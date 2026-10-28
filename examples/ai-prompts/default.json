@@ -13,6 +13,6 @@
   "prompts": {
     "evidenceSelection": "Select excerpts about business identity, services, contact details, booking and customer reassurance. Keep exact original wording; include evidence that contradicts an apparent weakness.",
     "leadSummary": "Summarize the business context and propose a realistic project direction aligned with the agency services. An unverified website is not proof that no website exists. Do not generate an outreach message.",
-    "websiteAudit": "Assess whether the sampled pages clearly explain the offer, establish trust and help visitors contact or book. Distinguish minor editorial improvements from substantial redesign opportunities. Explain the proposed scope of work using the supplied evidence. Do not penalize a simple website just because it is simple."
+    "websiteAudit": "Assess whether the sampled pages clearly explain the offer, establish trust and help visitors contact or book. Distinguish minor editorial improvements from substantial redesign opportunities. Explain the proposed scope of work using the supplied evidence. Do not penalize a simple website just because it is simple. Prioritize observed conversion barriers and local SEO opportunities. Use supplied Lighthouse measurements when available, distinguish lab data from real users, recognize strengths and propose targeted repairs before a redesign. Never infer rankings or revenue losses."
   }
 }

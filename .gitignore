@@ -56,3 +56,6 @@ tmp-demo-frames/
 
 # Local SearXNG settings (created from the tracked example).
 /docker/searxng/settings.yml
+
+# Private live audit reports
+.local-audits/

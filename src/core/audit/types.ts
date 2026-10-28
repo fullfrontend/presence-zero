@@ -1,3 +1,4 @@
+import type { SeoPage, SeoReport, LighthouseRun } from './technical-types'
 import type { PresenceStatus } from '../types'
 
 export interface AuditInput {
@@ -12,6 +13,7 @@ export interface AuditInput {
 }
 
 export interface PageEvidence {
+  seo?: SeoPage
   id: string
   requestedUrl: string
   url: string
@@ -33,6 +35,10 @@ export interface AuditFinding {
 }
 
 export interface AuditReport {
+  failureCode?: string
+  seo?: SeoReport
+  lighthouse?: LighthouseRun[]
+  timings?: { crawlMs: number; lighthouseMs: number; preparationMs: number; inferenceMs: number; totalMs: number }
   version: 1
   status: 'complete' | 'unverified' | 'failed' | 'skipped'
   mode: 'website' | 'profile'

@@ -1,3 +1,5 @@
+import type { LighthouseRun } from '@/core/audit/technical-types'
+import { createLighthouseRunner } from '@/core/audit/lighthouse'
 import { loadPromptProfile, profileInstructions } from './prompt-profile'
 import { createEvidencePreparer } from '@/core/audit/prepare-evidence'
 import { createEvidenceCrawler } from '@/core/audit/crawl'
@@ -5,7 +7,7 @@ import { createLeadAuditor } from '@/core/audit/audit-lead'
 import { createOllamaAudit } from '@/core/audit/ollama'
 import { readAuditConfig } from './audit-config'
 
-export function buildAuditLead(env: Record<string, string | undefined> = process.env) {
+export function buildAuditLead(env: Record<string, string | undefined> = process.env, overrides: { lighthouse?: (website: string) => Promise<LighthouseRun[]> } = {}) {
   const config = readAuditConfig(env)
   if (!config) return undefined
   const { profile, revision } = loadPromptProfile(env)
@@ -16,6 +18,7 @@ export function buildAuditLead(env: Record<string, string | undefined> = process
     language: config.AI_AUDIT_LANGUAGE, think: config.OLLAMA_LIGHT_THINK,
   }
   return createLeadAuditor({
+    ...(config.AI_AUDIT_LIGHTHOUSE_ENABLED ? { lighthouse: overrides.lighthouse ?? createLighthouseRunner({ apiKey: env.PAGESPEED_API_KEY?.trim(), strategy: config.AI_AUDIT_LIGHTHOUSE_STRATEGY, timeoutMs: config.AI_AUDIT_LIGHTHOUSE_TIMEOUT_MS }) } : {}),
     promptProfile: { id: profile.id, revision },
     lightModel: config.OLLAMA_LIGHT_MODEL,
     profileInfer: createOllamaAudit({ ...light, taskPrompt: profileInstructions(profile, 'leadSummary') }),

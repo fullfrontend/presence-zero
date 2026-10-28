@@ -86,3 +86,16 @@ it('uses customized SearXNG URL and persistent throttle spacing', async () => {
   expect(String(fetchFn.mock.calls[0][0])).toContain('http://custom-search:8080/')
   expect(deps.braveSearchEnabled).toBe(false)
 })
+
+it('overrides Lighthouse configuration and keeps the PageSpeed key out of public metadata', () => {
+  const result = resolveSettings([
+    { key: 'config:AI_AUDIT_LIGHTHOUSE_ENABLED', value: 'true' },
+    { key: 'config:AI_AUDIT_LIGHTHOUSE_STRATEGY', value: 'both' },
+    { key: 'pagespeed_api_key', value: 'private-pagespeed-key' },
+  ], { AI_AUDIT_LIGHTHOUSE_ENABLED: 'false' })
+  expect(result.env.AI_AUDIT_LIGHTHOUSE_ENABLED).toBe('true')
+  expect(result.env.AI_AUDIT_LIGHTHOUSE_STRATEGY).toBe('both')
+  expect(result.env.PAGESPEED_API_KEY).toBe('private-pagespeed-key')
+  expect(result.secrets.pagespeedApiKey.configured).toBe(true)
+  expect(JSON.stringify({ secrets: result.secrets, configuration: result.configuration })).not.toContain('private-pagespeed-key')
+})

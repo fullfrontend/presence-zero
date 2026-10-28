@@ -8,6 +8,9 @@ const bool = (fallback: boolean) => z.preprocess(
   z.boolean(),
 )
 export const auditConfigSchema = z.object({
+  AI_AUDIT_LIGHTHOUSE_ENABLED: bool(false),
+  AI_AUDIT_LIGHTHOUSE_STRATEGY: z.enum(['mobile', 'desktop', 'both']).default('mobile'),
+  AI_AUDIT_LIGHTHOUSE_TIMEOUT_MS: integer(90000, 1000, 180000),
   OLLAMA_BASE_URL: z.url().default('http://127.0.0.1:11434').refine(value => {
     const url = new URL(value)
     return ['http:', 'https:'].includes(url.protocol) && !url.username && !url.password && !url.search && !url.hash

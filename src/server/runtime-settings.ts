@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import { settingFields, type SettingsConfiguration } from '@/config/settings'
 
 export const secretFields = {
+  pagespeedApiKey: { key: 'pagespeed_api_key', env: 'PAGESPEED_API_KEY' },
   googleApiKey: { key: 'google_api_key', env: 'GOOGLE_PLACES_API_KEY' },
   apifyToken: { key: 'apify_token', env: 'APIFY_TOKEN' },
   braveSearchApiKey: { key: 'brave_search_api_key', env: 'BRAVE_SEARCH_API_KEY' },

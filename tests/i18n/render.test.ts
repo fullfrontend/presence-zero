@@ -59,3 +59,15 @@ it('shows listing discrepancy evidence in both locales without unsafe links', ()
   expect(fr).not.toContain('href="javascript:')
   expect(render('en-US', h(LeadDetail, { row }))).toContain('Listing link to review')
 })
+
+it('displays measured technical checks even when AI fails, separating unknown metrics from zero', () => {
+  const report = { version: 1, status: 'failed', mode: 'website', model: 'test', language: 'fr', createdAt: '2026-10-28T00:00:00Z',
+    reason: 'Failed', verification: { status: 'matched', detail: 'Matched' }, summary: '', websiteQuality: null, opportunityScore: null,
+    qualified: false, qualificationReasons: [], findings: [], brief: '', evidence: [],
+    lighthouse: [{ status: 'complete', strategy: 'mobile', checkedAt: '2026-10-28T00:00:00Z', durationMs: 1000, requestedUrl: 'https://example.com', scores: { performance: 95, seo: null, accessibility: 89, bestPractices: 96 }, metrics: { lcpMs: 2500, cls: 0, tbtMs: 0, fcpMs: null, speedIndexMs: null } }] } as AuditReport
+  const output = render('fr-FR', h(AuditDetail, { report }))
+  expect(output).toContain('Contrôles automatiques SEO et performance')
+  expect(output).toContain('95')
+  expect(output).toContain('CLS 0')
+  expect(output).toContain('FCP —')
+})
