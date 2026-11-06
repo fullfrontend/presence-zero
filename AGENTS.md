@@ -113,3 +113,11 @@ Settings overrides take precedence over environment values and application defau
 Search and AI require independent opt-in; models, URLs and keys alone do not enable them.
 See [configuration](guides/CONFIGURATION.md) and [deployment](guides/DEPLOYMENT.md)
 for inheritance, deployment-only fields, worker behavior and persistence.
+
+## Upstream integration
+
+The parent repository is `its-tahir/presence-zero` (`upstream/main`). This fork is
+application-only: keep the root application redirect, localized metadata and
+no-index rules when merging upstream. Public marketing pages, promotional guides,
+RSS, sitemap and their exclusive components are intentionally excluded. Preserve
+the upstream ancestry with a merge commit and document these exclusions there.
